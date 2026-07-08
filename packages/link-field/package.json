@@ -1,0 +1,69 @@
+{
+  "name": "@krameri/payload-link-field",
+  "version": "0.1.0",
+  "description": "PayloadCMS link-field plugin.",
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./client": {
+      "types": "./dist/exports/client.d.ts",
+      "import": "./dist/exports/client.js"
+    },
+    "./admin.css": "./dist/admin.css",
+    "./types": {
+      "types": "./dist/exports/types.d.ts",
+      "import": "./dist/exports/types.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": [
+    "*.css",
+    "**/*.css"
+  ],
+  "scripts": {
+    "build": "pnpm run clean && pnpm run build:types && pnpm run build:js && pnpm run build:css",
+    "build:css": "cp src/admin.css dist/admin.css",
+    "build:js": "tsc -p tsconfig.build.json --declaration false --declarationMap false",
+    "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm run test:int",
+    "test:int": "vitest run",
+    "dev": "node ../../scripts/dev-package.mjs",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "prepublishOnly": "pnpm run clean && pnpm run build"
+  },
+  "dependencies": {
+    "@payloadcms/ui": "^3.0.0"
+  },
+  "peerDependencies": {
+    "payload": "^3.0.0",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "payload": "^3.0.0",
+    "react": "^19.0.0",
+    "typescript": "latest",
+    "vitest": "4.1.9"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "payload",
+    "payloadcms",
+    "payload-plugin",
+    "cms",
+    "link-field"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "extends": "../tsconfig.base.json",
+  "exclude": ["dist", "node_modules"],
+  "include": [
+    "**/*.js",
+    "**/*.jsx",
+    "**/*.mjs",
+    "**/*.cjs",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "../packages/*/src/**/*.ts",
+    "next.config.mjs"
+  ],
+  "compilerOptions": {
+    "baseUrl": "./",
+    "emitDeclarationOnly": false,
+    "ignoreDeprecations": "6.0",
+    "jsx": "preserve",
+    "noEmit": true,
+    "paths": {
+      "@krameri/payload-plugin-seo": ["../packages/seo/src/index.ts"],
+      "@payload-config": ["./payload.config.ts"]
+    }
+  }
+}

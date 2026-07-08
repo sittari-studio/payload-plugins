@@ -1,0 +1,27 @@
+{
+  "name": "krameri-payload-plugins",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.7.0",
+  "scripts": {
+    "build": "turbo build --filter='./packages/*'",
+    "dev": "pnpm --filter dev dev",
+    "dev:plugins": "turbo dev --filter='./packages/*'",
+    "test": "turbo test --filter='./packages/*'",
+    "typecheck": "turbo typecheck --filter='./packages/*'",
+    "clean": "turbo clean --filter='./packages/*' && rm -rf node_modules",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "publish": "changeset publish",
+    "release": "turbo build --filter='./packages/*' && changeset publish",
+    "create:plugin": "node scripts/create-plugin.mjs"
+  },
+  "devDependencies": {
+    "@changesets/cli": "latest",
+    "tsdown": "0.22.2",
+    "turbo": "latest",
+    "typescript": "latest",
+    "vitest": "4.1.9"
+  }
+}

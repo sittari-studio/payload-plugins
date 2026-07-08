@@ -1,0 +1,14 @@
+packages:
+  - "packages/*"
+  - "dev"
+
+allowBuilds:
+  esbuild: true
+  sharp: true
+
+overrides:
+  std-env: 4.1.0
+
+onlyBuiltDependencies:
+  - esbuild
+  - sharp

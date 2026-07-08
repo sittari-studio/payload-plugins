@@ -1,0 +1,31 @@
+{
+  "name": "dev",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "generate:types": "payload generate:types",
+    "generate:importmap": "payload generate:importmap",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "clean": "rm -rf .next dist payload-types.ts payload.dev.sqlite media"
+  },
+  "dependencies": {
+    "@krameri/payload-link-field": "workspace:*",
+    "@payloadcms/db-sqlite": "^3.0.0",
+    "@payloadcms/next": "^3.0.0",
+    "@payloadcms/richtext-lexical": "^3.0.0",
+    "next": "^16.0.0",
+    "payload": "^3.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "sass": "^1.77.0",
+    "sharp": "^0.34.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "latest",
+    "vitest": "4.1.9"
+  }
+}
