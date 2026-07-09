@@ -9,6 +9,12 @@ export const DEFAULT_SEO_NAMES = {
   settingsGlobal: 'seo-settings',
 } as const
 
+/** Client component paths registered on generated Payload Admin fields. */
+export const SEO_PREVIEWS_ADMIN_COMPONENT =
+  '@krameri/payload-seo/client#SeoPreviews'
+export const SEO_RAW_JSON_ADMIN_COMPONENT =
+  '@krameri/payload-seo/client#ResetRawJson'
+
 export type SeoSchemaType =
   | 'Article'
   | 'FAQPage'
@@ -65,7 +71,7 @@ export type SeoCollectionConfig = {
   schema?: Record<string, string>
   schemaType: SeoSchemaType
   sitemap?: SeoSitemapConfig
-  /** Additional schema-editor fields. Their Payload field validation is added in Milestone 2. */
+  /** Additional schema-editor fields displayed alongside the built-in type-specific fields. */
   visualFields?: Field[]
   /** Additive boolean field access for the generated SEO group. */
   access?: {

@@ -19,6 +19,10 @@
     "./next": {
       "types": "./dist/next.d.ts",
       "import": "./dist/next.js"
+    },
+    "./client": {
+      "types": "./dist/exports/client.d.ts",
+      "import": "./dist/exports/client.js"
     }
   },
   "files": [
@@ -37,11 +41,17 @@
     "clean": "rm -rf dist *.tsbuildinfo",
     "prepublishOnly": "pnpm run clean && pnpm run build"
   },
+  "dependencies": {
+    "@payloadcms/ui": "^3.0.0"
+  },
   "peerDependencies": {
-    "payload": "^3.0.0"
+    "payload": "^3.0.0",
+    "react": "^19.0.0"
   },
   "devDependencies": {
+    "@types/react": "^19.0.0",
     "payload": "^3.0.0",
+    "react": "^19.0.0",
     "typescript": "latest",
     "vitest": "4.1.9"
   },

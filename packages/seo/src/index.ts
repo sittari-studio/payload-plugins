@@ -9,6 +9,8 @@ export { renderRobotsTxt } from './helpers/robots.js'
 export { renderSitemapIndexXml, renderSitemapXml } from './helpers/sitemap.js'
 export {
   DEFAULT_SEO_NAMES,
+  SEO_PREVIEWS_ADMIN_COMPONENT,
+  SEO_RAW_JSON_ADMIN_COMPONENT,
   SEO_PLUGIN_MARKER,
 } from './types.js'
 export type {

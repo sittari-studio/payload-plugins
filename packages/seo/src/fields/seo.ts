@@ -1,6 +1,11 @@
 import type { Field, GroupField, TextField } from 'payload'
 
-import { SEO_PLUGIN_MARKER, type SeoCollectionConfig } from '../types.js'
+import {
+  SEO_PLUGIN_MARKER,
+  SEO_PREVIEWS_ADMIN_COMPONENT,
+  SEO_RAW_JSON_ADMIN_COMPONENT,
+  type SeoCollectionConfig,
+} from '../types.js'
 import { validateAbsoluteHttpUrl, validateJson } from '../utils/validation.js'
 
 const localized = true
@@ -10,6 +15,35 @@ const socialCards = [
 ]
 
 const visualFieldTypes = new Set(['text', 'textarea', 'number', 'checkbox', 'select', 'date', 'upload'])
+
+const schemaTypeIs = (seoField: string, data: unknown, ...types: string[]): boolean => {
+  if (!data || typeof data !== 'object') return false
+  const seo = (data as Record<string, unknown>)[seoField]
+  if (!seo || typeof seo !== 'object') return false
+  const schema = (seo as Record<string, unknown>).schema
+  return Boolean(schema && typeof schema === 'object' && types.includes((schema as Record<string, unknown>).type as string))
+}
+
+const createBuiltInVisualFields = (seoField: string): Field[] => {
+  const when = (...types: string[]) => (data: unknown) => schemaTypeIs(seoField, data, ...types)
+  return [
+    { name: 'name', type: 'text', label: 'Name', admin: { condition: when('WebPage', 'Product', 'Organization', 'LocalBusiness') } },
+    { name: 'about', type: 'textarea', label: 'About', admin: { condition: when('WebPage') } },
+    { name: 'headline', type: 'text', label: 'Headline', admin: { condition: when('Article') } },
+    { name: 'author', type: 'text', label: 'Author', admin: { condition: when('Article') } },
+    { name: 'datePublished', type: 'date', label: 'Published date', admin: { condition: when('Article') } },
+    { name: 'dateModified', type: 'date', label: 'Modified date', admin: { condition: when('Article') } },
+    { name: 'description', type: 'textarea', label: 'Product description', admin: { condition: when('Product') } },
+    { name: 'sku', type: 'text', label: 'SKU', admin: { condition: when('Product') } },
+    { name: 'brand', type: 'text', label: 'Brand', admin: { condition: when('Product') } },
+    { name: 'price', type: 'number', label: 'Price', admin: { condition: when('Product') } },
+    { name: 'priceCurrency', type: 'text', label: 'Price currency', admin: { condition: when('Product') } },
+    { name: 'telephone', type: 'text', label: 'Telephone', admin: { condition: when('LocalBusiness') } },
+    { name: 'address', type: 'textarea', label: 'Address', admin: { condition: when('LocalBusiness') } },
+    { name: 'question', type: 'text', label: 'Question', admin: { condition: when('FAQPage') } },
+    { name: 'answer', type: 'textarea', label: 'Answer', admin: { condition: when('FAQPage') } },
+  ]
+}
 
 export const isSupportedVisualField = (field: Field): boolean =>
   'name' in field && visualFieldTypes.has(field.type)
@@ -41,7 +75,16 @@ export const createSeoField = ({
   name: string
 }): GroupField => {
   const imageCollection = collection.media?.collection ?? mediaCollection
-  const visualFields = (collection.visualFields ?? []).map((field) => ({ ...field, localized }) as Field)
+  const customVisualFields = (collection.visualFields ?? []).map((field) => ({ ...field, localized }) as Field)
+  const visualFields = [...createBuiltInVisualFields(name), ...customVisualFields]
+    .reduce<Field[]>((fields, field) => {
+      const fieldName = 'name' in field ? field.name : undefined
+      const index = fieldName ? fields.findIndex((candidate) => 'name' in candidate && candidate.name === fieldName) : -1
+      if (index >= 0) fields[index] = field
+      else fields.push(field)
+      return fields
+    }, [])
+    .map((field) => ({ ...field, localized }) as Field)
 
   return {
     name,
@@ -49,9 +92,9 @@ export const createSeoField = ({
     label: 'SEO',
     ...(collection.access ? { access: collection.access } : {}),
     admin: {
+      components: { Field: SEO_PREVIEWS_ADMIN_COMPONENT },
       custom: {
         seo: { marker: SEO_PLUGIN_MARKER },
-        component: '@krameri/payload-seo/admin/previews#SeoPreviews',
       },
     },
     fields: [
@@ -97,7 +140,10 @@ export const createSeoField = ({
           { name: 'values', type: 'group', localized, fields: visualFields },
           {
             name: 'rawJson', type: 'textarea', localized, validate: validateJson,
-            admin: { custom: { seo: { marker: SEO_PLUGIN_MARKER }, component: '@krameri/payload-seo/admin/schema#ResetRawJson' } },
+            admin: {
+              components: { Field: SEO_RAW_JSON_ADMIN_COMPONENT },
+              custom: { seo: { marker: SEO_PLUGIN_MARKER } },
+            },
           },
         ],
       },
