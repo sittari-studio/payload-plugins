@@ -226,8 +226,8 @@ export interface Page {
       url?: string | null;
     };
     robots: {
-      index: 'index' | 'noindex';
-      follow: 'follow' | 'nofollow';
+      mode: 'inherit' | 'index-follow' | 'noindex-follow' | 'index-nofollow' | 'noindex-nofollow' | 'custom';
+      directives?: string | null;
     };
     openGraph?: {
       title?: string | null;
@@ -239,6 +239,8 @@ export interface Page {
       description?: string | null;
       image?: (number | null) | Media;
       card?: ('summary' | 'summary_large_image') | null;
+      site?: string | null;
+      creator?: string | null;
     };
     schema: {
       type: 'WebPage' | 'Article' | 'Product' | 'Organization' | 'LocalBusiness' | 'FAQPage';
@@ -448,8 +450,8 @@ export interface PagesSelect<T extends boolean = true> {
         robots?:
           | T
           | {
-              index?: T;
-              follow?: T;
+              mode?: T;
+              directives?: T;
             };
         openGraph?:
           | T
@@ -465,6 +467,8 @@ export interface PagesSelect<T extends boolean = true> {
               description?: T;
               image?: T;
               card?: T;
+              site?: T;
+              creator?: T;
             };
         schema?:
           | T

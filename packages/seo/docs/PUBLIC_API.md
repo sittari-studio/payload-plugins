@@ -11,6 +11,8 @@ import {
   renderSchemaJsonLd,
   renderSitemapIndexXml,
   renderSitemapXml,
+  resolveEffectiveSeo,
+  resolveSitemapEligibility,
   resolveSeoMetadata,
   seoPlugin,
 } from '@krameri/payload-seo'
@@ -29,6 +31,9 @@ The plugin needs these active-mode options:
 | `media.resolveMediaUrl` | Yes | Resolves a populated media document to an absolute public URL or `null`. |
 | `resolveUrl` | Yes | Resolves one document and locale to a site-relative path or `null`. |
 | `resolveChunkUrl` | Yes | Resolves a sitemap collection, locale, and page to an absolute URL. |
+| `url.trailingSlash` | No | `never` (default) or `always`; applied to every same-site canonical and sitemap URL. |
+| `hreflang.xDefaultLocale` | No | Adds `x-default` only when that locale resolves to an eligible URL. |
+| `diagnostics` | No | Receives sanitized resolver failure context. |
 | `access` | No | Payload access overrides for the Settings Global and redirects collection. |
 | `names` | No | Replaces the default SEO field, settings Global, and redirects collection slugs. |
 | `robots.resolveSitemapUrls` | No | Returns absolute sitemap URLs appended to generated robots.txt. |
@@ -38,16 +43,16 @@ Each `SeoCollectionConfig` requires a `schemaType`: `WebPage`, `Article`,
 
 Optional collection options are:
 
-- `fields`: maps `title` and `description` to dot paths on the document for
-  metadata fallbacks. The type also accepts `image`, but the current resolver
-  does not use that mapping to populate social images; configure Open Graph or
-  Settings images instead.
+- `fields`: maps `title`, `description`, and `image` to document paths. Mapped
+  images participate in the Open Graph and X fallback chain.
 - `schema`: maps schema properties to dot paths on the document.
 - `lastModified`: returns the last-modified date used by sitemap output.
 - `media.collection`: overrides the plugin-level upload collection for that
   collection's Open Graph and X/Twitter fields.
 - `sitemap.enabled`: excludes the collection when set to `false`.
 - `sitemap.fields`: fields selected for each sitemap document read.
+- `sitemap.exclude`: sync or async host callback for redirects, scheduled
+  content, hidden routes, or other publication rules. Return `true` to omit.
 - `visualFields`: additional named text, textarea, number, checkbox, select,
   date, or upload fields for the schema editor.
 - `access`: additive `read` and `update` field access for the generated SEO
@@ -94,14 +99,46 @@ locale. It does not enable a draft preview or Payload fallback locale. Missing,
 invalid, or unresolvable values are omitted; the helper returns `{}` when it
 cannot resolve the document or settings.
 
+All outputs start with `resolveEffectiveSeo`: document field values → global
+defaults → page overrides → effective state. `resolveSeoMetadata`, sitemap,
+schema, robots, and `resolveSeoPreview` are projections of that state.
+
 `titleTemplate` from Settings is applied when it contains exactly one `%s`.
 Document title and description overrides take precedence over configured
 document-field mappings and site defaults. A valid document `rawJson` schema
 override replaces generated schema entirely.
 
+### `resolveSeoPreview(input)`
+
+This server-backed helper accepts the same `payload`, `collection`, `locale`,
+and `id`/`document` inputs as `resolveSeoMetadata`. It projects the shared
+effective state into preview title, description, canonical URL, image, and
+robots values, so host-owned preview endpoints can match rendered metadata.
+
+### Robots and canonicals
+
+Page `seo.robots.mode` defaults to `inherit`; it never silently sets index/follow.
+Modes are `inherit`, `index-follow`, `noindex-follow`, `index-nofollow`,
+`noindex-nofollow`, and `custom`. Untouched pages therefore use the localized
+Settings `defaultRobots` mode. Custom directives may set `noindex`/`nofollow`.
+
+Canonical modes are `auto`, `manual`, and `none`. Manual values must be absolute
+HTTP(S) URLs without query strings or fragments. Same-site manual canonicals are
+normalized with the configured trailing-slash policy. An external manual
+canonical is rendered in metadata but deliberately excluded from sitemaps;
+`none` renders no canonical and is also excluded because there is no canonical
+URL to list.
+
+`siteUrl` must be an HTTP(S) origin such as `https://example.com`—not a base
+path, query, fragment, or credential-bearing URL. The plugin does not support
+site base paths in this release.
+
 ### `renderSchemaJsonLd(input)`
 
-Returns the resolved schema object or `null`:
+Returns the resolved schema object or `null`. When site settings configure an
+organization and/or site name it returns an `@graph` containing the document
+schema plus Organization and WebSite schema. Organization URL falls back to
+`siteUrl`, logo uses `resolveMediaUrl`, and `sameAs` links are emitted.
 
 ```ts
 const schema = await renderSchemaJsonLd({
@@ -112,8 +149,10 @@ const schema = await renderSchemaJsonLd({
 })
 ```
 
-The helper never emits a `<script>` element. Serialize and render JSON-LD in
-the frontend using your framework's safe JSON script mechanism.
+Raw schema must be a JSON object—arrays, null, and primitives are rejected.
+Generated mappings cannot overwrite `@context`, `@type`, `url`, `image`, or
+`name`; only explicit `rawJson` can replace those keys. Use `serializeJsonLd`
+when embedding the returned object in an HTML script element.
 
 ## Redirects, robots, and sitemaps
 
@@ -133,16 +172,17 @@ application performs the HTTP redirect.
 ### `renderRobotsTxt({ payload, locale })`
 
 Returns robots.txt text from the localized SEO Settings Global. Generated
-settings include editor-managed user-agent rules, optional application-provided
-sitemap URLs, and optional appended text. Override mode returns only the saved
-override text. The application sets the response content type and cache policy.
+mode validates user agents, paths, and sitemap URLs and rejects CR/LF input;
+arbitrary text is permitted only by explicit override mode. Application-provided
+sitemap URLs from `robots.resolveSitemapUrls` are emitted in generated mode.
 
 ### `renderSitemapXml({ payload, collection, locale, page })`
 
-Returns XML for one sitemap chunk. Entries come only from published documents
-in the requested locale. The page size is 25,000. Invalid pages, disabled
-collections, invalid site URLs, or resolution failures produce a valid empty
-sitemap document rather than throwing.
+Returns XML for one sitemap chunk. Entries must be published, not deleted,
+have an eligible URL, resolve to indexable effective robots, and not be rejected
+by `sitemap.exclude`. External or absent canonicals are excluded. The page size
+is 25,000. Invalid pages, disabled collections, invalid site URLs, or resolution
+failures produce a valid empty sitemap document rather than throwing.
 
 ### `renderSitemapIndexXml({ payload })`
 

@@ -126,8 +126,15 @@ export const createSeoField = ({
             label: adminTabLabel('robots'),
             fields: [{
               name: 'robots', type: 'group', label: adminLabel('robots'), fields: [
-                { name: 'index', type: 'select', label: adminLabel('robotsIndex'), localized, defaultValue: 'index', required: true, options: [{ label: adminLabel('index'), value: 'index' }, { label: adminLabel('noindex'), value: 'noindex' }] },
-                { name: 'follow', type: 'select', label: adminLabel('robotsFollow'), localized, defaultValue: 'follow', required: true, options: [{ label: adminLabel('follow'), value: 'follow' }, { label: adminLabel('nofollow'), value: 'nofollow' }] },
+                {
+                  name: 'mode', type: 'select', label: adminLabel('robotsMode'), localized, defaultValue: 'inherit', required: true,
+                  options: [
+                    { label: 'Inherit', value: 'inherit' }, { label: 'Index, follow', value: 'index-follow' },
+                    { label: 'No index, follow', value: 'noindex-follow' }, { label: 'Index, nofollow', value: 'index-nofollow' },
+                    { label: 'No index, nofollow', value: 'noindex-nofollow' }, { label: 'Custom directives', value: 'custom' },
+                  ],
+                },
+                { name: 'directives', type: 'text', label: adminLabel('robots'), localized, admin: { condition: (_, siblingData) => siblingData?.mode === 'custom' } },
               ],
             }],
           },
@@ -149,6 +156,8 @@ export const createSeoField = ({
                 { name: 'description', type: 'textarea', label: adminLabel('description'), localized },
                 uploadField('image', imageCollection),
                 { name: 'card', type: 'select', label: adminLabel('card'), localized, options: socialCards },
+                { name: 'site', type: 'text', label: adminLabel('twitter'), localized },
+                { name: 'creator', type: 'text', label: adminLabel('author'), localized },
               ],
             }],
           },

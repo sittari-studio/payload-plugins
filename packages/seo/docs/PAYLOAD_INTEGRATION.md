@@ -107,9 +107,13 @@ Payload access policies before production.
 ## Required resolver behavior
 
 `resolveUrl` returns a path for one document in one locale. Return `null` when
-the document has no public URL. A valid path starts with one slash, does not
+the document has no public URL **or when that translation is unavailable or
+incomplete**. This is the hreflang eligibility contract: the plugin will not
+emit a language alternate for `null`. A valid path starts with one slash, does not
 start with `//`, and contains no query string or fragment. The plugin combines
-it with the `siteUrl` saved in SEO Settings.
+it with the `siteUrl` saved in SEO Settings. `siteUrl` must be an origin (for
+example `https://example.com`), so base-path deployments are intentionally not
+supported in this release.
 
 `resolveMediaUrl` receives a populated upload document and must return an
 absolute public HTTP(S) URL or `null`. When passing a document directly to a
@@ -129,6 +133,19 @@ If a collection defines `sitemap.fields`, list every document path used by
 For each enabled collection, the plugin adds a localized **SEO** tab containing
 fields for title, description, canonical URL, robots directives, Open Graph,
 X/Twitter, JSON-LD schema, and editor previews.
+
+Robots use one explicit `mode` field. New pages start at `inherit`, which means
+the Settings Global `defaultRobots` value wins. Configure a page mode only when
+it should differ. Canonicals use `auto`, `manual`, or `none`; externally
+canonicalized and no-canonical pages are kept out of the sitemap. Sitemaps also
+exclude drafts, deleted documents, `noindex` pages, missing URLs, and documents
+rejected by `sitemap.exclude`.
+
+The production resolver is the source of truth for metadata, sitemaps, schema,
+robots, and previews. `resolveSeoPreview({ payload, collection, id, locale })`
+is server-backed and returns the same title, description, canonical, social
+image, and robots decisions as production metadata. Use it for any host-owned
+live preview surface; the editor card remains a responsive unsaved-value aid.
 
 If the collection already has a top-level Payload `tabs` field, **SEO** is
 appended to that tab set. Otherwise, the plugin creates top-level **Content**

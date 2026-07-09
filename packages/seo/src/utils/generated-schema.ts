@@ -2,6 +2,7 @@ import { getByPath } from '../resolvers/document.js'
 import type { SeoDocument, SeoSchemaType } from '../types.js'
 
 const schemaTypes = ['Article', 'FAQPage', 'LocalBusiness', 'Organization', 'Product', 'WebPage'] as const
+const reservedSchemaKeys = new Set(['@context', '@type', 'url', 'image', 'name'])
 
 export const isSchemaType = (value: unknown): value is SeoSchemaType =>
   typeof value === 'string' && (schemaTypes as readonly string[]).includes(value)
@@ -30,11 +31,13 @@ export const buildGeneratedSchema = ({
   if (canonicalUrl) result.url = canonicalUrl
 
   for (const [property, path] of Object.entries(collectionSchema ?? {})) {
+    if (reservedSchemaKeys.has(property)) continue
     const value = getByPath(document, path)
     if (value !== undefined && value !== null && value !== '') result[property] = value
   }
 
   for (const [property, value] of Object.entries(schema.values && typeof schema.values === 'object' ? schema.values as SeoDocument : {})) {
+    if (reservedSchemaKeys.has(property)) continue
     if (value !== undefined && value !== null && value !== '') result[property] = value
   }
 

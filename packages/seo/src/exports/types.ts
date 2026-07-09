@@ -7,6 +7,7 @@ export type {
   SeoAdminCustom,
   SeoCollectionConfig,
   SeoDocument,
+  SeoDiagnostic,
   SeoDocumentFieldMappings,
   SeoDisabledPluginConfig,
   SeoEnabledPluginConfig,
@@ -17,7 +18,12 @@ export type {
   SeoSitemapConfig,
   SeoPayload,
   SeoRobotsDirectives,
+  RobotsMode,
+  CanonicalMode,
+  TrailingSlashPolicy,
   SeoSocialMetadata,
+  ResolvedEffectiveSeo,
+  SeoPreview,
   ResolvedSeoMetadata,
 } from '../types.js'
 export type { SeoRedirect } from '../helpers/redirects.js'

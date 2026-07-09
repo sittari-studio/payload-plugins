@@ -25,6 +25,7 @@ export const normalizeRedirectPath = (value: unknown): string | null => {
 }
 
 import { adminText } from '../admin/translations.js'
+import { normalizeSiteUrl } from './urls.js'
 
 type ValidationContext = { req?: { i18n?: { language?: string } } }
 
@@ -36,13 +37,27 @@ export const validateAbsoluteHttpUrl = (value: unknown, context?: ValidationCont
     ? true
     : validationText('validationAbsoluteHttpUrl', context)
 
+export const isPlainJsonObject = (value: unknown): value is Record<string, unknown> =>
+  value !== null && typeof value === 'object' && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype
+
 export const validateJson = (value: unknown, context?: ValidationContext): true | string => {
   if (value === undefined || value === null || value === '') return true
   if (typeof value !== 'string') return validationText('validationJson', context)
   try {
-    JSON.parse(value)
-    return true
+    return isPlainJsonObject(JSON.parse(value)) ? true : validationText('validationJson', context)
   } catch {
     return validationText('validationJson', context)
   }
 }
+
+export const validateSiteUrl = (value: unknown, context?: ValidationContext): true | string =>
+  value === undefined || value === null || value === '' || normalizeSiteUrl(value)
+    ? true
+    : validationText('validationAbsoluteHttpUrl', context)
+
+export const hasLineBreak = (value: unknown): boolean => typeof value === 'string' && /[\r\n]/.test(value)
+
+export const validateRobotsToken = (value: unknown, context?: ValidationContext): true | string =>
+  value === undefined || value === null || value === '' || (typeof value === 'string' && !hasLineBreak(value))
+    ? true
+    : validationText('validationAbsoluteHttpUrl', context)

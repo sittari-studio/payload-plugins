@@ -7,17 +7,22 @@ import {
   loadSettingsWithoutFallback,
   renderRobotsTxt,
   renderSchemaJsonLd,
+  serializeJsonLd,
   renderSitemapIndexXml,
   renderSitemapXml,
   resolveSeoMetadata,
+  resolveSeoPreview,
   resolveSeoMetadataCore,
+  resolveEffectiveSeo,
+  projectSeoPreview,
+  resolveSitemapEligibility,
   seoPlugin,
 } from '../src/index.js'
 import { SEO_RUNTIME_CONFIG_KEY } from '../src/helpers/config.js'
 import { resolveNextMetadata } from '../src/next.js'
 import { adminLabel, adminTabLabel, adminText, adminTranslations, resolveAdminLanguage } from '../src/admin/translations.js'
-import { validateAbsoluteHttpUrl, validateJson } from '../src/utils/validation.js'
-import { SEO_PLUGIN_MARKER, type SeoEnabledPluginConfig, type SeoPluginConfig } from '../src/types.js'
+import { validateAbsoluteHttpUrl, validateJson, validateSiteUrl } from '../src/utils/validation.js'
+import { SEO_PLUGIN_MARKER, type SeoDocument, type SeoEnabledPluginConfig, type SeoPluginConfig } from '../src/types.js'
 
 const validConfig = (): SeoEnabledPluginConfig => ({
   collections: {
@@ -240,7 +245,7 @@ describe('locale-safe resolver core', () => {
     const result = await resolveSeoMetadataCore({
       collection: 'pages', config, locale: 'es', settings: {
         siteUrl: 'https://example.com', titleTemplate: '%s | Example', defaultDescription: 'Default description',
-        defaultRobots: { index: 'noindex', follow: 'nofollow' },
+        defaultRobots: { mode: 'noindex-nofollow' },
       },
       document: { title: 'Página', excerpt: '', seo: { openGraph: {}, twitter: {} } },
       names: undefined,
@@ -275,7 +280,7 @@ describe('locale-safe resolver core', () => {
     const none = await resolveSeoMetadataCore({ collection: 'pages', config, locale: 'en', settings: {}, document: { seo: { canonical: { mode: 'none' } } } })
     expect(none.canonicalUrl).toBeUndefined()
     expect(none.description).toBeUndefined()
-    expect(none.robots).toBeUndefined()
+    expect(none.robots).toEqual({ index: 'index', follow: 'follow' })
   })
 
   it('uses a valid raw schema as a full replacement and omits malformed legacy JSON', async () => {
@@ -290,6 +295,91 @@ describe('locale-safe resolver core', () => {
       collection: 'pages', config, locale: 'en', settings: {}, document: { seo: { schema: { rawJson: '{bad' } } },
     })
     expect(malformed.schema).toBeUndefined()
+  })
+})
+
+describe('effective SEO resolution regression coverage', () => {
+  const input = (overrides: Record<string, unknown> = {}) => ({
+    collection: 'pages', config: validConfig(), locale: 'en',
+    settings: { siteUrl: 'https://example.com', siteName: 'Example', defaultRobots: { mode: 'noindex-follow' } } as SeoDocument,
+    document: { id: 'p1', title: 'Page', _status: 'published', ...overrides } as SeoDocument,
+  })
+
+  it('inherits global robots until a page explicitly selects an override', async () => {
+    expect((await resolveEffectiveSeo(input())).robots).toMatchObject({ mode: 'inherit', index: 'noindex', follow: 'follow' })
+    expect((await resolveEffectiveSeo(input({ seo: { robots: { mode: 'index-nofollow' } } }))).robots).toMatchObject({ index: 'index', follow: 'nofollow' })
+  })
+
+  it('uses one canonical decision for metadata and sitemap eligibility', async () => {
+    const auto = await resolveEffectiveSeo(input({ seo: { canonical: { mode: 'auto' } } }))
+    expect(auto.canonical.url).toBe('https://example.com/page')
+    expect(await resolveSitemapEligibility({ effective: auto, document: input().document, input: input() })).toBe(false) // inherited noindex
+
+    const manual = await resolveEffectiveSeo(input({ seo: { canonical: { mode: 'manual', url: 'https://example.com/page/' }, robots: { mode: 'index-follow' } } }))
+    expect(manual.canonical.url).toBe('https://example.com/page')
+    expect(await resolveSitemapEligibility({ effective: manual, document: input().document, input: input({ seo: { canonical: { mode: 'manual', url: 'https://example.com/page/' }, robots: { mode: 'index-follow' } } }) })).toBe(true)
+
+    const external = await resolveEffectiveSeo(input({ seo: { canonical: { mode: 'manual', url: 'https://other.example/page' }, robots: { mode: 'index-follow' } } }))
+    expect(external.canonical.external).toBe(true)
+    expect(await resolveSitemapEligibility({ effective: external, document: input().document, input: input({ seo: { canonical: { mode: 'manual', url: 'https://other.example/page' }, robots: { mode: 'index-follow' } } }) })).toBe(false)
+  })
+
+  it('excludes drafts, missing URLs, and host-defined exclusions from sitemaps', async () => {
+    const published = input({ seo: { robots: { mode: 'index-follow' } } })
+    const effective = await resolveEffectiveSeo(published)
+    expect(await resolveSitemapEligibility({ effective, document: { ...published.document, _status: 'draft' }, input: published })).toBe(false)
+    const missing = input({ seo: { canonical: { mode: 'none' }, robots: { mode: 'index-follow' } } })
+    expect(await resolveSitemapEligibility({ effective: await resolveEffectiveSeo(missing), document: missing.document, input: missing })).toBe(false)
+    const excluded = input({ seo: { robots: { mode: 'index-follow' } } })
+    excluded.config.collections.pages.sitemap = { exclude: () => true }
+    expect(await resolveSitemapEligibility({ effective: await resolveEffectiveSeo(excluded), document: excluded.document, input: excluded })).toBe(false)
+  })
+
+  it('normalizes site URL and rejects unsafe site URL/raw schema values', () => {
+    expect(validateSiteUrl('https://example.com')).toBe(true)
+    expect(validateSiteUrl('https://example.com/base')).not.toBe(true)
+    expect(validateSiteUrl('https://example.com?x=1')).not.toBe(true)
+    expect(validateSiteUrl('ftp://example.com')).not.toBe(true)
+    expect(validateJson('[]')).not.toBe(true)
+    expect(validateJson('null')).not.toBe(true)
+    expect(validateJson('"string"')).not.toBe(true)
+  })
+
+  it('uses mapped social images, complete social fallbacks, and preview parity', async () => {
+    const value = input({ hero: { url: 'https://cdn.example/hero.jpg' }, seo: { robots: { mode: 'index-follow' } } })
+    value.config.collections.pages.fields = { title: 'title', image: 'hero' }
+    value.config.media.resolveMediaUrl = ({ media }) => media.url as string
+    value.settings = { ...value.settings, defaultTwitterCard: 'summary_large_image', defaultTwitterSite: '@example', defaultTwitterCreator: '@author' }
+    const effective = await resolveEffectiveSeo(value)
+    expect(effective.social.openGraph).toMatchObject({ url: 'https://example.com/page', siteName: 'Example', image: 'https://cdn.example/hero.jpg', locale: 'en' })
+    expect(effective.social.twitter).toMatchObject({ card: 'summary_large_image', image: 'https://cdn.example/hero.jpg', site: '@example', creator: '@author' })
+    const preview = projectSeoPreview(effective)
+    expect(preview.title).toBe(effective.title)
+    expect(preview.description).toBe(effective.description)
+    expect(preview.canonicalUrl).toBe(effective.canonical.url)
+    expect(preview.image).toBe(effective.social.openGraph.image)
+  })
+
+  it('emits organization and WebSite schemas, protects generated reserved keys, and safely serializes JSON-LD', async () => {
+    const value = input({ seo: { schema: { values: { name: 'Cannot replace', url: 'https://bad.example', headline: 'Safe' } } } })
+    value.settings = { ...value.settings, organizationSchema: { name: 'Example Inc', logo: { url: 'https://cdn.example/logo.png' }, sameAs: [{ url: 'https://social.example/example' }] } }
+    value.config.media.resolveMediaUrl = ({ media }) => media.url as string
+    const effective = await resolveEffectiveSeo(value)
+    expect(effective.schema).toMatchObject({ '@type': 'WebPage', url: 'https://example.com/page', headline: 'Safe' })
+    expect(effective.schema?.name).toBeUndefined()
+    expect(effective.siteSchemas.some((schema) => schema['@type'] === 'Organization' && schema.logo === 'https://cdn.example/logo.png' && schema.url === 'https://example.com')).toBe(true)
+    expect(effective.siteSchemas.some((schema) => schema['@type'] === 'WebSite' && schema.url === 'https://example.com')).toBe(true)
+    expect(serializeJsonLd({ name: '</script><script>' })).not.toContain('</script>')
+  })
+
+  it('reports resolver failures without exposing document contents', async () => {
+    const diagnostics = vi.fn()
+    const value = input({ id: 'safe-id', secret: 'must not leak' })
+    value.config.resolveUrl = () => { throw new Error('bad') }
+    value.config.diagnostics = diagnostics
+    await resolveEffectiveSeo(value)
+    expect(diagnostics).toHaveBeenCalledWith(expect.objectContaining({ area: 'canonical', documentId: 'safe-id', message: expect.any(String) }))
+    expect(JSON.stringify(diagnostics.mock.calls)).not.toContain('must not leak')
   })
 })
 
@@ -315,6 +405,7 @@ describe('frontend helpers', () => {
     const result = await resolveSeoMetadata({ payload, collection: 'pages', id: 'page-1', locale: 'en' })
     expect(result).toMatchObject({ title: 'Page', alternates: { en: 'https://example.com/page', es: 'https://example.com/page' } })
     expect(await renderSchemaJsonLd({ payload, collection: 'pages', id: 'page-1', locale: 'en' })).toMatchObject({ '@type': 'WebPage' })
+    expect(await resolveSeoPreview({ payload, collection: 'pages', id: 'page-1', locale: 'en' })).toMatchObject({ title: result.title, canonicalUrl: result.canonicalUrl, robots: result.robots })
     expect(await resolveNextMetadata({ payload, collection: 'pages', id: 'page-1', locale: 'en' })).toMatchObject({ alternates: { languages: { en: 'https://example.com/page' } } })
   })
 
@@ -329,6 +420,17 @@ describe('frontend helpers', () => {
     expect(index).toContain('<loc>https://example.com/sitemap.xml</loc>')
   })
 
+  it('rejects CR/LF injection in generated robots and emits valid sitemap directives', async () => {
+    const payload = runtimePayload()
+    const config = payload.config.custom[SEO_RUNTIME_CONFIG_KEY] as SeoEnabledPluginConfig
+    config.robots = { resolveSitemapUrls: () => ['https://example.com/sitemap.xml', 'https://bad.example/\nInjected: yes'] }
+    payload.findGlobal = vi.fn(async () => ({
+      siteUrl: 'https://example.com',
+      robots: { mode: 'generated', groups: [{ userAgent: '*\nInjected: yes', allow: [{ path: '/ok' }], disallow: [{ path: '/private\nSitemap: bad' }] }] },
+    }))
+    expect(await renderRobotsTxt({ payload, locale: 'en' })).toBe('Sitemap: https://example.com/sitemap.xml')
+  })
+
   it('uses narrow projections when the sitemap configuration declares its resolver inputs', async () => {
     const payload = runtimePayload()
     const config = payload.config.custom[SEO_RUNTIME_CONFIG_KEY] as SeoEnabledPluginConfig
@@ -337,7 +439,7 @@ describe('frontend helpers', () => {
     await renderSitemapXml({ payload, collection: 'pages', locale: 'en', page: 1 })
     expect(payload.find).toHaveBeenCalledWith(expect.objectContaining({
       collection: 'pages',
-      select: { slug: true, updatedAt: true },
+      select: expect.objectContaining({ slug: true, updatedAt: true, seo: true, _status: true }),
     }))
 
     await findSeoRedirect({ payload, sourcePath: '/old' })

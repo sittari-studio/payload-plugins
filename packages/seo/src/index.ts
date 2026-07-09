@@ -2,8 +2,18 @@ export { seoPlugin } from './plugin.js'
 export { loadDocumentWithoutFallback, loadSettingsWithoutFallback } from './utils/locale.js'
 export { getByPath } from './resolvers/document.js'
 export { resolveSeoMetadataCore } from './resolvers/metadata.js'
+export {
+  resolveCanonical,
+  resolveEffectiveRobots,
+  resolveEffectiveSeo,
+  projectSeoPreview,
+  resolveSitemapEligibility,
+  resolveSocialMetadata,
+  resolveStructuredData,
+} from './resolvers/effective.js'
 export { resolveSeoMetadata } from './helpers/metadata.js'
-export { renderSchemaJsonLd } from './helpers/schema.js'
+export { resolveSeoPreview } from './helpers/preview.js'
+export { renderSchemaJsonLd, serializeJsonLd } from './helpers/schema.js'
 export { findSeoRedirect } from './helpers/redirects.js'
 export { renderRobotsTxt } from './helpers/robots.js'
 export { renderSitemapIndexXml, renderSitemapXml } from './helpers/sitemap.js'
@@ -23,6 +33,7 @@ export type {
   SeoAdminCustom,
   SeoCollectionConfig,
   SeoDocument,
+  SeoDiagnostic,
   SeoDocumentFieldMappings,
   SeoDisabledPluginConfig,
   SeoEnabledPluginConfig,
@@ -33,7 +44,12 @@ export type {
   SeoSitemapConfig,
   SeoPayload,
   SeoRobotsDirectives,
+  RobotsMode,
+  CanonicalMode,
+  TrailingSlashPolicy,
   SeoSocialMetadata,
+  ResolvedEffectiveSeo,
+  SeoPreview,
   ResolvedSeoMetadata,
 } from './types.js'
 export type { SeoRedirect } from './helpers/redirects.js'

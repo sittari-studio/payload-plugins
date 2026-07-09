@@ -1,8 +1,8 @@
 import type { ResolvedSeoMetadata, SeoDocument, SeoPayload } from '../types.js'
 import { resolveSeoNames } from '../plugin.js'
 import { resolveSeoMetadataCore } from '../resolvers/metadata.js'
+import { resolveEffectiveSeo } from '../resolvers/effective.js'
 import { loadDocumentWithoutFallback, loadSettingsWithoutFallback } from '../utils/locale.js'
-import { combineSiteUrl } from '../utils/urls.js'
 import { getSeoRuntimeConfig } from './config.js'
 
 type DocumentInput = { document: SeoDocument; id?: never } | { document?: never; id: string | number }
@@ -32,13 +32,17 @@ export const resolveSeoMetadata = async ({ payload, collection, locale, ...input
     for (const alternateLocale of getLocales(payload, locale)) {
       try {
         const alternateDocument = alternateLocale === locale ? document : await loadDocumentWithoutFallback({ payload, collection, id, locale: alternateLocale })
-        const path = await config.resolveUrl({ collection, document: alternateDocument, locale: alternateLocale })
-        const url = combineSiteUrl(settings.siteUrl, path)
-        if (url) alternates[alternateLocale] = url
-      } catch { /* A missing locale-specific document is simply not an alternate. */ }
+        const effective = await resolveEffectiveSeo({ collection, config, document: alternateDocument, locale: alternateLocale, names, settings })
+        // resolveUrl returning null is the translation-eligibility contract.
+        if (effective.canonical.url && !effective.canonical.external) alternates[alternateLocale] = effective.canonical.url
+      } catch {
+        config.diagnostics?.({ area: 'metadata', collection, documentId: id, locale: alternateLocale, message: 'Translation metadata resolution failed.' })
+      }
     }
+    if (config.hreflang?.xDefaultLocale && alternates[config.hreflang.xDefaultLocale]) alternates['x-default'] = alternates[config.hreflang.xDefaultLocale]
     return Object.keys(alternates).length ? { ...result, alternates } : result
   } catch {
+    config.diagnostics?.({ area: 'metadata', collection, locale, message: 'Metadata resolution failed.' })
     return {}
   }
 }

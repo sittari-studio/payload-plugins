@@ -27,6 +27,17 @@ export type SeoSchemaType =
 
 export type SeoDocument = Record<string, unknown>
 
+export type RobotsMode =
+  | 'inherit'
+  | 'index-follow'
+  | 'noindex-follow'
+  | 'index-nofollow'
+  | 'noindex-nofollow'
+  | 'custom'
+
+export type CanonicalMode = 'auto' | 'manual' | 'none'
+export type TrailingSlashPolicy = 'always' | 'never'
+
 export type ResolveDocumentUrl = (input: {
   collection: string
   document: SeoDocument
@@ -67,6 +78,13 @@ export type SeoSitemapConfig = {
    * a sitemap page. Supplying them keeps large sitemap reads projected.
    */
   fields?: readonly string[]
+  /** Return false to omit a document after its effective SEO state is resolved. */
+  exclude?: (input: {
+    collection: string
+    document: SeoDocument
+    locale: string
+    effective: ResolvedEffectiveSeo
+  }) => boolean | Promise<boolean>
 }
 
 export type SeoCollectionConfig = {
@@ -116,6 +134,11 @@ export type SeoEnabledPluginConfig = {
   }
   resolveChunkUrl: ResolveSitemapChunkUrl
   resolveUrl: ResolveDocumentUrl
+  /** URL policy used consistently by canonicals, alternates, and sitemaps. */
+  url?: { trailingSlash?: TrailingSlashPolicy }
+  hreflang?: { xDefaultLocale?: string }
+  /** Receives resolution failures without document values or other sensitive input. */
+  diagnostics?: (event: SeoDiagnostic) => void
   access?: SeoPluginAccess
   names?: SeoGeneratedNames
   robots?: {
@@ -153,9 +176,38 @@ export type SeoRobotsDirectives = {
   index?: 'index' | 'noindex'
 }
 
+export type SeoDiagnostic = {
+  area: 'canonical' | 'media' | 'metadata' | 'robots' | 'schema' | 'sitemap' | 'url'
+  collection?: string
+  documentId?: string | number
+  locale?: string
+  message: string
+}
+
 export type SeoSocialMetadata = {
   description?: string
   image?: string
+  title?: string
+}
+
+export type ResolvedEffectiveSeo = {
+  title?: string
+  description?: string
+  canonical: { mode: CanonicalMode; url?: string; external: boolean }
+  robots: Required<SeoRobotsDirectives> & { mode: RobotsMode; custom?: string[] }
+  social: {
+    openGraph: SeoSocialMetadata & { url?: string; type?: string; siteName?: string; locale?: string }
+    twitter: SeoSocialMetadata & { card?: 'summary' | 'summary_large_image'; site?: string; creator?: string }
+  }
+  schema?: Record<string, unknown>
+  siteSchemas: Record<string, unknown>[]
+}
+
+export type SeoPreview = {
+  canonicalUrl?: string
+  description?: string
+  image?: string
+  robots: Required<SeoRobotsDirectives>
   title?: string
 }
 
@@ -164,9 +216,9 @@ export type ResolvedSeoMetadata = {
   alternates?: Record<string, string>
   canonicalUrl?: string
   description?: string
-  openGraph?: SeoSocialMetadata
+  openGraph?: SeoSocialMetadata & { url?: string; type?: string; siteName?: string; locale?: string }
   robots?: SeoRobotsDirectives
   schema?: Record<string, unknown>
   title?: string
-  twitter?: SeoSocialMetadata & { card?: 'summary' | 'summary_large_image' }
+  twitter?: SeoSocialMetadata & { card?: 'summary' | 'summary_large_image'; site?: string; creator?: string }
 }

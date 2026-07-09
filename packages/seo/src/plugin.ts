@@ -147,6 +147,7 @@ export const validateSeoPluginConfig = (config: SeoEnabledPluginConfig): void =>
         throw new Error(`@krameri/payload-seo: collections.${slug}.sitemap.enabled must be a boolean.`)
       }
       validateSitemapFields(collection.sitemap.fields, `collections.${slug}.sitemap.fields`)
+      if (collection.sitemap.exclude !== undefined) requireFunction(collection.sitemap.exclude, `collections.${slug}.sitemap.exclude`)
     }
     if (collection.visualFields?.some((field) => !isSupportedVisualField(field))) {
       throw new Error(`@krameri/payload-seo: collections.${slug}.visualFields may only contain named text, textarea, number, checkbox, select, date, or upload fields.`)
@@ -160,6 +161,11 @@ export const validateSeoPluginConfig = (config: SeoEnabledPluginConfig): void =>
   requireFunction(config.media.resolveMediaUrl, 'media.resolveMediaUrl')
   requireFunction(config.resolveUrl, 'resolveUrl')
   requireFunction(config.resolveChunkUrl, 'resolveChunkUrl')
+  if (config.url?.trailingSlash !== undefined && config.url.trailingSlash !== 'always' && config.url.trailingSlash !== 'never') {
+    throw new Error('@krameri/payload-seo: url.trailingSlash must be "always" or "never".')
+  }
+  if (config.hreflang?.xDefaultLocale !== undefined) requireNonEmptyString(config.hreflang.xDefaultLocale, 'hreflang.xDefaultLocale')
+  if (config.diagnostics !== undefined) requireFunction(config.diagnostics, 'diagnostics')
 
   const names = resolveSeoNames(config.names)
   requireNonEmptyString(names.seoField, 'names.seoField')
