@@ -123,3 +123,31 @@ export type SeoAdminCustom = {
     marker: typeof SEO_PLUGIN_MARKER
   }
 }
+
+/** Locale-explicit subset of the Payload Local API used by the resolver core. */
+export type SeoPayload = {
+  findByID: (options: Record<string, unknown>) => Promise<SeoDocument>
+  findGlobal: (options: Record<string, unknown>) => Promise<SeoDocument>
+}
+
+export type SeoRobotsDirectives = {
+  follow?: 'follow' | 'nofollow'
+  index?: 'index' | 'noindex'
+}
+
+export type SeoSocialMetadata = {
+  description?: string
+  image?: string
+  title?: string
+}
+
+/** Framework-neutral, omission-first output of the locale-safe resolver. */
+export type ResolvedSeoMetadata = {
+  canonicalUrl?: string
+  description?: string
+  openGraph?: SeoSocialMetadata
+  robots?: SeoRobotsDirectives
+  schema?: Record<string, unknown>
+  title?: string
+  twitter?: SeoSocialMetadata & { card?: 'summary' | 'summary_large_image' }
+}

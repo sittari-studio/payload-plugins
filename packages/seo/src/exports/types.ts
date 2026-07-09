@@ -15,4 +15,8 @@ export type {
   SeoPluginConfig,
   SeoSchemaType,
   SeoSitemapConfig,
+  SeoPayload,
+  SeoRobotsDirectives,
+  SeoSocialMetadata,
+  ResolvedSeoMetadata,
 } from '../types.js'
