@@ -49,13 +49,28 @@ describe('seoPlugin', () => {
 
     expect(outputConfig).not.toBe(inputConfig)
     expect(outputConfig.collections).toHaveLength(3)
-    expect(outputConfig.collections?.[0]?.fields).toContainEqual(expect.objectContaining({ name: 'seo', type: 'group' }))
-    const seoField = outputConfig.collections?.[0]?.fields.find((field) => 'name' in field && field.name === 'seo')
-    expect(seoField).toMatchObject({ admin: { components: { Field: '@krameri/payload-seo/client#SeoPreviews' } } })
-    const schema = (seoField as any).fields.find((field: any) => field.name === 'schema')
-    expect(schema.fields.find((field: any) => field.name === 'rawJson')).toMatchObject({ admin: { components: { Field: '@krameri/payload-seo/client#ResetRawJson' } } })
+    const tabs = outputConfig.collections?.[0]?.fields[0] as any
+    expect(tabs).toMatchObject({ type: 'tabs', tabs: [{ label: 'Content' }, { label: 'SEO' }] })
+    const seoField = tabs.tabs[1].fields.find((field: any) => field.name === 'seo')
+    expect(seoField).toMatchObject({ type: 'group' })
+    const seoTabs = seoField.fields.find((field: any) => field.type === 'tabs')
+    expect(seoTabs.tabs.map((tab: any) => tab.label)).toEqual(['General', 'Canonical', 'Robots', 'Open Graph', 'X / Twitter', 'Schema', 'Previews'])
+    const schema = seoTabs.tabs.find((tab: any) => tab.label === 'Schema').fields[0]
+    expect(schema.fields.find((field: any) => field.name === 'rawJson')).toMatchObject({
+      admin: {
+        components: { Field: '@krameri/payload-seo/client#ResetRawJson' },
+        custom: { seo: { collectionSchema: {}, defaultType: 'WebPage' } },
+      },
+    })
+    expect(schema.fields.find((field: any) => field.name === 'values')).toMatchObject({
+      admin: {
+        components: { Field: '@krameri/payload-seo/client#SchemaValueOverrides' },
+        custom: { seo: { schemaMappings: {} } },
+      },
+    })
     expect(schema.fields.find((field: any) => field.name === 'values').fields.map((field: any) => field.name)).toContain('headline')
-    expect(outputConfig.globals).toContainEqual(expect.objectContaining({ slug: 'seo-settings' }))
+    const settings = outputConfig.globals?.find((global) => global.slug === 'seo-settings') as any
+    expect(settings.fields[0].tabs.map((tab: any) => tab.label)).toEqual(['Site defaults', 'Social defaults', 'Default robots', 'Organization schema', 'robots.txt'])
     expect(outputConfig.collections?.[2]).toMatchObject({ slug: 'seo-redirects', timestamps: true })
   })
 
@@ -101,7 +116,9 @@ describe('seoPlugin', () => {
     ]
 
     const output = await seoPlugin(validConfig())(config)
-    expect(output.collections?.[0]?.fields).toHaveLength(1)
+    const tabs = output.collections?.[0]?.fields[0] as any
+    expect(tabs.tabs[0].fields).toHaveLength(0)
+    expect(tabs.tabs[1].fields).toHaveLength(1)
     expect(output.collections?.filter((collection) => collection.slug === 'seo-redirects')).toHaveLength(1)
     expect(output.globals?.filter((global) => global.slug === 'seo-settings')).toHaveLength(1)
   })

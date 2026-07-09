@@ -149,6 +149,10 @@ export default buildConfig({
           fields: {
             title: 'title',
           },
+          schema: {
+            name: 'title',
+            about: 'excerpt',
+          },
           sitemap: {
             fields: ['slug'],
           },

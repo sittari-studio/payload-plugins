@@ -14,6 +14,8 @@ export const SEO_PREVIEWS_ADMIN_COMPONENT =
   '@krameri/payload-seo/client#SeoPreviews'
 export const SEO_RAW_JSON_ADMIN_COMPONENT =
   '@krameri/payload-seo/client#ResetRawJson'
+export const SEO_SCHEMA_VALUE_OVERRIDES_ADMIN_COMPONENT =
+  '@krameri/payload-seo/client#SchemaValueOverrides'
 
 export type SeoSchemaType =
   | 'Article'

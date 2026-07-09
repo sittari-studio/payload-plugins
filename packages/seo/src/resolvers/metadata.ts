@@ -7,6 +7,7 @@ import type {
   SeoSchemaType,
 } from '../types.js'
 import { getByPath, getSeoGroup } from './document.js'
+import { buildGeneratedSchema } from '../utils/generated-schema.js'
 import { combineSiteUrl, nonEmptyString } from '../utils/urls.js'
 import { isAbsoluteHttpUrl } from '../utils/validation.js'
 
@@ -60,8 +61,6 @@ const resolveCanonical = async ({ seo, config, document, collection, locale, set
   }
 }
 
-const schemaTypes = ['Article', 'FAQPage', 'LocalBusiness', 'Organization', 'Product', 'WebPage'] as const
-
 const resolveSchema = ({ seo, collection, document, settings, canonicalUrl }: {
   seo: SeoDocument
   collection: SeoCollectionConfig
@@ -80,22 +79,20 @@ const resolveSchema = ({ seo, collection, document, settings, canonicalUrl }: {
     }
   }
 
-  const type = select(schema.type, schemaTypes) ?? collection.schemaType
-  const result: Record<string, unknown> = { '@context': 'https://schema.org', '@type': type }
-  if (canonicalUrl) result.url = canonicalUrl
+  const result = buildGeneratedSchema({
+    canonicalUrl,
+    collectionSchema: collection.schema,
+    defaultType: collection.schemaType,
+    document,
+    schema,
+  })
+  const type = result['@type'] as SeoSchemaType
   const organization = object(settings.organizationSchema)
   if (type === 'Organization' || type === 'LocalBusiness') {
     const name = nonEmptyString(organization.name) ?? nonEmptyString(settings.siteName)
     const url = isAbsoluteHttpUrl(organization.url) ? organization.url.trim() : undefined
     if (name) result.name = name
     if (url) result.url = url
-  }
-  for (const [property, path] of Object.entries(collection.schema ?? {})) {
-    const value = getByPath(document, path)
-    if (value !== undefined && value !== null && value !== '') result[property] = value
-  }
-  for (const [property, value] of Object.entries(object(schema.values))) {
-    if (value !== undefined && value !== null && value !== '') result[property] = value
   }
   return result
 }

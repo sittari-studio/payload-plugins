@@ -1,4 +1,4 @@
-import type { Config, Field, Plugin } from 'payload'
+import type { Config, Field, Plugin, TabsField } from 'payload'
 
 import {
   DEFAULT_SEO_NAMES,
@@ -27,6 +27,49 @@ const hasGeneratedMarker = (value: { admin?: unknown }): boolean => {
 }
 
 const hasNamedField = (field: Field, name: string): boolean => 'name' in field && field.name === name
+
+const hasGeneratedTabs = (field: Field): boolean => field.type === 'tabs' && hasGeneratedMarker(field)
+
+const findNamedField = (fields: Field[], name: string): Field | undefined => {
+  for (const field of fields) {
+    if (hasNamedField(field, name)) return field
+    if ('fields' in field && Array.isArray(field.fields)) {
+      const nested = findNamedField(field.fields, name)
+      if (nested) return nested
+    }
+    if (field.type === 'tabs') {
+      for (const tab of field.tabs) {
+        const nested = findNamedField(tab.fields, name)
+        if (nested) return nested
+      }
+    }
+    if (field.type === 'blocks') {
+      for (const block of field.blocks) {
+        if (typeof block === 'string') continue
+        const nested = findNamedField(block.fields, name)
+        if (nested) return nested
+      }
+    }
+  }
+  return undefined
+}
+
+const containsGeneratedTabs = (fields: Field[]): boolean => fields.some((field) => {
+  if (hasGeneratedTabs(field)) return true
+  if ('fields' in field && Array.isArray(field.fields) && containsGeneratedTabs(field.fields)) return true
+  if (field.type === 'tabs') return field.tabs.some((tab) => containsGeneratedTabs(tab.fields))
+  if (field.type === 'blocks') return field.blocks.some((block) => typeof block !== 'string' && containsGeneratedTabs(block.fields))
+  return false
+})
+
+const createSeoTabs = (fields: Field[], seoField: Field): TabsField => ({
+  type: 'tabs',
+  admin: { custom: { seo: { marker: SEO_PLUGIN_MARKER } } },
+  tabs: [
+    { label: 'Content', fields },
+    { label: 'SEO', fields: [seoField] },
+  ],
+})
 
 const requireNonEmptyString = (value: unknown, label: string): void => {
   if (typeof value !== 'string' || value.trim() === '') {
@@ -136,7 +179,7 @@ const assertNoGeneratedNameCollisions = (incomingConfig: Config, config: SeoEnab
 
   for (const slug of Object.keys(config.collections)) {
     const collection = getSelectedCollection(collections, slug)
-    const conflict = collection.fields.find((field) => hasNamedField(field, names.seoField))
+    const conflict = findNamedField(collection.fields, names.seoField)
     if (conflict && !hasGeneratedMarker(conflict)) {
       throw new Error(`@krameri/payload-seo: collection "${slug}" already has a field named "${names.seoField}".`)
     }
@@ -181,8 +224,18 @@ export const seoPlugin =
       custom: { ...incomingConfig.custom, [SEO_RUNTIME_CONFIG_KEY]: enabledConfig },
       collections: (incomingConfig.collections ?? []).map((collection) => {
         const seoConfig = enabledConfig.collections[collection.slug]
-        if (!seoConfig || collection.fields.some((field) => hasNamedField(field, names.seoField))) return collection
-        return { ...collection, fields: [...collection.fields, createSeoField({ collection: seoConfig, mediaCollection: enabledConfig.media.collection, name: names.seoField })] }
+        if (!seoConfig || containsGeneratedTabs(collection.fields)) return collection
+        const existingSeoField = findNamedField(collection.fields, names.seoField)
+        const contentFields = existingSeoField && hasGeneratedMarker(existingSeoField)
+          ? collection.fields.filter((field) => field !== existingSeoField)
+          : collection.fields
+        return {
+          ...collection,
+          fields: [createSeoTabs(
+            contentFields,
+            createSeoField({ collection: seoConfig, mediaCollection: enabledConfig.media.collection, name: names.seoField }),
+          )],
+        }
       }).concat((incomingConfig.collections ?? []).some((collection) => collection.slug === names.redirectsCollection) ? [] : [createRedirectsCollection({ access: enabledConfig.access?.redirects, slug: names.redirectsCollection })]),
       globals: [...(incomingConfig.globals ?? []), ...((incomingConfig.globals ?? []).some((global) => global.slug === names.settingsGlobal) ? [] : [createSeoSettingsGlobal({ access: enabledConfig.access?.settings, slug: names.settingsGlobal, mediaCollection: enabledConfig.media.collection })])],
     }

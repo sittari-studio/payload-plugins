@@ -4,6 +4,7 @@ import {
   SEO_PLUGIN_MARKER,
   SEO_PREVIEWS_ADMIN_COMPONENT,
   SEO_RAW_JSON_ADMIN_COMPONENT,
+  SEO_SCHEMA_VALUE_OVERRIDES_ADMIN_COMPONENT,
   type SeoCollectionConfig,
 } from '../types.js'
 import { validateAbsoluteHttpUrl, validateJson } from '../utils/validation.js'
@@ -91,59 +92,103 @@ export const createSeoField = ({
     type: 'group',
     label: 'SEO',
     ...(collection.access ? { access: collection.access } : {}),
-    admin: {
-      components: { Field: SEO_PREVIEWS_ADMIN_COMPONENT },
-      custom: {
-        seo: { marker: SEO_PLUGIN_MARKER },
-      },
-    },
+    admin: { custom: { seo: { marker: SEO_PLUGIN_MARKER } } },
     fields: [
-      { name: 'title', type: 'text', localized },
-      { name: 'description', type: 'textarea', localized },
-      { name: 'focusKeyword', type: 'text', localized },
       {
-        name: 'canonical', type: 'group', fields: [
-          { name: 'mode', type: 'select', localized, defaultValue: 'auto', required: true, options: ['auto', 'manual', 'none'] },
+        type: 'tabs',
+        tabs: [
           {
-            name: 'url', type: 'text', localized, validate: (value, { siblingData } = {} as never) =>
-              (siblingData as { mode?: string } | undefined)?.mode === 'manual' && !value
-                ? 'A manual canonical URL is required.'
-                : validateAbsoluteHttpUrl(value),
-            admin: { condition: (_, siblingData) => siblingData?.mode === 'manual' },
-          } as TextField,
-        ],
-      },
-      {
-        name: 'robots', type: 'group', fields: [
-          { name: 'index', type: 'select', localized, defaultValue: 'index', required: true, options: ['index', 'noindex'] },
-          { name: 'follow', type: 'select', localized, defaultValue: 'follow', required: true, options: ['follow', 'nofollow'] },
-        ],
-      },
-      {
-        name: 'openGraph', type: 'group', fields: [
-          { name: 'title', type: 'text', localized },
-          { name: 'description', type: 'textarea', localized },
-          uploadField('image', imageCollection),
-        ],
-      },
-      {
-        name: 'twitter', type: 'group', fields: [
-          { name: 'title', type: 'text', localized },
-          { name: 'description', type: 'textarea', localized },
-          uploadField('image', imageCollection),
-          { name: 'card', type: 'select', localized, options: socialCards },
-        ],
-      },
-      {
-        name: 'schema', type: 'group', fields: [
-          { name: 'type', type: 'select', localized, defaultValue: collection.schemaType, required: true, options: schemaOptions },
-          { name: 'values', type: 'group', localized, fields: visualFields },
+            label: 'General',
+            fields: [
+              { name: 'title', type: 'text', localized },
+              { name: 'description', type: 'textarea', localized },
+              { name: 'focusKeyword', type: 'text', localized },
+            ],
+          },
           {
-            name: 'rawJson', type: 'textarea', localized, validate: validateJson,
-            admin: {
-              components: { Field: SEO_RAW_JSON_ADMIN_COMPONENT },
-              custom: { seo: { marker: SEO_PLUGIN_MARKER } },
-            },
+            label: 'Canonical',
+            fields: [{
+              name: 'canonical', type: 'group', fields: [
+                { name: 'mode', type: 'select', localized, defaultValue: 'auto', required: true, options: ['auto', 'manual', 'none'] },
+                {
+                  name: 'url', type: 'text', localized, validate: (value, { siblingData } = {} as never) =>
+                    (siblingData as { mode?: string } | undefined)?.mode === 'manual' && !value
+                      ? 'A manual canonical URL is required.'
+                      : validateAbsoluteHttpUrl(value),
+                  admin: { condition: (_, siblingData) => siblingData?.mode === 'manual' },
+                } as TextField,
+              ],
+            }],
+          },
+          {
+            label: 'Robots',
+            fields: [{
+              name: 'robots', type: 'group', fields: [
+                { name: 'index', type: 'select', localized, defaultValue: 'index', required: true, options: ['index', 'noindex'] },
+                { name: 'follow', type: 'select', localized, defaultValue: 'follow', required: true, options: ['follow', 'nofollow'] },
+              ],
+            }],
+          },
+          {
+            label: 'Open Graph',
+            fields: [{
+              name: 'openGraph', type: 'group', fields: [
+                { name: 'title', type: 'text', localized },
+                { name: 'description', type: 'textarea', localized },
+                uploadField('image', imageCollection),
+              ],
+            }],
+          },
+          {
+            label: 'X / Twitter',
+            fields: [{
+              name: 'twitter', type: 'group', fields: [
+                { name: 'title', type: 'text', localized },
+                { name: 'description', type: 'textarea', localized },
+                uploadField('image', imageCollection),
+                { name: 'card', type: 'select', localized, options: socialCards },
+              ],
+            }],
+          },
+          {
+            label: 'Schema',
+            fields: [{
+              name: 'schema', type: 'group', fields: [
+                { name: 'type', type: 'select', localized, defaultValue: collection.schemaType, required: true, options: schemaOptions },
+                {
+                  name: 'values', type: 'group', label: 'Schema overrides', localized, fields: visualFields,
+                  admin: {
+                    components: { Field: SEO_SCHEMA_VALUE_OVERRIDES_ADMIN_COMPONENT },
+                    custom: { seo: { schemaMappings: collection.schema ?? {} } },
+                  },
+                },
+                {
+                  name: 'rawJson', type: 'textarea', localized, validate: validateJson,
+                  admin: {
+                    components: { Field: SEO_RAW_JSON_ADMIN_COMPONENT },
+                    custom: {
+                      seo: {
+                        collectionSchema: collection.schema ?? {},
+                        defaultType: collection.schemaType,
+                        marker: SEO_PLUGIN_MARKER,
+                        seoField: name,
+                      },
+                    },
+                  },
+                },
+              ],
+            }],
+          },
+          {
+            label: 'Previews',
+            fields: [{
+              name: 'previews',
+              type: 'ui',
+              admin: {
+                components: { Field: SEO_PREVIEWS_ADMIN_COMPONENT },
+                custom: { seo: { seoField: name } },
+              },
+            }],
           },
         ],
       },

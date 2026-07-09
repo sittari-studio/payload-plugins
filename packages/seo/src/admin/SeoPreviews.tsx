@@ -1,7 +1,7 @@
 'use client'
 
-import type { GroupFieldClientProps } from 'payload'
-import { RenderFields, useFormFields } from '@payloadcms/ui'
+import type { UIFieldClientProps } from 'payload'
+import { useFormFields } from '@payloadcms/ui'
 
 type Fields = Record<string, { value?: unknown }>
 
@@ -14,14 +14,18 @@ const imageUrl = (value: unknown): string | undefined => {
 
 const fieldValue = (fields: Fields, path: string): unknown => fields[path]?.value
 
-const previewStyle = { border: '1px solid var(--theme-elevation-150)', borderRadius: '4px', padding: '1rem', marginBottom: '1rem' }
+const cardStyle = { background: 'var(--theme-elevation-0)', border: '1px solid var(--theme-elevation-150)', borderRadius: '8px', overflow: 'hidden' }
+const mutedStyle = { color: 'var(--theme-elevation-600)', fontSize: '.875rem' }
+const clamp = (lines: number) => ({ WebkitBoxOrient: 'vertical' as const, WebkitLineClamp: lines, display: '-webkit-box', overflow: 'hidden' })
 
 /** Displays informational Google, Open Graph, and Twitter/X previews from unsaved form state. */
-export const SeoPreviews = ({ field, path = '', permissions, readOnly, schemaPath }: GroupFieldClientProps) => {
+export const SeoPreviews = ({ field }: UIFieldClientProps) => {
   const values = useFormFields(([fields]) => fields as Fields)
-  const at = (name: string) => fieldValue(values, path ? `${path}.${name}` : name)
+  const seoField = (field.admin?.custom?.seo as { seoField?: string } | undefined)?.seoField ?? 'seo'
+  const at = (name: string) => fieldValue(values, `${seoField}.${name}`)
   const title = text(at('title')) ?? 'Page title'
   const description = text(at('description')) ?? 'Add a concise description to preview how this document may appear when shared.'
+  const canonicalUrl = text(at('canonical.url')) ?? 'https://example.com/page'
   const openGraphTitle = text(at('openGraph.title')) ?? title
   const openGraphDescription = text(at('openGraph.description')) ?? description
   const twitterTitle = text(at('twitter.title')) ?? openGraphTitle
@@ -29,34 +33,35 @@ export const SeoPreviews = ({ field, path = '', permissions, readOnly, schemaPat
   const openGraphImage = imageUrl(at('openGraph.image'))
   const twitterImage = imageUrl(at('twitter.image')) ?? openGraphImage
 
-  return <>
-    <section aria-label="SEO previews">
-      <div style={previewStyle}>
-        <strong>Google result preview</strong>
-        <div style={{ color: '#1a0dab', fontSize: '1.1rem', marginTop: '.5rem' }}>{title}</div>
-        <div style={{ color: '#188038' }}>https://example.com/page</div>
-        <div>{description}</div>
+  const PreviewImage = ({ src }: { src?: string }) => src
+    ? <img alt="" src={src} style={{ aspectRatio: '1.91 / 1', display: 'block', objectFit: 'cover', width: '100%' }} />
+    : <div style={{ alignItems: 'center', aspectRatio: '1.91 / 1', background: 'linear-gradient(135deg, var(--theme-elevation-100), var(--theme-elevation-200))', color: 'var(--theme-elevation-600)', display: 'flex', justifyContent: 'center' }}>No image selected</div>
+
+  return <section aria-label="SEO previews" style={{ display: 'grid', gap: '1.25rem', gridTemplateColumns: 'repeat(auto-fit, minmax(18rem, 1fr))' }}>
+    <article style={{ ...cardStyle, padding: '1.25rem' }}>
+      <div style={mutedStyle}>Google result</div>
+      <div style={{ alignItems: 'center', display: 'flex', gap: '.5rem', marginTop: '.75rem' }}>
+        <span aria-hidden="true" style={{ alignItems: 'center', background: 'var(--theme-elevation-150)', borderRadius: '50%', display: 'flex', fontSize: '.75rem', height: '1.5rem', justifyContent: 'center', width: '1.5rem' }}>◐</span>
+        <div><div style={{ fontSize: '.875rem' }}>example.com</div><div style={{ ...clamp(1), ...mutedStyle }}>{canonicalUrl}</div></div>
       </div>
-      <div style={previewStyle}>
-        <strong>Open Graph preview</strong>
-        {openGraphImage && <img alt="" src={openGraphImage} style={{ display: 'block', marginTop: '.5rem', maxHeight: '12rem', maxWidth: '100%', objectFit: 'cover' }} />}
-        <div style={{ fontSize: '1.1rem', marginTop: '.5rem' }}>{openGraphTitle}</div>
-        <div>{openGraphDescription}</div>
+      <div style={{ ...clamp(2), color: 'var(--theme-success-500)', fontSize: '1.25rem', lineHeight: 1.3, marginTop: '.75rem' }}>{title}</div>
+      <p style={{ ...clamp(3), color: 'var(--theme-elevation-700)', lineHeight: 1.5, marginBottom: 0 }}>{description}</p>
+    </article>
+    <article style={cardStyle}>
+      <PreviewImage src={openGraphImage} />
+      <div style={{ padding: '1rem' }}>
+        <div style={mutedStyle}>Open Graph · example.com</div>
+        <div style={{ ...clamp(2), fontSize: '1.1rem', fontWeight: 600, marginTop: '.4rem' }}>{openGraphTitle}</div>
+        <p style={{ ...clamp(2), ...mutedStyle, lineHeight: 1.45, marginBottom: 0 }}>{openGraphDescription}</p>
       </div>
-      <div style={previewStyle}>
-        <strong>Twitter/X card preview</strong>
-        {twitterImage && <img alt="" src={twitterImage} style={{ display: 'block', marginTop: '.5rem', maxHeight: '12rem', maxWidth: '100%', objectFit: 'cover' }} />}
-        <div style={{ fontSize: '1.1rem', marginTop: '.5rem' }}>{twitterTitle}</div>
-        <div>{twitterDescription}</div>
+    </article>
+    <article style={cardStyle}>
+      <PreviewImage src={twitterImage} />
+      <div style={{ borderTop: '1px solid var(--theme-elevation-150)', padding: '1rem' }}>
+        <div style={{ ...clamp(2), fontWeight: 600 }}>{twitterTitle}</div>
+        <div style={{ ...clamp(2), ...mutedStyle, marginTop: '.35rem' }}>{twitterDescription}</div>
+        <div style={{ ...mutedStyle, marginTop: '.65rem' }}>X card · example.com</div>
       </div>
-    </section>
-    <RenderFields
-      fields={field.fields}
-      parentIndexPath=""
-      parentPath={path}
-      parentSchemaPath={schemaPath ?? ''}
-      permissions={permissions ?? true}
-      readOnly={readOnly}
-    />
-  </>
+    </article>
+  </section>
 }
