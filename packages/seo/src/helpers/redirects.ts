@@ -10,7 +10,14 @@ export const findSeoRedirect = async ({ payload, sourcePath }: { payload: SeoPay
   const config = getSeoRuntimeConfig(payload)
   if (!source || !config || !payload.find) return null
   try {
-    const result = await payload.find({ collection: resolveSeoNames(config.names).redirectsCollection, depth: 0, limit: 1, pagination: false, where: { and: [{ source: { equals: source } }, { enabled: { equals: true } }] } })
+    const result = await payload.find({
+      collection: resolveSeoNames(config.names).redirectsCollection,
+      depth: 0,
+      limit: 1,
+      pagination: false,
+      select: { destination: true, destinationType: true, statusCode: true },
+      where: { and: [{ source: { equals: source } }, { enabled: { equals: true } }] },
+    })
     const redirect = result.docs[0] ?? {}
     const statusCode = redirect.statusCode === 301 || redirect.statusCode === '301' ? 301 : redirect.statusCode === 302 || redirect.statusCode === '302' ? 302 : undefined
     const destination = redirect.destinationType === 'internal' ? normalizeRedirectPath(redirect.destination) : isAbsoluteHttpUrl(redirect.destination) ? redirect.destination.trim() : null

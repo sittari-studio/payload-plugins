@@ -33,11 +33,12 @@ package publishing contents.
 
 ## Operational concerns
 
-- Sitemap generation can inspect large collections. Query only fields required
-  for URL and last-modified resolution, paginate at 25,000, and avoid loading
-  relationships unless configuration requires them.
-- Add an index for redirect source and consider an enabled/source compound
-  index when supported by the selected database adapter.
+- Sitemap generation can inspect large collections. Configure sitemap.fields
+  with only the URL and last-modified inputs, paginate at 25,000, and avoid
+  loading relationships unless configuration requires them.
+- Redirect source has a unique database index, which covers exact source lookup
+  efficiently; enabled is included in the query to prevent disabled redirects
+  from being returned.
 - Cache decisions belong to the host route because cache lifetime and
   invalidation strategy are application-specific.
 - The plugin should log resolution faults at a useful level but must not turn a

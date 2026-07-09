@@ -11,6 +11,11 @@ const validDate = (value: unknown): string | undefined => {
   return date && !Number.isNaN(date.getTime()) ? date.toISOString() : undefined
 }
 
+const sitemapSelect = (fields: readonly string[] | undefined): Record<string, true> | undefined => {
+  if (!fields?.length) return undefined
+  return Object.fromEntries([...new Set(['updatedAt', ...fields])].map((field) => [field, true]))
+}
+
 export const renderSitemapXml = async ({ payload, collection, locale, page }: { payload: SeoPayload; collection: string; locale: string; page: number }): Promise<string> => {
   const config = getSeoRuntimeConfig(payload)
   const collectionConfig = config?.collections[collection]
@@ -19,7 +24,17 @@ export const renderSitemapXml = async ({ payload, collection, locale, page }: { 
     const settings = await payload.findGlobal({ slug: resolveSeoNames(config.names).settingsGlobal, locale, fallbackLocale: false, draft: false })
     const siteUrl = settings.siteUrl
     if (!isAbsoluteHttpUrl(siteUrl)) return xmlDocument('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>')
-    const result = await payload.find({ collection, locale, fallbackLocale: false, draft: false, depth: 0, limit: PAGE_SIZE, page })
+    const select = sitemapSelect(collectionConfig.sitemap?.fields)
+    const result = await payload.find({
+      collection,
+      locale,
+      fallbackLocale: false,
+      draft: false,
+      depth: 0,
+      limit: PAGE_SIZE,
+      page,
+      ...(select ? { select } : {}),
+    })
     const urls = await Promise.all(result.docs.map(async (document) => {
       try {
         const path = await config.resolveUrl({ collection, document, locale })

@@ -60,6 +60,11 @@ export type SeoDocumentFieldMappings = {
 
 export type SeoSitemapConfig = {
   enabled?: boolean
+  /**
+   * Document paths required by `resolveUrl` and `lastModified` while rendering
+   * a sitemap page. Supplying them keeps large sitemap reads projected.
+   */
+  fields?: readonly string[]
 }
 
 export type SeoCollectionConfig = {

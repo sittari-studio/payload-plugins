@@ -7,7 +7,7 @@ Monorepo for PayloadCMS plugins published under the `@krameri` npm scope.
 | Package | Description |
 | --- | --- |
 | `@krameri/payload-shared` | Shared helpers for Krameri Payload plugins. |
-| `@krameri/payload-plugin-seo` | Adds reusable SEO fields to selected collections. |
+| `@krameri/payload-seo` | Locale-safe SEO fields and framework-neutral metadata, robots, redirect, and sitemap helpers. |
 
 The `dev` workspace is a private local Payload app for testing packages during development.
 
@@ -81,11 +81,16 @@ Every public scoped package includes:
 
 ```ts
 import { buildConfig } from 'payload'
-import { seoPlugin } from '@krameri/payload-plugin-seo'
+import { seoPlugin } from '@krameri/payload-seo'
 
 export default buildConfig({
   plugins: [
-    seoPlugin({ collections: ['pages', 'posts'] })
+    seoPlugin({
+      collections: { pages: { schemaType: 'WebPage' } },
+      media: { collection: 'media', resolveMediaUrl: () => null },
+      resolveUrl: () => null,
+      resolveChunkUrl: () => 'https://example.com/sitemap.xml',
+    })
   ],
   collections: []
 })

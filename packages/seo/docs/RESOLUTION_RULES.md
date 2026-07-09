@@ -126,6 +126,11 @@ pagination, rather than output-entry count, defines page boundaries, so a page
 can have fewer than 25,000 output entries when some documents have no valid
 URL.
 
+When sitemap.fields is configured, the document query projects only those
+listed paths and updatedAt. Integrators must include every path their URL and
+last-modified resolvers read. Omitting sitemap.fields preserves access to the
+full document for existing resolvers.
+
 renderSitemapIndexXml accepts the Payload instance but no collection, locale,
 or page arguments from the route handler. It derives all enabled sitemap
 collections and configured locales from plugin configuration, calculates

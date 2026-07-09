@@ -19,7 +19,7 @@
     "jsx": "preserve",
     "noEmit": true,
     "paths": {
-      "@krameri/payload-plugin-seo": ["../packages/seo/src/index.ts"],
+      "@krameri/payload-seo": ["../packages/seo/src/index.ts"],
       "@payload-config": ["./payload.config.ts"]
     }
   }

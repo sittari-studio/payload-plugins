@@ -47,6 +47,13 @@ const validateMappings = (value: unknown, label: string): void => {
   }
 }
 
+const validateSitemapFields = (value: unknown, label: string): void => {
+  if (value === undefined) return
+  if (!Array.isArray(value) || value.some((path) => typeof path !== 'string' || path.trim() === '')) {
+    throw new Error(`@krameri/payload-seo: ${label} must be an array of non-empty field paths.`)
+  }
+}
+
 const validSchemaTypes = new Set(['Article', 'FAQPage', 'LocalBusiness', 'Organization', 'Product', 'WebPage'])
 
 export const resolveSeoNames = (names?: SeoPluginConfig['names']) => ({
@@ -86,8 +93,11 @@ export const validateSeoPluginConfig = (config: SeoEnabledPluginConfig): void =>
       }
       requireNonEmptyString(collection.media.collection, `collections.${slug}.media.collection`)
     }
-    if (collection.sitemap !== undefined && (!isRecord(collection.sitemap) || typeof collection.sitemap.enabled !== 'boolean')) {
-      throw new Error(`@krameri/payload-seo: collections.${slug}.sitemap.enabled must be a boolean.`)
+    if (collection.sitemap !== undefined) {
+      if (!isRecord(collection.sitemap) || (collection.sitemap.enabled !== undefined && typeof collection.sitemap.enabled !== 'boolean')) {
+        throw new Error(`@krameri/payload-seo: collections.${slug}.sitemap.enabled must be a boolean.`)
+      }
+      validateSitemapFields(collection.sitemap.fields, `collections.${slug}.sitemap.fields`)
     }
     if (collection.visualFields?.some((field) => !isSupportedVisualField(field))) {
       throw new Error(`@krameri/payload-seo: collections.${slug}.visualFields may only contain named text, textarea, number, checkbox, select, date, or upload fields.`)

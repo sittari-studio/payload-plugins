@@ -1,9 +1,8 @@
 # @krameri/payload-seo documentation
 
 This directory is the implementation and maintenance specification for
-@krameri/payload-seo, a Payload CMS v3 plugin. The package is currently a
-scaffold; these documents define the intended v1 behavior before code is
-written.
+@krameri/payload-seo, a Payload CMS v3 plugin. These documents define and
+maintain its v1 behavior.
 
 The plugin stores and manages SEO data in Payload. It does not create public
 routes. Application developers own their metadata, schema, redirects,

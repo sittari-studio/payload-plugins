@@ -22,6 +22,7 @@ seoPlugin({
       },
       sitemap: {
         enabled: true,
+        fields: ['slug'],
       },
     },
   },
@@ -56,6 +57,9 @@ SeoPluginConfig must include:
 A collection entry includes its default schema type, optional localized document
 field mappings, optional schema mappings, optional last-modified resolver, and
 optional SEO field access override. Its sitemap.enabled option defaults to true.
+When sitemap.fields is present, it must list every document field path used by
+resolveUrl and lastModified; the sitemap query selects only those paths plus
+updatedAt.
 No collection-specific URL resolver is permitted; the shared top-level resolver
 receives the collection slug.
 

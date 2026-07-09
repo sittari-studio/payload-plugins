@@ -66,6 +66,15 @@ describe('seoPlugin', () => {
     )
   })
 
+  it('validates optional sitemap field projections', () => {
+    const config = validConfig()
+    config.collections.pages.sitemap = { fields: ['slug', 'updatedAt'] }
+    expect(() => seoPlugin(config)(payloadConfig())).not.toThrow()
+
+    config.collections.pages.sitemap = { fields: ['slug', ''] }
+    expect(() => seoPlugin(config)(payloadConfig())).toThrow('sitemap.fields must be an array of non-empty field paths')
+  })
+
   it('rejects a configured collection that is absent from Payload config', () => {
     const config = validConfig()
     config.collections.posts = { schemaType: 'Article' }
@@ -217,5 +226,23 @@ describe('frontend helpers', () => {
     expect(sitemap).toContain('<lastmod>2026-01-02T03:04:05.000Z</lastmod>')
     const index = await renderSitemapIndexXml({ payload })
     expect(index).toContain('<loc>https://example.com/sitemap.xml</loc>')
+  })
+
+  it('uses narrow projections when the sitemap configuration declares its resolver inputs', async () => {
+    const payload = runtimePayload()
+    const config = payload.config.custom[SEO_RUNTIME_CONFIG_KEY] as SeoEnabledPluginConfig
+    config.collections.pages.sitemap = { fields: ['slug'] }
+
+    await renderSitemapXml({ payload, collection: 'pages', locale: 'en', page: 1 })
+    expect(payload.find).toHaveBeenCalledWith(expect.objectContaining({
+      collection: 'pages',
+      select: { slug: true, updatedAt: true },
+    }))
+
+    await findSeoRedirect({ payload, sourcePath: '/old' })
+    expect(payload.find).toHaveBeenCalledWith(expect.objectContaining({
+      collection: 'seo-redirects',
+      select: { destination: true, destinationType: true, statusCode: true },
+    }))
   })
 })
