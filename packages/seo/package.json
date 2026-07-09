@@ -1,0 +1,54 @@
+{
+  "name": "@krameri/payload-seo",
+  "version": "0.1.0",
+  "description": "PayloadCMS seo plugin.",
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/exports/types.d.ts",
+      "import": "./dist/exports/types.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "pnpm run clean && pnpm run build:types && pnpm run build:js",
+    "build:js": "tsc -p tsconfig.build.json --declaration false --declarationMap false",
+    "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm run test:int",
+    "test:int": "vitest run",
+    "dev": "node ../../scripts/dev-package.mjs",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "prepublishOnly": "pnpm run clean && pnpm run build"
+  },
+  "peerDependencies": {
+    "payload": "^3.0.0"
+  },
+  "devDependencies": {
+    "payload": "^3.0.0",
+    "typescript": "latest",
+    "vitest": "4.1.9"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "payload",
+    "payloadcms",
+    "payload-plugin",
+    "cms",
+    "seo"
+  ]
+}

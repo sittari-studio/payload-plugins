@@ -57,7 +57,7 @@ pnpm test
 pnpm create:plugin sitemap
 ```
 
-This creates `packages/sitemap` with package name `@krameri/payload-plugin-sitemap`.
+This creates `packages/sitemap` with package name `@krameri/payload-sitemap`.
 
 ## Publish
 

@@ -32,9 +32,9 @@ const pascalName = name
 
 const camelName = pascalName[0].toLowerCase() + pascalName.slice(1)
 const exportName = `${camelName}Plugin`
-const optionsName = `${pascalName}PluginOptions`
+const pluginConfigName = `${pascalName}PluginConfig`
 
-const packageName = `@krameri/payload-plugin-${name}`
+const packageName = `@krameri/payload-${name}`
 const packageDir = path.join(process.cwd(), 'packages', name)
 
 if (existsSync(packageDir)) {
@@ -43,6 +43,7 @@ if (existsSync(packageDir)) {
 }
 
 await mkdir(path.join(packageDir, 'src'), { recursive: true })
+await mkdir(path.join(packageDir, 'src', 'exports'), { recursive: true })
 await mkdir(path.join(packageDir, 'test'), { recursive: true })
 
 await writeFile(
@@ -54,29 +55,37 @@ await writeFile(
       description: `PayloadCMS ${name} plugin.`,
       type: 'module',
       license: 'MIT',
-      main: './dist/index.mjs',
-      types: './dist/index.d.mts',
+      main: './dist/index.js',
+      types: './dist/index.d.ts',
       exports: {
         '.': {
-          types: './dist/index.d.mts',
-          import: './dist/index.mjs',
+          types: './dist/index.d.ts',
+          import: './dist/index.js',
+          default: './dist/index.js',
+        },
+        './types': {
+          types: './dist/exports/types.d.ts',
+          import: './dist/exports/types.js',
         },
       },
       files: ['dist', 'README.md'],
       sideEffects: false,
       scripts: {
-        build: 'tsdown --entry src/index.ts --format esm --dts --out-dir dist --clean --deps.never-bundle payload',
+        build: 'pnpm run clean && pnpm run build:types && pnpm run build:js',
+        'build:js': 'tsc -p tsconfig.build.json --declaration false --declarationMap false',
+        'build:types': 'tsc -p tsconfig.build.json --emitDeclarationOnly',
         typecheck: 'tsc --noEmit',
-        test: 'vitest run',
-        dev: 'tsdown --entry src/index.ts --format esm --dts --out-dir dist --clean --deps.never-bundle payload --watch',
-        clean: 'rm -rf dist',
+        test: 'pnpm run test:int',
+        'test:int': 'vitest run',
+        dev: 'node ../../scripts/dev-package.mjs',
+        clean: 'rm -rf dist *.tsbuildinfo',
+        prepublishOnly: 'pnpm run clean && pnpm run build',
       },
       peerDependencies: {
         payload: '^3.0.0',
       },
       devDependencies: {
         payload: '^3.0.0',
-        tsdown: '0.22.2',
         typescript: 'latest',
         vitest: '4.1.9',
       },
@@ -101,19 +110,42 @@ await writeFile(
 )
 
 await writeFile(
-  path.join(packageDir, 'src/index.ts'),
-  `import type { Config, Plugin } from 'payload'
+  path.join(packageDir, 'tsconfig.build.json'),
+  `{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false,
+    "noEmit": false,
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["dist", "node_modules", "test"]
+}
+`,
+)
 
-export type ${optionsName} = {
+await writeFile(
+  path.join(packageDir, 'src/types.ts'),
+  `export type ${pluginConfigName} = {
   enabled?: boolean
 }
+`,
+)
 
-export const ${exportName} = (
-  options: ${optionsName} = {},
-): Plugin => {
-  const { enabled = true } = options
+await writeFile(
+  path.join(packageDir, 'src/plugin.ts'),
+  `import type { Config, Plugin } from 'payload'
 
-  return (incomingConfig: Config): Config => {
+import type { ${pluginConfigName} } from './types.js'
+
+export const ${exportName} =
+  (pluginConfig: ${pluginConfigName} = {}): Plugin =>
+  (incomingConfig: Config): Config => {
+    const { enabled = true } = pluginConfig
+
     if (!enabled) {
       return incomingConfig
     }
@@ -122,38 +154,50 @@ export const ${exportName} = (
       ...incomingConfig,
     }
   }
-}
 
 export default ${exportName}
 `,
 )
 
 await writeFile(
-  path.join(packageDir, 'test/${name}-plugin.test.ts'),
+  path.join(packageDir, 'src/index.ts'),
+  `export { ${exportName} } from './plugin.js'
+export type { ${pluginConfigName} } from './types.js'
+
+export { ${exportName} as default } from './plugin.js'
+`,
+)
+
+await writeFile(
+  path.join(packageDir, 'src/exports/types.ts'),
+  `export type { ${pluginConfigName} } from '../types.js'
+`,
+)
+
+await writeFile(
+  path.join(packageDir, `test/${name}.test.ts`),
   `import type { Config } from 'payload'
 import { describe, expect, it } from 'vitest'
 
 import { ${exportName} } from '../src/index.js'
 
 describe('${exportName}', () => {
-  it('returns the incoming config when enabled', async () => {
+  it('returns the incoming config when enabled', () => {
     const inputConfig = {
       collections: [],
     } as unknown as Config
 
-    const outputConfig = await Promise.resolve(${exportName}()(inputConfig))
+    const outputConfig = ${exportName}()(inputConfig)
 
     expect(outputConfig).toEqual(inputConfig)
   })
 
-  it('returns the incoming config when disabled', async () => {
+  it('returns the incoming config when disabled', () => {
     const inputConfig = {
       collections: [],
     } as unknown as Config
 
-    const outputConfig = await Promise.resolve(
-      ${exportName}({ enabled: false })(inputConfig),
-    )
+    const outputConfig = ${exportName}({ enabled: false })(inputConfig)
 
     expect(outputConfig).toEqual(inputConfig)
   })
