@@ -9,17 +9,16 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "../packages/*/src/**/*.ts",
     "next.config.mjs"
   ],
   "compilerOptions": {
     "baseUrl": "./",
     "emitDeclarationOnly": false,
-    "ignoreDeprecations": "6.0",
+    "allowJs": true,
+    "ignoreDeprecations": "5.0",
     "jsx": "preserve",
     "noEmit": true,
     "paths": {
-      "@krameri/payload-seo": ["../packages/seo/src/index.ts"],
       "@payload-config": ["./payload.config.ts"]
     }
   }

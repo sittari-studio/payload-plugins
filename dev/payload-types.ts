@@ -71,6 +71,7 @@ export interface Config {
     media: Media;
     'link-field-test': LinkFieldTest;
     pages: Page;
+    'seo-redirects': SeoRedirect;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -82,6 +83,7 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     'link-field-test': LinkFieldTestSelect<false> | LinkFieldTestSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
+    'seo-redirects': SeoRedirectsSelect<false> | SeoRedirectsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -93,9 +95,11 @@ export interface Config {
   fallbackLocale: null;
   globals: {
     'site-settings': SiteSetting;
+    'seo-settings': SeoSetting;
   };
   globalsSelect: {
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
+    'seo-settings': SeoSettingsSelect<false> | SeoSettingsSelect<true>;
   };
   locale: null;
   widgets: {
@@ -213,6 +217,66 @@ export interface Page {
     };
     [k: string]: unknown;
   } | null;
+  seo: {
+    title?: string | null;
+    description?: string | null;
+    focusKeyword?: string | null;
+    canonical: {
+      mode: 'auto' | 'manual' | 'none';
+      url?: string | null;
+    };
+    robots: {
+      index: 'index' | 'noindex';
+      follow: 'follow' | 'nofollow';
+    };
+    openGraph?: {
+      title?: string | null;
+      description?: string | null;
+      image?: (number | null) | Media;
+    };
+    twitter?: {
+      title?: string | null;
+      description?: string | null;
+      image?: (number | null) | Media;
+      card?: ('summary' | 'summary_large_image') | null;
+    };
+    schema: {
+      type: 'WebPage' | 'Article' | 'Product' | 'Organization' | 'LocalBusiness' | 'FAQPage';
+      values?: {
+        name?: string | null;
+        about?: string | null;
+        headline?: string | null;
+        author?: string | null;
+        datePublished?: string | null;
+        dateModified?: string | null;
+        description?: string | null;
+        sku?: string | null;
+        brand?: string | null;
+        price?: number | null;
+        priceCurrency?: string | null;
+        telephone?: string | null;
+        address?: string | null;
+        question?: string | null;
+        answer?: string | null;
+      };
+      rawJson?: string | null;
+    };
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "seo-redirects".
+ */
+export interface SeoRedirect {
+  id: number;
+  source: string;
+  destinationType: 'internal' | 'external';
+  destination: string;
+  statusCode: '301' | '302';
+  enabled?: boolean | null;
+  notes?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -255,6 +319,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'pages';
         value: number | Page;
+      } | null)
+    | ({
+        relationTo: 'seo-redirects';
+        value: number | SeoRedirect;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -365,6 +433,79 @@ export interface PagesSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
   content?: T;
+  seo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        focusKeyword?: T;
+        canonical?:
+          | T
+          | {
+              mode?: T;
+              url?: T;
+            };
+        robots?:
+          | T
+          | {
+              index?: T;
+              follow?: T;
+            };
+        openGraph?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+              image?: T;
+            };
+        twitter?:
+          | T
+          | {
+              title?: T;
+              description?: T;
+              image?: T;
+              card?: T;
+            };
+        schema?:
+          | T
+          | {
+              type?: T;
+              values?:
+                | T
+                | {
+                    name?: T;
+                    about?: T;
+                    headline?: T;
+                    author?: T;
+                    datePublished?: T;
+                    dateModified?: T;
+                    description?: T;
+                    sku?: T;
+                    brand?: T;
+                    price?: T;
+                    priceCurrency?: T;
+                    telephone?: T;
+                    address?: T;
+                    question?: T;
+                    answer?: T;
+                  };
+              rawJson?: T;
+            };
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "seo-redirects_select".
+ */
+export interface SeoRedirectsSelect<T extends boolean = true> {
+  source?: T;
+  destinationType?: T;
+  destination?: T;
+  statusCode?: T;
+  enabled?: T;
+  notes?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -421,11 +562,111 @@ export interface SiteSetting {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "seo-settings".
+ */
+export interface SeoSetting {
+  id: number;
+  siteName?: string | null;
+  siteUrl: string;
+  titleTemplate?: string | null;
+  defaultDescription?: string | null;
+  defaultOpenGraphImage?: (number | null) | Media;
+  defaultTwitterCard?: ('summary' | 'summary_large_image') | null;
+  defaultRobots?: {
+    index?: ('index' | 'noindex') | null;
+    follow?: ('follow' | 'nofollow') | null;
+  };
+  organizationSchema?: {
+    name?: string | null;
+    url?: string | null;
+    logo?: (number | null) | Media;
+  };
+  robots: {
+    mode: 'generated' | 'override';
+    groups?:
+      | {
+          userAgent: string;
+          allow?:
+            | {
+                path?: string | null;
+                id?: string | null;
+              }[]
+            | null;
+          disallow?:
+            | {
+                path?: string | null;
+                id?: string | null;
+              }[]
+            | null;
+          id?: string | null;
+        }[]
+      | null;
+    appendText?: string | null;
+    overrideText?: string | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "site-settings_select".
  */
 export interface SiteSettingsSelect<T extends boolean = true> {
   title?: T;
   description?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "seo-settings_select".
+ */
+export interface SeoSettingsSelect<T extends boolean = true> {
+  siteName?: T;
+  siteUrl?: T;
+  titleTemplate?: T;
+  defaultDescription?: T;
+  defaultOpenGraphImage?: T;
+  defaultTwitterCard?: T;
+  defaultRobots?:
+    | T
+    | {
+        index?: T;
+        follow?: T;
+      };
+  organizationSchema?:
+    | T
+    | {
+        name?: T;
+        url?: T;
+        logo?: T;
+      };
+  robots?:
+    | T
+    | {
+        mode?: T;
+        groups?:
+          | T
+          | {
+              userAgent?: T;
+              allow?:
+                | T
+                | {
+                    path?: T;
+                    id?: T;
+                  };
+              disallow?:
+                | T
+                | {
+                    path?: T;
+                    id?: T;
+                  };
+              id?: T;
+            };
+        appendText?: T;
+        overrideText?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

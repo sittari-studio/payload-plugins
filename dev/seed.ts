@@ -40,8 +40,10 @@ const ensureDevUser = async (payload: Payload): Promise<void> => {
 }
 
 const ensureSamplePage = async (payload: Payload): Promise<void> => {
-  const existing = await payload.count({
+  const existing = await payload.find({
     collection: 'pages',
+    depth: 0,
+    limit: 1,
     where: {
       slug: {
         equals: 'home',
@@ -49,7 +51,30 @@ const ensureSamplePage = async (payload: Payload): Promise<void> => {
     },
   })
 
-  if (existing.totalDocs > 0) {
+  const page = existing.docs[0]
+  if (page) {
+    if ((page as { seo?: unknown }).seo) {
+      return
+    }
+
+    const id = getDocumentID(page)
+    if (!id) {
+      return
+    }
+
+    await payload.update({
+      collection: 'pages',
+      id,
+      data: {
+        seo: {
+          title: 'Home SEO title',
+          description: 'Sample SEO description for the local dev app.',
+          canonical: { mode: 'auto' },
+          robots: { index: 'index', follow: 'follow' },
+          schema: { type: 'WebPage' },
+        },
+      },
+    })
     return
   }
 
@@ -61,7 +86,34 @@ const ensureSamplePage = async (payload: Payload): Promise<void> => {
       seo: {
         title: 'Home SEO title',
         description: 'Sample SEO description for the local dev app.',
-        noIndex: false,
+        canonical: { mode: 'auto' },
+        robots: { index: 'index', follow: 'follow' },
+        schema: { type: 'WebPage' },
+      },
+    },
+  })
+}
+
+const ensureSeoSettings = async (payload: Payload): Promise<void> => {
+  const settings = await payload.findGlobal({
+    slug: 'seo-settings',
+  })
+
+  if (typeof settings.siteUrl === 'string' && settings.siteUrl) {
+    return
+  }
+
+  await payload.updateGlobal({
+    slug: 'seo-settings',
+    data: {
+      siteName: 'Krameri development',
+      siteUrl: 'https://example.test',
+      titleTemplate: '%s | Krameri development',
+      defaultDescription: 'Development content for the Payload SEO plugin.',
+      defaultRobots: { index: 'index', follow: 'follow' },
+      robots: {
+        mode: 'generated',
+        groups: [{ userAgent: '*', disallow: [{ path: '/admin' }] }],
       },
     },
   })
@@ -69,6 +121,7 @@ const ensureSamplePage = async (payload: Payload): Promise<void> => {
 
 export const seed = async (payload: Payload): Promise<void> => {
   await ensureDevUser(payload)
+  await ensureSeoSettings(payload)
   await ensureSamplePage(payload)
 }
 

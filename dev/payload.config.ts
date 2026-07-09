@@ -7,6 +7,7 @@ import { buildConfig } from 'payload'
 import sharp from 'sharp'
 
 import { linkFieldPlugin, linkField } from '@krameri/payload-link-field'
+import { seoPlugin } from '@krameri/payload-seo'
 
 import { testEmailAdapter } from './helpers/testEmailAdapter.js'
 import { devUser, seed } from './seed.js'
@@ -141,6 +142,39 @@ export default buildConfig({
     await seed(payload)
   },
   plugins: [
+    seoPlugin({
+      collections: {
+        pages: {
+          schemaType: 'WebPage',
+          fields: {
+            title: 'title',
+          },
+          sitemap: {
+            fields: ['slug'],
+          },
+        },
+      },
+      media: {
+        collection: 'media',
+        resolveMediaUrl: ({ media }) => typeof media.url === 'string' ? media.url : null,
+      },
+      resolveUrl: ({ document }) => typeof document.slug === 'string' ? `/${document.slug}` : null,
+      resolveChunkUrl: ({ collection, locale, page }) =>
+        `https://example.test/sitemaps/${collection}/${locale}/${page}.xml`,
+      access: {
+        settings: {
+          read: () => true,
+          update: () => true,
+        },
+        redirects: {
+          admin: () => true,
+          create: () => true,
+          read: () => true,
+          update: () => true,
+          delete: () => true,
+        },
+      },
+    }),
     linkFieldPlugin({
       resolveDocumentUrl: async ({ collectionSlug, document, payload }) => {
         return `/${collectionSlug}/${document?.slug}`

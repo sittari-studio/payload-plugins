@@ -21,7 +21,7 @@
     "@changesets/cli": "latest",
     "tsdown": "0.22.2",
     "turbo": "latest",
-    "typescript": "latest",
+    "typescript": "5.9.3",
     "vitest": "4.1.9"
   }
 }
