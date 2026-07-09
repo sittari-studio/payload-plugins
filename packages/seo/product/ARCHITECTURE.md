@@ -21,12 +21,13 @@ The host application owns:
 | Component | Responsibility |
 | --- | --- |
 | Plugin transformer | Validates plugin configuration, augments enabled collections, appends the Global and redirects collection, and preserves all existing config. |
-| Field factories | Produce the generated SEO group, conditional subfields, validation, and marker metadata. |
+| Field factories | Produce the generated SEO group, conditional subfields, localized Admin labels and validation, and marker metadata. |
 | Global factory | Produces the site SEO and robots configuration Global. |
 | Redirect factory | Produces the exact-path redirects collection with indexes, validation, and access. |
 | Resolver core | Loads documents/settings without locale fallback and turns persisted values into a normalized SEO result. |
 | Helper adapters | Return metadata objects, schema JSON-LD, redirects, robots text, sitemap XML, and sitemap index XML. |
-| Admin components | Render previews and schema reset behavior using the same resolver rules where possible. |
+| Admin components | Render localized previews and schema reset behavior using the same resolver rules where possible. |
+| Translation catalog | Provides one typed set of plugin-owned Admin strings for English, Russian, and Ukrainian, with English fallback. |
 | Validators | Normalize and validate URLs, JSON, paths, redirect graphs, and configuration. |
 
 ## Recommended source layout
@@ -120,6 +121,9 @@ normalized result; they must not reimplement fallback logic.
   document from a collection afterRead hook.
 - Give generated redirects source fields a database-backed uniqueness guarantee
   as well as application validation.
+- Treat the active Payload Admin interface language as presentation state. It
+  must select plugin UI translations but must not change the explicit content
+  locale passed to SEO helpers or persisted enum values.
 
 ## Failure policy
 
@@ -127,4 +131,3 @@ Configuration errors fail application startup. Editor-entered invalid values
 fail field validation. Runtime resolution errors are non-fatal to the host
 route: log enough context for diagnosis, omit the affected result, and retain
 unrelated valid output.
-

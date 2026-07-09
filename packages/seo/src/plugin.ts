@@ -11,6 +11,7 @@ import { createRedirectsCollection } from './collections/redirects.js'
 import { createSeoField, isSupportedVisualField } from './fields/seo.js'
 import { createSeoSettingsGlobal } from './globals/seo-settings.js'
 import { SEO_RUNTIME_CONFIG_KEY } from './helpers/config.js'
+import { adminTabLabel } from './admin/translations.js'
 
 type CollectionConfig = NonNullable<Config['collections']>[number]
 type GlobalConfig = NonNullable<Config['globals']>[number]
@@ -66,8 +67,8 @@ const createSeoTabs = (fields: Field[], seoField: Field): TabsField => ({
   type: 'tabs',
   admin: { custom: { seo: { marker: SEO_PLUGIN_MARKER } } },
   tabs: [
-    { label: 'Content', fields },
-    { label: 'SEO', fields: [seoField] },
+    { label: adminTabLabel('contentTab'), fields },
+    { label: adminTabLabel('seoTab'), fields: [seoField] },
   ],
 })
 

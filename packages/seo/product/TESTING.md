@@ -21,6 +21,9 @@ Unit-test pure functions without a Payload server:
 - robots generated, append, and override text;
 - XML escaping, sitemap chunking, and lastmod formatting;
 - Next.js metadata projection from the normalized result.
+- Admin-language normalization for supported regional language codes and
+  English fallback for unsupported language codes.
+- translation catalog key completeness across English, Russian, and Ukrainian.
 
 Every missing, invalid, empty, or resolver-null branch should assert omission,
 not a synthesized value.
@@ -61,9 +64,17 @@ Component tests should verify:
 - raw JSON errors are clear and associated with the field;
 - reset clears only raw JSON and returns the preview to generated schema;
 - users without the relevant field access cannot edit restricted fields.
+- every plugin-owned label, option, validation message, preview string, button,
+  and accessibility label renders in each of `en`, `ru`, and `uk`;
+- the three interface languages preserve identical field paths and persisted
+  option values;
+- supported regional interface language codes resolve to their base-language
+  catalog, and unsupported codes render complete English fallback copy without
+  raw translation keys.
 
 Use browser-level smoke coverage against a real Payload Admin instance before
-release to validate import-map registration and client component module paths.
+release to validate import-map registration, client component module paths, and
+the English/Russian/Ukrainian Admin language matrix.
 
 ## Contract and regression matrix
 

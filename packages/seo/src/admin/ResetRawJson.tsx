@@ -5,12 +5,14 @@ import { Button, FieldError, FieldLabel, useField, useFormFields } from '@payloa
 
 import { buildGeneratedSchema } from '../utils/generated-schema.js'
 import { isAbsoluteHttpUrl } from '../utils/validation.js'
+import { useAdminText } from './use-admin-text.js'
 
 /** A focused raw-schema editor that can clear only the explicit JSON override. */
 export const ResetRawJson = ({ field, path, readOnly }: TextareaFieldClientProps) => {
+  const t = useAdminText()
   const { errorMessage, setValue, showError, value } = useField<string>({ path })
   const fields = useFormFields(([formFields]) => formFields as Record<string, { value?: unknown }>)
-  const label = typeof field.label === 'string' ? field.label : 'Raw JSON override'
+  const label = typeof field.label === 'string' ? field.label : t('rawJson')
   const config = field.admin?.custom?.seo as {
     collectionSchema?: Record<string, string>
     defaultType?: 'Article' | 'FAQPage' | 'LocalBusiness' | 'Organization' | 'Product' | 'WebPage'
@@ -54,18 +56,18 @@ export const ResetRawJson = ({ field, path, readOnly }: TextareaFieldClientProps
 
   return <div className="field-type textarea">
     <div style={{ marginBottom: '1rem' }}>
-      <strong>Generated JSON</strong>
+      <strong>{t('generatedJson')}</strong>
       <p style={{ color: 'var(--theme-elevation-600)', margin: '.35rem 0 .5rem' }}>
-        This reflects the visual schema fields. A raw override takes precedence when saved.
+        {t('generatedJsonDescription')}
       </p>
       <pre style={{ background: 'var(--theme-elevation-50)', border: '1px solid var(--theme-elevation-150)', borderRadius: '6px', margin: 0, maxHeight: '18rem', overflow: 'auto', padding: '1rem' }}>{generatedJson}</pre>
       <Button buttonStyle="secondary" disabled={readOnly} onClick={() => setValue(generatedJson)} size="small" type="button">
-        Use generated JSON as override
+        {t('useGeneratedJson')}
       </Button>
     </div>
     <FieldLabel label={label} path={path} required={field.required} />
     <p style={{ color: 'var(--theme-elevation-600)', margin: '.35rem 0 .5rem' }}>
-      Optional. Valid JSON here replaces the generated schema entirely.
+      {t('rawJsonDescription')}
     </p>
     <textarea
       aria-label={label}
@@ -75,7 +77,7 @@ export const ResetRawJson = ({ field, path, readOnly }: TextareaFieldClientProps
       value={value ?? ''}
     />
     <Button buttonStyle="secondary" disabled={readOnly || !value} onClick={() => setValue('')} size="small" type="button">
-      Clear raw JSON override
+      {t('clearRawJson')}
     </Button>
     {showError && <FieldError message={errorMessage} />}
   </div>

@@ -9,6 +9,14 @@ import sharp from 'sharp'
 import { linkFieldPlugin, linkField } from '@krameri/payload-link-field'
 import { seoPlugin } from '@krameri/payload-seo'
 
+import { uk } from '@payloadcms/translations/languages/uk'
+import {
+  ru
+} from '@payloadcms/translations/languages/ru'
+import {
+  en
+} from '@payloadcms/translations/languages/en'
+
 import { testEmailAdapter } from './helpers/testEmailAdapter.js'
 import { devUser, seed } from './seed.js'
 
@@ -120,6 +128,13 @@ export default buildConfig({
     },
     transactionOptions: {},
   }),
+  i18n: {
+    supportedLanguages: {
+      en,
+      uk,
+      ru
+    }
+  },
   editor: lexicalEditor(),
   email: testEmailAdapter,
   globals: [

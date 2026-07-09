@@ -25,6 +25,14 @@ All fields below are stored under the generated seo group and are localized.
 When Payload localization is disabled, they behave as ordinary non-localized
 fields. The group itself should be presented as a dedicated SEO tab or section.
 
+All generated labels, descriptions, option labels, and editor-facing validation
+messages are plugin-owned Admin strings. They must resolve from the active
+Payload Admin interface language and be available in `en`, `ru`, and `uk`.
+Translation changes presentation only: field paths and select values in the
+following tables stay stable. In particular, `auto`, `manual`, `none`,
+`index`, `noindex`, `follow`, `nofollow`, and Twitter card values are not
+translated.
+
 | Path | Payload shape | Purpose |
 | --- | --- | --- |
 | seo.title | text | Title tag before the title template is applied. |
@@ -126,3 +134,10 @@ schema reset action. Component configuration may receive only non-sensitive
 data: selected locale, labels, field paths, API base path, and marker/version.
 It must not embed server secrets, access functions, or unrestricted document
 data in admin custom metadata.
+
+Client components must obtain their own visible strings from the shared Admin
+translation catalog and Payload's active interface language. Do not pass a
+translated string snapshot through custom metadata: it can become stale when an
+Admin session changes language and would duplicate the catalog. See
+[Admin translations](ADMIN_TRANSLATIONS.md) for the required catalog and
+fallback behavior.

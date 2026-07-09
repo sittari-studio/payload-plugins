@@ -24,18 +24,25 @@ export const normalizeRedirectPath = (value: unknown): string | null => {
   }
 }
 
-export const validateAbsoluteHttpUrl = (value: unknown): true | string =>
+import { adminText } from '../admin/translations.js'
+
+type ValidationContext = { req?: { i18n?: { language?: string } } }
+
+const validationText = (key: 'validationAbsoluteHttpUrl' | 'validationJson', context?: ValidationContext): string =>
+  adminText(key, context?.req?.i18n?.language)
+
+export const validateAbsoluteHttpUrl = (value: unknown, context?: ValidationContext): true | string =>
   value === undefined || value === null || value === '' || isAbsoluteHttpUrl(value)
     ? true
-    : 'Enter an absolute HTTP or HTTPS URL.'
+    : validationText('validationAbsoluteHttpUrl', context)
 
-export const validateJson = (value: unknown): true | string => {
+export const validateJson = (value: unknown, context?: ValidationContext): true | string => {
   if (value === undefined || value === null || value === '') return true
-  if (typeof value !== 'string') return 'Enter valid JSON.'
+  if (typeof value !== 'string') return validationText('validationJson', context)
   try {
     JSON.parse(value)
     return true
   } catch {
-    return 'Enter valid JSON.'
+    return validationText('validationJson', context)
   }
 }

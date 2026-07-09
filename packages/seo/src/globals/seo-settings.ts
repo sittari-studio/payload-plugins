@@ -1,11 +1,12 @@
 import type { GlobalConfig } from 'payload'
 
 import { SEO_PLUGIN_MARKER, type SeoPluginAccess } from '../types.js'
+import { adminLabel, adminTabLabel } from '../admin/translations.js'
 import { validateAbsoluteHttpUrl } from '../utils/validation.js'
 
 export const createSeoSettingsGlobal = ({ access, slug, mediaCollection }: { access?: SeoPluginAccess['settings']; slug: string; mediaCollection: string }): GlobalConfig => ({
   slug,
-  label: 'SEO settings',
+  label: adminLabel('seoSettings'),
   access: { read: access?.read ?? (() => false), update: access?.update ?? (() => false) },
   admin: { custom: { seo: { marker: SEO_PLUGIN_MARKER } } },
   fields: [
@@ -13,45 +14,45 @@ export const createSeoSettingsGlobal = ({ access, slug, mediaCollection }: { acc
       type: 'tabs',
       tabs: [
         {
-          label: 'Site defaults',
+          label: adminTabLabel('siteDefaults'),
           fields: [
-            { name: 'siteName', type: 'text', localized: true },
-            { name: 'siteUrl', type: 'text', required: true, validate: validateAbsoluteHttpUrl },
-            { name: 'titleTemplate', type: 'text', localized: true },
-            { name: 'defaultDescription', type: 'textarea', localized: true },
+            { name: 'siteName', type: 'text', label: adminLabel('siteName'), localized: true },
+            { name: 'siteUrl', type: 'text', label: adminLabel('siteUrl'), required: true, validate: validateAbsoluteHttpUrl },
+            { name: 'titleTemplate', type: 'text', label: adminLabel('titleTemplate'), localized: true },
+            { name: 'defaultDescription', type: 'textarea', label: adminLabel('defaultDescription'), localized: true },
           ],
         },
         {
-          label: 'Social defaults',
+          label: adminTabLabel('socialDefaults'),
           fields: [
-            { name: 'defaultOpenGraphImage', type: 'upload', relationTo: mediaCollection, localized: true },
-            { name: 'defaultTwitterCard', type: 'select', localized: true, options: ['summary', 'summary_large_image'] },
+            { name: 'defaultOpenGraphImage', type: 'upload', label: adminLabel('defaultOpenGraphImage'), relationTo: mediaCollection, localized: true },
+            { name: 'defaultTwitterCard', type: 'select', label: adminLabel('defaultTwitterCard'), localized: true, options: [{ label: adminLabel('summary'), value: 'summary' }, { label: adminLabel('summaryLargeImage'), value: 'summary_large_image' }] },
           ],
         },
         {
-          label: 'Default robots',
-          fields: [{ name: 'defaultRobots', type: 'group', localized: true, fields: [
-            { name: 'index', type: 'select', options: ['index', 'noindex'], defaultValue: 'index' },
-            { name: 'follow', type: 'select', options: ['follow', 'nofollow'], defaultValue: 'follow' },
+          label: adminTabLabel('defaultRobots'),
+          fields: [{ name: 'defaultRobots', type: 'group', label: adminLabel('defaultRobots'), localized: true, fields: [
+            { name: 'index', type: 'select', label: adminLabel('robotsIndex'), options: [{ label: adminLabel('index'), value: 'index' }, { label: adminLabel('noindex'), value: 'noindex' }], defaultValue: 'index' },
+            { name: 'follow', type: 'select', label: adminLabel('robotsFollow'), options: [{ label: adminLabel('follow'), value: 'follow' }, { label: adminLabel('nofollow'), value: 'nofollow' }], defaultValue: 'follow' },
           ] }],
         },
         {
-          label: 'Organization schema',
-          fields: [{ name: 'organizationSchema', type: 'group', localized: true, fields: [
-            { name: 'name', type: 'text' }, { name: 'url', type: 'text', validate: validateAbsoluteHttpUrl }, { name: 'logo', type: 'upload', relationTo: mediaCollection },
+          label: adminTabLabel('organizationSchema'),
+          fields: [{ name: 'organizationSchema', type: 'group', label: adminLabel('organizationSchema'), localized: true, fields: [
+            { name: 'name', type: 'text', label: adminLabel('organizationName') }, { name: 'url', type: 'text', label: adminLabel('organizationUrl'), validate: validateAbsoluteHttpUrl }, { name: 'logo', type: 'upload', label: adminLabel('organizationLogo'), relationTo: mediaCollection },
           ] }],
         },
         {
-          label: 'robots.txt',
-          fields: [{ name: 'robots', type: 'group', localized: true, fields: [
-            { name: 'mode', type: 'select', required: true, defaultValue: 'generated', options: ['generated', 'override'] },
-            { name: 'groups', type: 'array', fields: [
-              { name: 'userAgent', type: 'text', required: true },
-              { name: 'allow', type: 'array', fields: [{ name: 'path', type: 'text' }] },
-              { name: 'disallow', type: 'array', fields: [{ name: 'path', type: 'text' }] },
+          label: adminTabLabel('robotsTxt'),
+          fields: [{ name: 'robots', type: 'group', label: adminLabel('robots'), localized: true, fields: [
+            { name: 'mode', type: 'select', label: adminLabel('robotsMode'), required: true, defaultValue: 'generated', options: [{ label: adminLabel('generated'), value: 'generated' }, { label: adminLabel('override'), value: 'override' }] },
+            { name: 'groups', type: 'array', label: adminLabel('groups'), fields: [
+              { name: 'userAgent', type: 'text', label: adminLabel('userAgent'), required: true },
+              { name: 'allow', type: 'array', label: adminLabel('allow'), fields: [{ name: 'path', type: 'text', label: adminLabel('path') }] },
+              { name: 'disallow', type: 'array', label: adminLabel('disallow'), fields: [{ name: 'path', type: 'text', label: adminLabel('path') }] },
             ] },
-            { name: 'appendText', type: 'textarea' },
-            { name: 'overrideText', type: 'textarea', admin: { condition: (_, siblingData) => siblingData?.mode === 'override' } },
+            { name: 'appendText', type: 'textarea', label: adminLabel('appendText') },
+            { name: 'overrideText', type: 'textarea', label: adminLabel('overrideText'), admin: { condition: (_, siblingData) => siblingData?.mode === 'override' } },
           ] }],
         },
       ],

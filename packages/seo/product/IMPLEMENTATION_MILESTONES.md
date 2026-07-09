@@ -53,7 +53,21 @@ without duplicating SEO rules.
 Exit criteria: the Payload Admin experience covers every editor requirement in
 the PRD.
 
-## 6. Hardening and release
+## 6. Admin translations
+
+- Add one typed catalog for plugin-owned Admin strings in English, Russian,
+  and Ukrainian.
+- Resolve generated field configuration and client-component copy from
+  Payload's active Admin interface language.
+- Preserve stable stored values, field paths, public API behavior, and
+  locale-safe content resolution.
+- Add translation completeness, fallback, component, and browser coverage.
+
+Exit criteria: every plugin-owned Admin string renders in English, Russian, or
+Ukrainian as selected by Payload Admin, supported regional codes resolve to
+their base language, and unsupported codes render a complete English fallback.
+
+## 7. Hardening and release
 
 - Complete the test matrix and browser smoke test.
 - Profile sitemap and redirect queries; add required indexes/selects.

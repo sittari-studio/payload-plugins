@@ -16,6 +16,7 @@ robots.txt, and sitemap routes and call the exported helpers from those routes.
 | [Architecture](ARCHITECTURE.md) | Plugin boundaries, module responsibilities, Payload integration rules, and data flow. |
 | [Public API](PUBLIC_API.md) | Exports, TypeScript contracts, input/output semantics, and route examples. |
 | [Payload integration](PAYLOAD_INTEGRATION.md) | Plugin configuration, generated collection fields, global settings, and redirects collection. |
+| [Admin translations](ADMIN_TRANSLATIONS.md) | English, Russian, and Ukrainian translation contract for plugin-owned Admin UI. |
 | [Resolution rules](RESOLUTION_RULES.md) | Locale, fallback, canonical, metadata, schema, robots.txt, sitemap, and redirect behavior. |
 | [Access and validation](ACCESS_AND_VALIDATION.md) | Authorization boundaries, validation rules, and malformed-data handling. |
 | [Testing strategy](TESTING.md) | Unit, integration, admin UI, regression, and acceptance test requirements. |
@@ -39,3 +40,6 @@ expected v1 implementation unless a documented exception is approved.
 - No helper may use cross-locale fallback.
 - An invalid, missing, or unresolved input causes dependent output to be omitted,
   never guessed or emitted in malformed form.
+- Plugin-owned Admin UI supports English (`en`), Russian (`ru`), and Ukrainian
+  (`uk`); its interface language is independent from the document content
+  locale.

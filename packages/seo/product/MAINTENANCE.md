@@ -14,6 +14,11 @@ Use semantic versioning:
 - Major: renamed persisted fields, changed fallback behavior, route/helper
   behavior changes, or removed exports.
 
+Adding a new Admin UI language is a backwards-compatible minor change. Changing
+existing translation keys or the meaning of a translated label requires review
+of the English, Russian, and Ukrainian catalogs. Translation changes must not
+change stored option values or SEO helper behavior.
+
 Any change to generated field names or settings/redirect slugs requires a
 documented manual data migration or a separately designed migration tool. The
 plugin must not rename stored fields implicitly.
@@ -61,3 +66,6 @@ second, tests third, and README last. Record the decision date and release
 version in the relevant contract document. Keep non-goals current so features
 such as wildcard redirects or SEO scoring are not accidentally added as
 incidental work.
+
+For Admin UI copy changes, update all three supported catalogs and the
+[Admin translations](ADMIN_TRANSLATIONS.md) contract in the same change.

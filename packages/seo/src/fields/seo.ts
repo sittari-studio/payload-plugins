@@ -7,12 +7,13 @@ import {
   SEO_SCHEMA_VALUE_OVERRIDES_ADMIN_COMPONENT,
   type SeoCollectionConfig,
 } from '../types.js'
+import { adminLabel, adminTabLabel, adminText } from '../admin/translations.js'
 import { validateAbsoluteHttpUrl, validateJson } from '../utils/validation.js'
 
 const localized = true
 const socialCards = [
-  { label: 'Summary', value: 'summary' },
-  { label: 'Summary large image', value: 'summary_large_image' },
+  { label: adminLabel('summary'), value: 'summary' },
+  { label: adminLabel('summaryLargeImage'), value: 'summary_large_image' },
 ]
 
 const visualFieldTypes = new Set(['text', 'textarea', 'number', 'checkbox', 'select', 'date', 'upload'])
@@ -28,21 +29,21 @@ const schemaTypeIs = (seoField: string, data: unknown, ...types: string[]): bool
 const createBuiltInVisualFields = (seoField: string): Field[] => {
   const when = (...types: string[]) => (data: unknown) => schemaTypeIs(seoField, data, ...types)
   return [
-    { name: 'name', type: 'text', label: 'Name', admin: { condition: when('WebPage', 'Product', 'Organization', 'LocalBusiness') } },
-    { name: 'about', type: 'textarea', label: 'About', admin: { condition: when('WebPage') } },
-    { name: 'headline', type: 'text', label: 'Headline', admin: { condition: when('Article') } },
-    { name: 'author', type: 'text', label: 'Author', admin: { condition: when('Article') } },
-    { name: 'datePublished', type: 'date', label: 'Published date', admin: { condition: when('Article') } },
-    { name: 'dateModified', type: 'date', label: 'Modified date', admin: { condition: when('Article') } },
-    { name: 'description', type: 'textarea', label: 'Product description', admin: { condition: when('Product') } },
-    { name: 'sku', type: 'text', label: 'SKU', admin: { condition: when('Product') } },
-    { name: 'brand', type: 'text', label: 'Brand', admin: { condition: when('Product') } },
-    { name: 'price', type: 'number', label: 'Price', admin: { condition: when('Product') } },
-    { name: 'priceCurrency', type: 'text', label: 'Price currency', admin: { condition: when('Product') } },
-    { name: 'telephone', type: 'text', label: 'Telephone', admin: { condition: when('LocalBusiness') } },
-    { name: 'address', type: 'textarea', label: 'Address', admin: { condition: when('LocalBusiness') } },
-    { name: 'question', type: 'text', label: 'Question', admin: { condition: when('FAQPage') } },
-    { name: 'answer', type: 'textarea', label: 'Answer', admin: { condition: when('FAQPage') } },
+    { name: 'name', type: 'text', label: adminLabel('name'), admin: { condition: when('WebPage', 'Product', 'Organization', 'LocalBusiness') } },
+    { name: 'about', type: 'textarea', label: adminLabel('about'), admin: { condition: when('WebPage') } },
+    { name: 'headline', type: 'text', label: adminLabel('headline'), admin: { condition: when('Article') } },
+    { name: 'author', type: 'text', label: adminLabel('author'), admin: { condition: when('Article') } },
+    { name: 'datePublished', type: 'date', label: adminLabel('datePublished'), admin: { condition: when('Article') } },
+    { name: 'dateModified', type: 'date', label: adminLabel('dateModified'), admin: { condition: when('Article') } },
+    { name: 'description', type: 'textarea', label: adminLabel('productDescription'), admin: { condition: when('Product') } },
+    { name: 'sku', type: 'text', label: adminLabel('sku'), admin: { condition: when('Product') } },
+    { name: 'brand', type: 'text', label: adminLabel('brand'), admin: { condition: when('Product') } },
+    { name: 'price', type: 'number', label: adminLabel('price'), admin: { condition: when('Product') } },
+    { name: 'priceCurrency', type: 'text', label: adminLabel('priceCurrency'), admin: { condition: when('Product') } },
+    { name: 'telephone', type: 'text', label: adminLabel('telephone'), admin: { condition: when('LocalBusiness') } },
+    { name: 'address', type: 'textarea', label: adminLabel('address'), admin: { condition: when('LocalBusiness') } },
+    { name: 'question', type: 'text', label: adminLabel('question'), admin: { condition: when('FAQPage') } },
+    { name: 'answer', type: 'textarea', label: adminLabel('answer'), admin: { condition: when('FAQPage') } },
   ]
 }
 
@@ -61,6 +62,7 @@ const schemaOptions = [
 const uploadField = (name: string, relationTo: string): Field => ({
   name,
   type: 'upload',
+  label: adminLabel('image'),
   relationTo,
   localized,
 })
@@ -90,7 +92,7 @@ export const createSeoField = ({
   return {
     name,
     type: 'group',
-    label: 'SEO',
+    label: adminLabel('seo'),
     ...(collection.access ? { access: collection.access } : {}),
     admin: { custom: { seo: { marker: SEO_PLUGIN_MARKER } } },
     fields: [
@@ -98,72 +100,72 @@ export const createSeoField = ({
         type: 'tabs',
         tabs: [
           {
-            label: 'General',
+            label: adminTabLabel('general'),
             fields: [
-              { name: 'title', type: 'text', localized },
-              { name: 'description', type: 'textarea', localized },
-              { name: 'focusKeyword', type: 'text', localized },
+              { name: 'title', type: 'text', label: adminLabel('title'), localized },
+              { name: 'description', type: 'textarea', label: adminLabel('description'), localized },
+              { name: 'focusKeyword', type: 'text', label: adminLabel('focusKeyword'), localized },
             ],
           },
           {
-            label: 'Canonical',
+            label: adminTabLabel('canonical'),
             fields: [{
-              name: 'canonical', type: 'group', fields: [
-                { name: 'mode', type: 'select', localized, defaultValue: 'auto', required: true, options: ['auto', 'manual', 'none'] },
+              name: 'canonical', type: 'group', label: adminLabel('canonical'), fields: [
+                { name: 'mode', type: 'select', label: adminLabel('canonicalMode'), localized, defaultValue: 'auto', required: true, options: [{ label: adminLabel('auto'), value: 'auto' }, { label: adminLabel('manual'), value: 'manual' }, { label: adminLabel('none'), value: 'none' }] },
                 {
-                  name: 'url', type: 'text', localized, validate: (value, { siblingData } = {} as never) =>
+                  name: 'url', type: 'text', label: adminLabel('canonicalUrl'), localized, validate: (value, { siblingData, req } = {} as never) =>
                     (siblingData as { mode?: string } | undefined)?.mode === 'manual' && !value
-                      ? 'A manual canonical URL is required.'
-                      : validateAbsoluteHttpUrl(value),
+                      ? adminText('validationManualCanonical', req?.i18n?.language)
+                      : validateAbsoluteHttpUrl(value, { req }),
                   admin: { condition: (_, siblingData) => siblingData?.mode === 'manual' },
                 } as TextField,
               ],
             }],
           },
           {
-            label: 'Robots',
+            label: adminTabLabel('robots'),
             fields: [{
-              name: 'robots', type: 'group', fields: [
-                { name: 'index', type: 'select', localized, defaultValue: 'index', required: true, options: ['index', 'noindex'] },
-                { name: 'follow', type: 'select', localized, defaultValue: 'follow', required: true, options: ['follow', 'nofollow'] },
+              name: 'robots', type: 'group', label: adminLabel('robots'), fields: [
+                { name: 'index', type: 'select', label: adminLabel('robotsIndex'), localized, defaultValue: 'index', required: true, options: [{ label: adminLabel('index'), value: 'index' }, { label: adminLabel('noindex'), value: 'noindex' }] },
+                { name: 'follow', type: 'select', label: adminLabel('robotsFollow'), localized, defaultValue: 'follow', required: true, options: [{ label: adminLabel('follow'), value: 'follow' }, { label: adminLabel('nofollow'), value: 'nofollow' }] },
               ],
             }],
           },
           {
-            label: 'Open Graph',
+            label: adminTabLabel('openGraph'),
             fields: [{
-              name: 'openGraph', type: 'group', fields: [
-                { name: 'title', type: 'text', localized },
-                { name: 'description', type: 'textarea', localized },
+              name: 'openGraph', type: 'group', label: adminLabel('openGraph'), fields: [
+                { name: 'title', type: 'text', label: adminLabel('title'), localized },
+                { name: 'description', type: 'textarea', label: adminLabel('description'), localized },
                 uploadField('image', imageCollection),
               ],
             }],
           },
           {
-            label: 'X / Twitter',
+            label: adminTabLabel('twitter'),
             fields: [{
-              name: 'twitter', type: 'group', fields: [
-                { name: 'title', type: 'text', localized },
-                { name: 'description', type: 'textarea', localized },
+              name: 'twitter', type: 'group', label: adminLabel('twitter'), fields: [
+                { name: 'title', type: 'text', label: adminLabel('title'), localized },
+                { name: 'description', type: 'textarea', label: adminLabel('description'), localized },
                 uploadField('image', imageCollection),
-                { name: 'card', type: 'select', localized, options: socialCards },
+                { name: 'card', type: 'select', label: adminLabel('card'), localized, options: socialCards },
               ],
             }],
           },
           {
-            label: 'Schema',
+            label: adminTabLabel('schema'),
             fields: [{
-              name: 'schema', type: 'group', fields: [
-                { name: 'type', type: 'select', localized, defaultValue: collection.schemaType, required: true, options: schemaOptions },
+              name: 'schema', type: 'group', label: adminLabel('schema'), fields: [
+                { name: 'type', type: 'select', label: adminLabel('schemaType'), localized, defaultValue: collection.schemaType, required: true, options: schemaOptions },
                 {
-                  name: 'values', type: 'group', label: 'Schema overrides', localized, fields: visualFields,
+                  name: 'values', type: 'group', label: adminLabel('schemaOverrides'), localized, fields: visualFields,
                   admin: {
                     components: { Field: SEO_SCHEMA_VALUE_OVERRIDES_ADMIN_COMPONENT },
                     custom: { seo: { schemaMappings: collection.schema ?? {} } },
                   },
                 },
                 {
-                  name: 'rawJson', type: 'textarea', localized, validate: validateJson,
+                  name: 'rawJson', type: 'textarea', label: adminLabel('rawJson'), localized, validate: validateJson,
                   admin: {
                     components: { Field: SEO_RAW_JSON_ADMIN_COMPONENT },
                     custom: {
@@ -180,7 +182,7 @@ export const createSeoField = ({
             }],
           },
           {
-            label: 'Previews',
+            label: adminTabLabel('previews'),
             fields: [{
               name: 'previews',
               type: 'ui',

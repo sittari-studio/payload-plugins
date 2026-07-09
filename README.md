@@ -7,7 +7,7 @@ Monorepo for PayloadCMS plugins published under the `@krameri` npm scope.
 | Package | Description |
 | --- | --- |
 | `@krameri/payload-shared` | Shared helpers for Krameri Payload plugins. |
-| `@krameri/payload-seo` | Locale-safe SEO fields and framework-neutral metadata, robots, redirect, and sitemap helpers. |
+| `@krameri/payload-seo` | Locale-safe SEO fields, English/Russian/Ukrainian Admin UI, and framework-neutral metadata, robots, redirect, and sitemap helpers. |
 
 The `dev` workspace is a private local Payload app for testing packages during development.
 

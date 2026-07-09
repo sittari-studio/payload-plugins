@@ -15,6 +15,8 @@ import {
 } from '../src/index.js'
 import { SEO_RUNTIME_CONFIG_KEY } from '../src/helpers/config.js'
 import { resolveNextMetadata } from '../src/next.js'
+import { adminLabel, adminTabLabel, adminText, adminTranslations, resolveAdminLanguage } from '../src/admin/translations.js'
+import { validateAbsoluteHttpUrl, validateJson } from '../src/utils/validation.js'
 import { SEO_PLUGIN_MARKER, type SeoEnabledPluginConfig, type SeoPluginConfig } from '../src/types.js'
 
 const validConfig = (): SeoEnabledPluginConfig => ({
@@ -36,6 +38,17 @@ const payloadConfig = (): Config => ({
   ],
 }) as unknown as Config
 
+const labelText = (label: unknown, language = 'en'): string => {
+  if (typeof label === 'function') {
+    return label({ i18n: { language }, t: vi.fn() })
+  }
+  if (label && typeof label === 'object') {
+    const labels = label as Record<string, string>
+    return labels[language] ?? labels[resolveAdminLanguage(language)] ?? labels.en
+  }
+  return label as string
+}
+
 describe('seoPlugin', () => {
   it('returns the exact incoming config and skips validation when disabled', () => {
     const inputConfig = payloadConfig()
@@ -50,12 +63,13 @@ describe('seoPlugin', () => {
     expect(outputConfig).not.toBe(inputConfig)
     expect(outputConfig.collections).toHaveLength(3)
     const tabs = outputConfig.collections?.[0]?.fields[0] as any
-    expect(tabs).toMatchObject({ type: 'tabs', tabs: [{ label: 'Content' }, { label: 'SEO' }] })
+    expect(tabs.type).toBe('tabs')
+    expect(tabs.tabs.map((tab: any) => labelText(tab.label))).toEqual(['Content', 'SEO'])
     const seoField = tabs.tabs[1].fields.find((field: any) => field.name === 'seo')
     expect(seoField).toMatchObject({ type: 'group' })
     const seoTabs = seoField.fields.find((field: any) => field.type === 'tabs')
-    expect(seoTabs.tabs.map((tab: any) => tab.label)).toEqual(['General', 'Canonical', 'Robots', 'Open Graph', 'X / Twitter', 'Schema', 'Previews'])
-    const schema = seoTabs.tabs.find((tab: any) => tab.label === 'Schema').fields[0]
+    expect(seoTabs.tabs.map((tab: any) => labelText(tab.label))).toEqual(['General', 'Canonical', 'Robots', 'Open Graph', 'X / Twitter', 'Schema', 'Previews'])
+    const schema = seoTabs.tabs.find((tab: any) => labelText(tab.label) === 'Schema').fields[0]
     expect(schema.fields.find((field: any) => field.name === 'rawJson')).toMatchObject({
       admin: {
         components: { Field: '@krameri/payload-seo/client#ResetRawJson' },
@@ -70,7 +84,7 @@ describe('seoPlugin', () => {
     })
     expect(schema.fields.find((field: any) => field.name === 'values').fields.map((field: any) => field.name)).toContain('headline')
     const settings = outputConfig.globals?.find((global) => global.slug === 'seo-settings') as any
-    expect(settings.fields[0].tabs.map((tab: any) => tab.label)).toEqual(['Site defaults', 'Social defaults', 'Default robots', 'Organization schema', 'robots.txt'])
+    expect(settings.fields[0].tabs.map((tab: any) => labelText(tab.label))).toEqual(['Site defaults', 'Social defaults', 'Default robots', 'Organization schema', 'robots.txt'])
     expect(outputConfig.collections?.[2]).toMatchObject({ slug: 'seo-redirects', timestamps: true })
   })
 
@@ -133,6 +147,56 @@ describe('seoPlugin', () => {
     expect(() => seoPlugin(validConfig())(collectionCollision)).toThrow(
       'collection named "seo-redirects" already exists',
     )
+  })
+})
+
+describe('Admin translations', () => {
+  it('keeps all English, Russian, and Ukrainian catalogs complete', () => {
+    const keys = Object.keys(adminTranslations.en).sort()
+    for (const language of Object.values(adminTranslations)) {
+      expect(Object.keys(language).sort()).toEqual(keys)
+      expect(Object.values(language).every((value) => value.trim().length > 0)).toBe(true)
+    }
+  })
+
+  it('normalizes supported regional codes and falls back to complete English copy', () => {
+    expect(resolveAdminLanguage('en-GB')).toBe('en')
+    expect(resolveAdminLanguage('ru-RU')).toBe('ru')
+    expect(resolveAdminLanguage('uk-UA')).toBe('uk')
+    expect(resolveAdminLanguage('de-DE')).toBe('en')
+    expect(adminText('previewTitle', 'ru-RU')).toBe('Заголовок страницы')
+    expect(adminText('previewTitle', 'uk-UA')).toBe('Заголовок сторінки')
+    expect(adminText('previewTitle', 'de-DE')).toBe('Page title')
+  })
+
+  it('uses the active Admin language for generated labels without changing stored values', async () => {
+    const output = await seoPlugin(validConfig())(payloadConfig())
+    const tabs = output.collections?.[0]?.fields[0] as any
+    const seoField = tabs.tabs[1].fields.find((field: any) => field.name === 'seo')
+    const seoTabs = seoField.fields.find((field: any) => field.type === 'tabs')
+    const canonicalTab = seoTabs.tabs.find((tab: any) => labelText(tab.label) === 'Canonical')
+    const canonicalMode = canonicalTab.fields[0].fields.find((field: any) => field.name === 'mode')
+
+    expect(labelText(tabs.tabs[0].label, 'ru-RU')).toBe('Содержимое')
+    expect(labelText(tabs.tabs[0].label, 'uk-UA')).toBe('Вміст')
+    expect(labelText(tabs.tabs[0].label, 'de-DE')).toBe('Content')
+    expect(adminTabLabel('general')).toMatchObject({ ru: 'Основное', uk: 'Загальне', 'uk-UA': 'Загальне' })
+    expect((adminLabel('contentTab') as any)({})).toBe('Content')
+    expect(canonicalMode.options.map((option: any) => ({ label: labelText(option.label, 'uk'), value: option.value }))).toEqual([
+      { label: 'Автоматично', value: 'auto' },
+      { label: 'Вручну', value: 'manual' },
+      { label: 'Немає', value: 'none' },
+    ])
+    expect(labelText(adminLabel('clearRawJson'), 'ru')).toBe('Очистить переопределение Raw JSON')
+  })
+
+  it('localizes plugin-owned validation messages from the active Admin language', () => {
+    const ukRequest = { req: { i18n: { language: 'uk-UA' } } }
+    const ruRequest = { req: { i18n: { language: 'ru-RU' } } }
+
+    expect(validateAbsoluteHttpUrl('not a URL', ukRequest)).toBe('Введіть абсолютний URL HTTP або HTTPS.')
+    expect(validateJson('{bad', ruRequest)).toBe('Введите корректный JSON.')
+    expect(validateJson('{bad', { req: { i18n: { language: 'de-DE' } } })).toBe('Enter valid JSON.')
   })
 })
 
