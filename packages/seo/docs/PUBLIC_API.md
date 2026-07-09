@@ -1,0 +1,167 @@
+# Public API
+
+Import server functionality from the package root. Client components are an
+internal Payload Admin integration and are available only from the `client`
+subpath.
+
+```ts
+import {
+  findSeoRedirect,
+  renderRobotsTxt,
+  renderSchemaJsonLd,
+  renderSitemapIndexXml,
+  renderSitemapXml,
+  resolveSeoMetadata,
+  seoPlugin,
+} from '@krameri/payload-seo'
+```
+
+Types are exported from both the package root and `@krameri/payload-seo/types`.
+
+## `seoPlugin(options)`
+
+The plugin needs these active-mode options:
+
+| Option | Required | Description |
+| --- | --- | --- |
+| `collections` | Yes | Non-empty mapping of existing Payload collection slugs to `SeoCollectionConfig`. |
+| `media.collection` | Yes | Existing Payload upload collection used for default SEO images. |
+| `media.resolveMediaUrl` | Yes | Resolves a populated media document to an absolute public URL or `null`. |
+| `resolveUrl` | Yes | Resolves one document and locale to a site-relative path or `null`. |
+| `resolveChunkUrl` | Yes | Resolves a sitemap collection, locale, and page to an absolute URL. |
+| `access` | No | Payload access overrides for the Settings Global and redirects collection. |
+| `names` | No | Replaces the default SEO field, settings Global, and redirects collection slugs. |
+| `robots.resolveSitemapUrls` | No | Returns absolute sitemap URLs appended to generated robots.txt. |
+
+Each `SeoCollectionConfig` requires a `schemaType`: `WebPage`, `Article`,
+`Product`, `Organization`, `LocalBusiness`, or `FAQPage`.
+
+Optional collection options are:
+
+- `fields`: maps `title` and `description` to dot paths on the document for
+  metadata fallbacks. The type also accepts `image`, but the current resolver
+  does not use that mapping to populate social images; configure Open Graph or
+  Settings images instead.
+- `schema`: maps schema properties to dot paths on the document.
+- `lastModified`: returns the last-modified date used by sitemap output.
+- `media.collection`: overrides the plugin-level upload collection for that
+  collection's Open Graph and X/Twitter fields.
+- `sitemap.enabled`: excludes the collection when set to `false`.
+- `sitemap.fields`: fields selected for each sitemap document read.
+- `visualFields`: additional named text, textarea, number, checkbox, select,
+  date, or upload fields for the schema editor.
+- `access`: additive `read` and `update` field access for the generated SEO
+  group.
+
+## Metadata and schema
+
+### `resolveSeoMetadata(input)`
+
+Resolves one selected document into framework-neutral metadata. Pass either a
+document you already loaded or its ID:
+
+```ts
+const metadata = await resolveSeoMetadata({
+  payload,
+  collection: 'pages',
+  id: pageId,
+  locale: 'uk',
+})
+```
+
+The result has only resolved values:
+
+```ts
+type ResolvedSeoMetadata = {
+  title?: string
+  description?: string
+  canonicalUrl?: string
+  alternates?: Record<string, string>
+  robots?: { index?: 'index' | 'noindex'; follow?: 'follow' | 'nofollow' }
+  openGraph?: { title?: string; description?: string; image?: string }
+  twitter?: {
+    title?: string
+    description?: string
+    image?: string
+    card?: 'summary' | 'summary_large_image'
+  }
+  schema?: Record<string, unknown>
+}
+```
+
+ID input loads the published document and settings in exactly the requested
+locale. It does not enable a draft preview or Payload fallback locale. Missing,
+invalid, or unresolvable values are omitted; the helper returns `{}` when it
+cannot resolve the document or settings.
+
+`titleTemplate` from Settings is applied when it contains exactly one `%s`.
+Document title and description overrides take precedence over configured
+document-field mappings and site defaults. A valid document `rawJson` schema
+override replaces generated schema entirely.
+
+### `renderSchemaJsonLd(input)`
+
+Returns the resolved schema object or `null`:
+
+```ts
+const schema = await renderSchemaJsonLd({
+  payload,
+  collection: 'posts',
+  id: postId,
+  locale: 'en',
+})
+```
+
+The helper never emits a `<script>` element. Serialize and render JSON-LD in
+the frontend using your framework's safe JSON script mechanism.
+
+## Redirects, robots, and sitemaps
+
+### `findSeoRedirect({ payload, sourcePath })`
+
+Returns an enabled exact-path redirect or `null`:
+
+```ts
+const redirect = await findSeoRedirect({ payload, sourcePath: '/old-page' })
+// { destination: '/new-page', statusCode: 301 } | null
+```
+
+`sourcePath` is normalized as an internal path. Query strings, hashes, origins,
+and invalid values return `null`. The helper only finds redirects; the
+application performs the HTTP redirect.
+
+### `renderRobotsTxt({ payload, locale })`
+
+Returns robots.txt text from the localized SEO Settings Global. Generated
+settings include editor-managed user-agent rules, optional application-provided
+sitemap URLs, and optional appended text. Override mode returns only the saved
+override text. The application sets the response content type and cache policy.
+
+### `renderSitemapXml({ payload, collection, locale, page })`
+
+Returns XML for one sitemap chunk. Entries come only from published documents
+in the requested locale. The page size is 25,000. Invalid pages, disabled
+collections, invalid site URLs, or resolution failures produce a valid empty
+sitemap document rather than throwing.
+
+### `renderSitemapIndexXml({ payload })`
+
+Returns XML containing sitemap chunk URLs for every enabled collection and
+configured locale. It calls `resolveChunkUrl` for each non-empty chunk. With
+localization disabled, the resolver receives `locale: ''`.
+
+Neither sitemap helper registers a route or sets an XML response header.
+
+## Next.js adapter
+
+`@krameri/payload-seo/next` exports `resolveNextMetadata(input)`. It projects
+resolved values into a structurally compatible Next.js `Metadata` object,
+including canonical and language alternates, robots booleans, and social image
+arrays. See the [Next.js guide](NEXTJS.md) for usage.
+
+## Other exports
+
+The root entry point exports `loadDocumentWithoutFallback`,
+`loadSettingsWithoutFallback`, `getByPath`, and `resolveSeoMetadataCore` for
+advanced integrations. These are lower-level building blocks; prefer the
+public helpers above for normal frontend delivery.

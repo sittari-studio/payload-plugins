@@ -72,6 +72,11 @@ const createSeoTabs = (fields: Field[], seoField: Field): TabsField => ({
   ],
 })
 
+const appendSeoTab = (tabs: TabsField, seoField: Field): TabsField => ({
+  ...tabs,
+  tabs: [...tabs.tabs, { label: adminTabLabel('seoTab'), fields: [seoField] }],
+})
+
 const requireNonEmptyString = (value: unknown, label: string): void => {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new Error(`@krameri/payload-seo: ${label} must be a non-empty string.`)
@@ -227,6 +232,19 @@ export const seoPlugin =
         const seoConfig = enabledConfig.collections[collection.slug]
         if (!seoConfig || containsGeneratedTabs(collection.fields)) return collection
         const existingSeoField = findNamedField(collection.fields, names.seoField)
+        const topLevelTabs = collection.fields.find((field): field is TabsField => field.type === 'tabs')
+
+        // A collection that already owns its top-level tabs keeps that structure.
+        // The generated field marker makes this branch safe to run repeatedly.
+        if (topLevelTabs) {
+          if (existingSeoField && hasGeneratedMarker(existingSeoField)) return collection
+          const seoField = createSeoField({ collection: seoConfig, mediaCollection: enabledConfig.media.collection, name: names.seoField })
+          return {
+            ...collection,
+            fields: collection.fields.map((field) => field === topLevelTabs ? appendSeoTab(field, seoField) : field),
+          }
+        }
+
         const contentFields = existingSeoField && hasGeneratedMarker(existingSeoField)
           ? collection.fields.filter((field) => field !== existingSeoField)
           : collection.fields

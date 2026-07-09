@@ -88,6 +88,26 @@ describe('seoPlugin', () => {
     expect(outputConfig.collections?.[2]).toMatchObject({ slug: 'seo-redirects', timestamps: true })
   })
 
+  it('appends the SEO tab to an existing top-level tabs field without nesting it', async () => {
+    const config = payloadConfig()
+    config.collections![0]!.fields = [{
+      type: 'tabs',
+      tabs: [{ label: 'Details', fields: [{ name: 'title', type: 'text' }] }],
+    }]
+
+    const output = await seoPlugin(validConfig())(config)
+    const tabs = output.collections?.[0]?.fields[0] as any
+
+    expect(output.collections?.[0]?.fields).toHaveLength(1)
+    expect(tabs.tabs.map((tab: any) => labelText(tab.label))).toEqual(['Details', 'SEO'])
+    expect(tabs.tabs[0].fields).toEqual([{ name: 'title', type: 'text' }])
+    expect(tabs.tabs[1].fields[0]).toMatchObject({ name: 'seo', type: 'group' })
+
+    const reapplied = await seoPlugin(validConfig())(output)
+    const reappliedTabs = reapplied.collections?.[0]?.fields[0] as any
+    expect(reappliedTabs.tabs.map((tab: any) => labelText(tab.label))).toEqual(['Details', 'SEO'])
+  })
+
   it('rejects missing required configuration', () => {
     expect(() => seoPlugin()(payloadConfig())).toThrow('collections must be a non-empty mapping')
     expect(() => seoPlugin({ collections: {} } as SeoPluginConfig)(payloadConfig())).toThrow(
