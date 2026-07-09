@@ -1,7 +1,20 @@
 import type { Config } from 'payload'
 import { describe, expect, it, vi } from 'vitest'
 
-import { loadDocumentWithoutFallback, loadSettingsWithoutFallback, resolveSeoMetadataCore, seoPlugin } from '../src/index.js'
+import {
+  findSeoRedirect,
+  loadDocumentWithoutFallback,
+  loadSettingsWithoutFallback,
+  renderRobotsTxt,
+  renderSchemaJsonLd,
+  renderSitemapIndexXml,
+  renderSitemapXml,
+  resolveSeoMetadata,
+  resolveSeoMetadataCore,
+  seoPlugin,
+} from '../src/index.js'
+import { SEO_RUNTIME_CONFIG_KEY } from '../src/helpers/config.js'
+import { resolveNextMetadata } from '../src/next.js'
 import { SEO_PLUGIN_MARKER, type SeoEnabledPluginConfig, type SeoPluginConfig } from '../src/types.js'
 
 const validConfig = (): SeoEnabledPluginConfig => ({
@@ -162,5 +175,42 @@ describe('locale-safe resolver core', () => {
       collection: 'pages', config, locale: 'en', settings: {}, document: { seo: { schema: { rawJson: '{bad' } } },
     })
     expect(malformed.schema).toBeUndefined()
+  })
+})
+
+describe('frontend helpers', () => {
+  const runtimePayload = () => {
+    const config = validConfig()
+    config.collections.pages.fields = { title: 'title' }
+    return {
+      config: {
+        custom: { [SEO_RUNTIME_CONFIG_KEY]: config },
+        localization: { locales: ['en', 'es'] },
+      },
+      findByID: vi.fn(async ({ locale }) => ({ id: 'page-1', title: locale === 'es' ? 'Página' : 'Page' })),
+      findGlobal: vi.fn(async () => ({ siteUrl: 'https://example.com', robots: { mode: 'generated', groups: [{ userAgent: '*', disallow: [{ path: '/private&area' }] }] } })),
+      find: vi.fn(async ({ collection }) => collection === 'seo-redirects'
+        ? { docs: [{ destinationType: 'internal', destination: '/new', statusCode: '301' }] }
+        : { docs: [{ id: 'page-1', updatedAt: '2026-01-02T03:04:05.000Z' }], totalDocs: 1 }),
+    }
+  }
+
+  it('projects normalized metadata, schema, and locale alternates without a Next runtime import', async () => {
+    const payload = runtimePayload()
+    const result = await resolveSeoMetadata({ payload, collection: 'pages', id: 'page-1', locale: 'en' })
+    expect(result).toMatchObject({ title: 'Page', alternates: { en: 'https://example.com/page', es: 'https://example.com/page' } })
+    expect(await renderSchemaJsonLd({ payload, collection: 'pages', id: 'page-1', locale: 'en' })).toMatchObject({ '@type': 'WebPage' })
+    expect(await resolveNextMetadata({ payload, collection: 'pages', id: 'page-1', locale: 'en' })).toMatchObject({ alternates: { languages: { en: 'https://example.com/page' } } })
+  })
+
+  it('renders redirects, robots, and escaped sitemap XML from plugin configuration', async () => {
+    const payload = runtimePayload()
+    expect(await findSeoRedirect({ payload, sourcePath: ' /old ' })).toEqual({ destination: '/new', statusCode: 301 })
+    expect(await renderRobotsTxt({ payload, locale: 'en' })).toBe('User-agent: *\nDisallow: /private&area')
+    const sitemap = await renderSitemapXml({ payload, collection: 'pages', locale: 'en', page: 1 })
+    expect(sitemap).toContain('<loc>https://example.com/page</loc>')
+    expect(sitemap).toContain('<lastmod>2026-01-02T03:04:05.000Z</lastmod>')
+    const index = await renderSitemapIndexXml({ payload })
+    expect(index).toContain('<loc>https://example.com/sitemap.xml</loc>')
   })
 })

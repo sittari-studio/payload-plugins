@@ -20,3 +20,4 @@ export type {
   SeoSocialMetadata,
   ResolvedSeoMetadata,
 } from '../types.js'
+export type { SeoRedirect } from '../helpers/redirects.js'

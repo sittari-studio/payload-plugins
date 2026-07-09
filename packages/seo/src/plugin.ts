@@ -10,6 +10,7 @@ import {
 import { createRedirectsCollection } from './collections/redirects.js'
 import { createSeoField, isSupportedVisualField } from './fields/seo.js'
 import { createSeoSettingsGlobal } from './globals/seo-settings.js'
+import { SEO_RUNTIME_CONFIG_KEY } from './helpers/config.js'
 
 type CollectionConfig = NonNullable<Config['collections']>[number]
 type GlobalConfig = NonNullable<Config['globals']>[number]
@@ -167,6 +168,7 @@ export const seoPlugin =
     const names = resolveSeoNames(enabledConfig.names)
     return {
       ...incomingConfig,
+      custom: { ...incomingConfig.custom, [SEO_RUNTIME_CONFIG_KEY]: enabledConfig },
       collections: (incomingConfig.collections ?? []).map((collection) => {
         const seoConfig = enabledConfig.collections[collection.slug]
         if (!seoConfig || collection.fields.some((field) => hasNamedField(field, names.seoField))) return collection

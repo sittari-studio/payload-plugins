@@ -128,6 +128,11 @@ export type SeoAdminCustom = {
 export type SeoPayload = {
   findByID: (options: Record<string, unknown>) => Promise<SeoDocument>
   findGlobal: (options: Record<string, unknown>) => Promise<SeoDocument>
+  find?: (options: Record<string, unknown>) => Promise<{ docs: SeoDocument[]; totalDocs?: number }>
+  config?: {
+    custom?: Record<string, unknown>
+    localization?: { locales?: Array<string | { code?: string }> }
+  }
 }
 
 export type SeoRobotsDirectives = {
@@ -143,6 +148,7 @@ export type SeoSocialMetadata = {
 
 /** Framework-neutral, omission-first output of the locale-safe resolver. */
 export type ResolvedSeoMetadata = {
+  alternates?: Record<string, string>
   canonicalUrl?: string
   description?: string
   openGraph?: SeoSocialMetadata
