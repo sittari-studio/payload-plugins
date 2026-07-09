@@ -7,6 +7,9 @@ import {
   type SeoEnabledPluginConfig,
   type SeoPluginConfig,
 } from './types.js'
+import { createRedirectsCollection } from './collections/redirects.js'
+import { createSeoField, isSupportedVisualField } from './fields/seo.js'
+import { createSeoSettingsGlobal } from './globals/seo-settings.js'
 
 type CollectionConfig = NonNullable<Config['collections']>[number]
 type GlobalConfig = NonNullable<Config['globals']>[number]
@@ -43,6 +46,8 @@ const validateMappings = (value: unknown, label: string): void => {
   }
 }
 
+const validSchemaTypes = new Set(['Article', 'FAQPage', 'LocalBusiness', 'Organization', 'Product', 'WebPage'])
+
 export const resolveSeoNames = (names?: SeoPluginConfig['names']) => ({
   ...DEFAULT_SEO_NAMES,
   ...names,
@@ -68,6 +73,7 @@ export const validateSeoPluginConfig = (config: SeoEnabledPluginConfig): void =>
       throw new Error(`@krameri/payload-seo: collections.${slug} must be an object.`)
     }
     requireNonEmptyString(collection.schemaType, `collections.${slug}.schemaType`)
+    if (!validSchemaTypes.has(collection.schemaType)) throw new Error(`@krameri/payload-seo: collections.${slug}.schemaType is not supported.`)
     validateMappings(collection.fields, `collections.${slug}.fields`)
     validateMappings(collection.schema, `collections.${slug}.schema`)
     if (collection.lastModified !== undefined) {
@@ -81,6 +87,9 @@ export const validateSeoPluginConfig = (config: SeoEnabledPluginConfig): void =>
     }
     if (collection.sitemap !== undefined && (!isRecord(collection.sitemap) || typeof collection.sitemap.enabled !== 'boolean')) {
       throw new Error(`@krameri/payload-seo: collections.${slug}.sitemap.enabled must be a boolean.`)
+    }
+    if (collection.visualFields?.some((field) => !isSupportedVisualField(field))) {
+      throw new Error(`@krameri/payload-seo: collections.${slug}.visualFields may only contain named text, textarea, number, checkbox, select, date, or upload fields.`)
     }
   }
 
@@ -133,6 +142,12 @@ const assertNoGeneratedNameCollisions = (incomingConfig: Config, config: SeoEnab
   }
 }
 
+const assertMediaCollectionsExist = (incomingConfig: Config, config: SeoEnabledPluginConfig): void => {
+  const slugs = new Set((incomingConfig.collections ?? []).map((collection) => collection.slug))
+  const required = [config.media.collection, ...Object.values(config.collections).flatMap((collection) => collection.media?.collection ? [collection.media.collection] : [])]
+  for (const slug of required) if (!slugs.has(slug)) throw new Error(`@krameri/payload-seo: media collection "${slug}" does not exist in Payload config.`)
+}
+
 export const seoPlugin =
   (pluginConfig: SeoPluginConfig = {} as SeoPluginConfig): Plugin =>
   (incomingConfig: Config): Config => {
@@ -147,10 +162,18 @@ export const seoPlugin =
     const enabledConfig = pluginConfig as SeoEnabledPluginConfig
     validateSeoPluginConfig(enabledConfig)
     assertNoGeneratedNameCollisions(incomingConfig, enabledConfig)
+    assertMediaCollectionsExist(incomingConfig, enabledConfig)
 
-    // Milestone 1 intentionally performs no Payload mutations. Milestone 2 adds
-    // the marked field, Global, and collection after this safety gate.
-    return incomingConfig
+    const names = resolveSeoNames(enabledConfig.names)
+    return {
+      ...incomingConfig,
+      collections: (incomingConfig.collections ?? []).map((collection) => {
+        const seoConfig = enabledConfig.collections[collection.slug]
+        if (!seoConfig || collection.fields.some((field) => hasNamedField(field, names.seoField))) return collection
+        return { ...collection, fields: [...collection.fields, createSeoField({ collection: seoConfig, mediaCollection: enabledConfig.media.collection, name: names.seoField })] }
+      }).concat((incomingConfig.collections ?? []).some((collection) => collection.slug === names.redirectsCollection) ? [] : [createRedirectsCollection({ access: enabledConfig.access?.redirects, slug: names.redirectsCollection })]),
+      globals: [...(incomingConfig.globals ?? []), ...((incomingConfig.globals ?? []).some((global) => global.slug === names.settingsGlobal) ? [] : [createSeoSettingsGlobal({ access: enabledConfig.access?.settings, slug: names.settingsGlobal, mediaCollection: enabledConfig.media.collection })])],
+    }
   }
 
 export default seoPlugin

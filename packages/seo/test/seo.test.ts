@@ -30,11 +30,15 @@ describe('seoPlugin', () => {
     expect(seoPlugin({ enabled: false })(inputConfig)).toBe(inputConfig)
   })
 
-  it('validates the contract and safely selects configured collections without mutating config', () => {
+  it('validates the contract and adds the marked SEO fields, Global, and redirects collection', async () => {
     const inputConfig = payloadConfig()
-    const outputConfig = seoPlugin(validConfig())(inputConfig)
+    const outputConfig = await seoPlugin(validConfig())(inputConfig)
 
-    expect(outputConfig).toBe(inputConfig)
+    expect(outputConfig).not.toBe(inputConfig)
+    expect(outputConfig.collections).toHaveLength(3)
+    expect(outputConfig.collections?.[0]?.fields).toContainEqual(expect.objectContaining({ name: 'seo', type: 'group' }))
+    expect(outputConfig.globals).toContainEqual(expect.objectContaining({ slug: 'seo-settings' }))
+    expect(outputConfig.collections?.[2]).toMatchObject({ slug: 'seo-redirects', timestamps: true })
   })
 
   it('rejects missing required configuration', () => {
@@ -58,7 +62,7 @@ describe('seoPlugin', () => {
     expect(() => seoPlugin(validConfig())(config)).toThrow('already has a field named "seo"')
   })
 
-  it('accepts an existing field with the generated marker for idempotent reapplication', () => {
+  it('accepts an existing field with the generated marker for idempotent reapplication', async () => {
     const config = payloadConfig()
     config.collections![0]!.fields = [
       {
@@ -69,7 +73,10 @@ describe('seoPlugin', () => {
       },
     ]
 
-    expect(seoPlugin(validConfig())(config)).toBe(config)
+    const output = await seoPlugin(validConfig())(config)
+    expect(output.collections?.[0]?.fields).toHaveLength(1)
+    expect(output.collections?.filter((collection) => collection.slug === 'seo-redirects')).toHaveLength(1)
+    expect(output.globals?.filter((global) => global.slug === 'seo-settings')).toHaveLength(1)
   })
 
   it('rejects user-owned settings and redirects generated-name collisions', () => {
