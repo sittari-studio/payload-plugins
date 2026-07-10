@@ -246,6 +246,7 @@ export interface Page {
       type: 'WebPage' | 'Article' | 'Product' | 'Organization' | 'LocalBusiness' | 'FAQPage';
       values?: {
         name?: string | null;
+        image?: (number | null) | Media;
         about?: string | null;
         headline?: string | null;
         author?: string | null;
@@ -478,6 +479,7 @@ export interface PagesSelect<T extends boolean = true> {
                 | T
                 | {
                     name?: T;
+                    image?: T;
                     about?: T;
                     headline?: T;
                     author?: T;

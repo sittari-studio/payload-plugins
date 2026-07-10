@@ -18,6 +18,7 @@ import { seoPlugin } from '@krameri/payload-seo'
 
 export default buildConfig({
   plugins: [seoPlugin({
+    siteUrl: 'https://example.com',
     collections: {
       pages: { schemaType: 'WebPage', sitemap: { fields: ['slug'] } },
     },

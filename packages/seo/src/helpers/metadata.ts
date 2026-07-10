@@ -1,7 +1,7 @@
 import type { ResolvedSeoMetadata, SeoDocument, SeoPayload } from '../types.js'
 import { resolveSeoNames } from '../plugin.js'
 import { resolveSeoMetadataCore } from '../resolvers/metadata.js'
-import { resolveEffectiveSeo } from '../resolvers/effective.js'
+import { isPublicSeoDocument, resolveCanonicalRobotsSeo, resolveEffectiveSeo } from '../resolvers/effective.js'
 import { loadDocumentWithoutFallback, loadSettingsWithoutFallback } from '../utils/locale.js'
 import { getSeoRuntimeConfig } from './config.js'
 
@@ -32,9 +32,9 @@ export const resolveSeoMetadata = async ({ payload, collection, locale, ...input
     for (const alternateLocale of getLocales(payload, locale)) {
       try {
         const alternateDocument = alternateLocale === locale ? document : await loadDocumentWithoutFallback({ payload, collection, id, locale: alternateLocale })
-        const effective = await resolveEffectiveSeo({ collection, config, document: alternateDocument, locale: alternateLocale, names, settings })
+        const effective = await resolveCanonicalRobotsSeo({ collection, config, document: alternateDocument, locale: alternateLocale, names, settings })
         // resolveUrl returning null is the translation-eligibility contract.
-        if (effective.canonical.url && !effective.canonical.external) alternates[alternateLocale] = effective.canonical.url
+        if (isPublicSeoDocument(alternateDocument) && effective.robots.index !== 'noindex' && effective.canonical.url && !effective.canonical.external) alternates[alternateLocale] = effective.canonical.url
       } catch {
         config.diagnostics?.({ area: 'metadata', collection, documentId: id, locale: alternateLocale, message: 'Translation metadata resolution failed.' })
       }

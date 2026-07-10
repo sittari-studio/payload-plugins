@@ -144,6 +144,7 @@ export const validateSeoPluginConfig = (config: SeoEnabledPluginConfig): void =>
     if (!validSchemaTypes.has(collection.schemaType)) throw new Error(`@krameri/payload-seo: collections.${slug}.schemaType is not supported.`)
     validateMappings(collection.fields, `collections.${slug}.fields`)
     validateMappings(collection.schema, `collections.${slug}.schema`)
+    if (collection.breadcrumbs !== undefined) requireFunction(collection.breadcrumbs, `collections.${slug}.breadcrumbs`)
     if (collection.lastModified !== undefined) {
       requireFunction(collection.lastModified, `collections.${slug}.lastModified`)
     }
@@ -264,7 +265,7 @@ export const seoPlugin =
         // The generated field marker makes this branch safe to run repeatedly.
         if (topLevelTabs) {
           if (existingSeoField && hasGeneratedMarker(existingSeoField)) return collection
-          const seoField = createSeoField({ collection: seoConfig, mediaCollection: enabledConfig.media.collection, name: names.seoField })
+          const seoField = createSeoField({ collection: seoConfig, mediaCollection: enabledConfig.media.collection, name: names.seoField, trailingSlashPolicy: enabledConfig.url?.trailingSlash })
           return {
             ...collection,
             endpoints: withPreviewEndpoint(collection),
@@ -280,7 +281,7 @@ export const seoPlugin =
           endpoints: withPreviewEndpoint(collection),
           fields: [createSeoTabs(
             contentFields,
-            createSeoField({ collection: seoConfig, mediaCollection: enabledConfig.media.collection, name: names.seoField }),
+            createSeoField({ collection: seoConfig, mediaCollection: enabledConfig.media.collection, name: names.seoField, trailingSlashPolicy: enabledConfig.url?.trailingSlash }),
           )],
         }
       }).concat((incomingConfig.collections ?? []).some((collection) => collection.slug === names.redirectsCollection) ? [] : [createRedirectsCollection({ access: enabledConfig.access?.redirects, slug: names.redirectsCollection })]),

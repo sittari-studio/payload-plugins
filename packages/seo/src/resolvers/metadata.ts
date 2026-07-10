@@ -17,12 +17,12 @@ export const resolveSeoMetadataCore = async (input: ResolverOptions): Promise<Re
   if (effective.title) result.title = effective.title
   if (effective.description) result.description = effective.description
   if (effective.canonical.url) result.canonicalUrl = effective.canonical.url
-  result.robots = { index: effective.robots.index, follow: effective.robots.follow }
+  result.robots = { index: effective.robots.index, follow: effective.robots.follow, ...(effective.robots.custom?.length ? { custom: effective.robots.custom } : {}) }
   if (Object.keys(effective.social.openGraph).length) result.openGraph = effective.social.openGraph
   if (Object.keys(effective.social.twitter).length) result.twitter = effective.social.twitter
-  if (effective.schema || effective.siteSchemas.length) {
-    result.schema = effective.siteSchemas.length
-      ? { '@context': 'https://schema.org', '@graph': [...(effective.schema ? [effective.schema] : []), ...effective.siteSchemas] }
+  if (effective.schema || effective.siteSchemas.length || effective.breadcrumbs.length) {
+    result.schema = effective.siteSchemas.length || effective.breadcrumbs.length
+      ? { '@context': 'https://schema.org', '@graph': [...(effective.schema ? [effective.schema] : []), ...effective.breadcrumbs, ...effective.siteSchemas] }
       : effective.schema
   }
   return result

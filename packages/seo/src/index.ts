@@ -4,8 +4,10 @@ export { getByPath } from './resolvers/document.js'
 export { resolveSeoMetadataCore } from './resolvers/metadata.js'
 export {
   resolveCanonical,
+  resolveCanonicalRobotsSeo,
   resolveEffectiveRobots,
   resolveEffectiveSeo,
+  isPublicSeoDocument,
   projectSeoPreview,
   resolveSitemapEligibility,
   resolveSocialMetadata,
@@ -26,6 +28,7 @@ export {
 } from './types.js'
 export type {
   ResolveDocumentUrl,
+  ResolveBreadcrumbs,
   ResolveLastModified,
   ResolveMediaUrl,
   ResolveRobotsSitemapUrls,
@@ -35,6 +38,7 @@ export type {
   SeoDocument,
   SeoDiagnostic,
   SeoDocumentFieldMappings,
+  SeoBreadcrumbItem,
   SeoDisabledPluginConfig,
   SeoEnabledPluginConfig,
   SeoGeneratedNames,
@@ -43,12 +47,14 @@ export type {
   SeoSchemaType,
   SeoSitemapConfig,
   SeoPayload,
+  SeoLocalApiOptions,
   SeoRobotsDirectives,
   RobotsMode,
   CanonicalMode,
   TrailingSlashPolicy,
   SeoSocialMetadata,
   ResolvedEffectiveSeo,
+  ResolvedSitemapSeo,
   SeoPreview,
   ResolvedSeoMetadata,
 } from './types.js'

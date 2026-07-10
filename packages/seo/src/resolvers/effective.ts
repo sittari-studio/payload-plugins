@@ -1,6 +1,7 @@
 import type {
   CanonicalMode,
   ResolvedEffectiveSeo,
+  ResolvedSitemapSeo,
   RobotsMode,
   SeoDiagnostic,
   SeoDocument,
@@ -12,6 +13,7 @@ import { getByPath, getSeoGroup } from './document.js'
 import { buildGeneratedSchema } from '../utils/generated-schema.js'
 import { combineSiteUrl, isSameSiteUrl, nonEmptyString, normalizeCanonicalUrl, normalizeSiteUrl } from '../utils/urls.js'
 import { isAbsoluteHttpUrl, isPlainJsonObject } from '../utils/validation.js'
+import { normalizeRobotsDirectives } from '../utils/robots.js'
 
 type Input = {
   collection: string
@@ -28,7 +30,7 @@ const object = (value: unknown): SeoDocument =>
 const select = <T extends string>(value: unknown, allowed: readonly T[]): T | undefined =>
   typeof value === 'string' && (allowed as readonly string[]).includes(value) ? value as T : undefined
 
-const modeDirectives: Record<Exclude<RobotsMode, 'inherit' | 'custom'>, Required<SeoRobotsDirectives>> = {
+const modeDirectives: Record<Exclude<RobotsMode, 'inherit' | 'custom'>, Pick<ResolvedEffectiveSeo['robots'], 'index' | 'follow'>> = {
   'index-follow': { index: 'index', follow: 'follow' },
   'noindex-follow': { index: 'noindex', follow: 'follow' },
   'index-nofollow': { index: 'index', follow: 'nofollow' },
@@ -75,11 +77,11 @@ export const resolveEffectiveRobots = (page: SeoDocument, settings: SeoDocument)
     ? select(defaults.mode, ['index-follow', 'noindex-follow', 'index-nofollow', 'noindex-nofollow', 'custom'] as const) ?? 'index-follow'
     : pageMode
   const source = pageMode === 'inherit' ? defaults : pageRobots
-  const custom = nonEmptyString(source.directives)?.split(',').map((value) => value.trim().toLowerCase()).filter(Boolean)
-  const fallback = configuredMode === 'custom'
-    ? { index: custom?.includes('noindex') ? 'noindex' : 'index', follow: custom?.includes('nofollow') ? 'nofollow' : 'follow' } as Required<SeoRobotsDirectives>
+  const custom = normalizeRobotsDirectives(source.directives)
+  const fallback: Pick<ResolvedEffectiveSeo['robots'], 'index' | 'follow'> = configuredMode === 'custom'
+    ? { index: custom.includes('noindex') ? 'noindex' : 'index', follow: custom.includes('nofollow') ? 'nofollow' : 'follow' }
     : modeDirectives[configuredMode]
-  return { mode: pageMode, ...fallback, ...(custom?.length ? { custom } : {}) }
+  return { mode: pageMode, ...fallback, ...(custom.length ? { custom } : {}) }
 }
 
 export const resolveCanonical = async (input: Input, seo: SeoDocument): Promise<ResolvedEffectiveSeo['canonical']> => {
@@ -117,10 +119,40 @@ const resolvePageSchema = async (input: Input, seo: SeoDocument, canonicalUrl?: 
     }
     return undefined
   }
-  return buildGeneratedSchema({ canonicalUrl, collectionSchema: collection.schema, defaultType: collection.schemaType, document: input.document, schema })
+  const generated = buildGeneratedSchema({ canonicalUrl, collectionSchema: collection.schema, defaultType: collection.schemaType, document: input.document, schema })
+  const image = generated.image
+  if (image !== undefined) {
+    if (isAbsoluteHttpUrl(image)) generated.image = image.trim()
+    else {
+      const resolved = await resolveImage(image, input)
+      if (resolved) generated.image = resolved
+      else delete generated.image
+    }
+  }
+  return generated
 }
 
-export const resolveStructuredData = async (input: Input, seo: SeoDocument, canonicalUrl?: string): Promise<{ schema?: Record<string, unknown>; siteSchemas: Record<string, unknown>[] }> => {
+const resolveBreadcrumbs = async (input: Input, canonicalUrl?: string): Promise<Record<string, unknown>[]> => {
+  const resolver = input.config.collections[input.collection]?.breadcrumbs
+  if (!resolver) return []
+  try {
+    const items = await resolver({ collection: input.collection, document: input.document, locale: input.locale, canonicalUrl })
+    const policy = input.config.url?.trailingSlash ?? 'never'
+    const itemListElement = items.flatMap((item, position) => {
+      const name = nonEmptyString(item?.name)
+      const url = isAbsoluteHttpUrl(item?.url)
+        ? normalizeCanonicalUrl(item.url, policy)
+        : combineSiteUrl(input.config.siteUrl, item?.url, policy)
+      return name && url ? [{ '@type': 'ListItem', position: position + 1, name, item: url }] : []
+    })
+    return itemListElement.length ? [{ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement }] : []
+  } catch {
+    diagnostic(input, 'schema', 'Breadcrumb resolver failed.')
+    return []
+  }
+}
+
+export const resolveStructuredData = async (input: Input, seo: SeoDocument, canonicalUrl?: string): Promise<{ schema?: Record<string, unknown>; siteSchemas: Record<string, unknown>[]; breadcrumbs: Record<string, unknown>[] }> => {
   const schema = await resolvePageSchema(input, seo, canonicalUrl)
   const organization = object(input.settings.organizationSchema)
   const siteUrl = normalizeSiteUrl(input.config.siteUrl)
@@ -132,7 +164,7 @@ export const resolveStructuredData = async (input: Input, seo: SeoDocument, cano
   const siteSchemas: Record<string, unknown>[] = []
   if (name || logo || sameAs.length) siteSchemas.push({ '@context': 'https://schema.org', '@type': 'Organization', ...(name ? { name } : {}), ...(siteUrl ? { url: normalizeCanonicalUrl(organization.url, input.config.url?.trailingSlash ?? 'never') ?? siteUrl } : {}), ...(logo ? { logo } : {}), ...(sameAs.length ? { sameAs } : {}) })
   if (siteUrl && nonEmptyString(input.settings.siteName)) siteSchemas.push({ '@context': 'https://schema.org', '@type': 'WebSite', url: siteUrl, name: nonEmptyString(input.settings.siteName)! })
-  return { schema, siteSchemas }
+  return { schema, siteSchemas, breadcrumbs: await resolveBreadcrumbs(input, canonicalUrl) }
 }
 
 export const resolveSocialMetadata = async (input: Input, seo: SeoDocument, title?: string, description?: string, canonicalUrl?: string): Promise<ResolvedEffectiveSeo['social']> => {
@@ -166,7 +198,7 @@ export const resolveSocialMetadata = async (input: Input, seo: SeoDocument, titl
 /** The one resolver every SEO output consumes. It performs no Payload reads. */
 export const resolveEffectiveSeo = async (input: Input): Promise<ResolvedEffectiveSeo> => {
   const collection = input.config.collections[input.collection]
-  if (!collection) return { canonical: { mode: 'auto', external: false }, robots: { mode: 'inherit', index: 'index', follow: 'follow' }, social: { openGraph: {}, twitter: {} }, siteSchemas: [] }
+  if (!collection) return { canonical: { mode: 'auto', external: false }, robots: { mode: 'inherit', index: 'index', follow: 'follow' }, social: { openGraph: {}, twitter: {} }, siteSchemas: [], breadcrumbs: [] }
   const seo = getSeoGroup(input.document, input.names?.seoField ?? 'seo')
   const sourceTitle = nonEmptyString(seo.title) ?? nonEmptyString(getByPath(input.document, collection.fields?.title))
   const title = sourceTitle && titleTemplate(input.settings.titleTemplate) ? titleTemplate(input.settings.titleTemplate)!.replace('%s', sourceTitle) : sourceTitle
@@ -178,11 +210,21 @@ export const resolveEffectiveSeo = async (input: Input): Promise<ResolvedEffecti
   return { ...(title ? { title } : {}), ...(description ? { description } : {}), canonical, robots, social, ...structured }
 }
 
+/** Lightweight shared decision for sitemap and hreflang eligibility. */
+export const resolveCanonicalRobotsSeo = async (input: Input): Promise<ResolvedSitemapSeo> => {
+  const seo = getSeoGroup(input.document, input.names?.seoField ?? 'seo')
+  return { canonical: await resolveCanonical(input, seo), robots: resolveEffectiveRobots(seo, input.settings) }
+}
+
+export const isPublicSeoDocument = (document: SeoDocument): boolean =>
+  !(document._status !== undefined && document._status !== 'published')
+  && document._deleted !== true
+  && !document.deletedAt
+
 /** Shared sitemap decision: only published, non-deleted, indexable pages with a same-site canonical can be listed. */
-export const resolveSitemapEligibility = async ({ effective, document, input }: { effective: ResolvedEffectiveSeo; document: SeoDocument; input: Input }): Promise<boolean> => {
+export const resolveSitemapEligibility = async ({ effective, document, input }: { effective: ResolvedSitemapSeo; document: SeoDocument; input: Input }): Promise<boolean> => {
   if (effective.robots.index === 'noindex' || effective.canonical.external || !effective.canonical.url) return false
-  if (document._status !== undefined && document._status !== 'published') return false
-  if (document._deleted === true || document.deletedAt) return false
+  if (!isPublicSeoDocument(document)) return false
   const exclude = input.config.collections[input.collection]?.sitemap?.exclude
   return exclude ? !(await exclude({ collection: input.collection, document, locale: input.locale, effective })) : true
 }
@@ -194,5 +236,10 @@ export const projectSeoPreview = (effective: ResolvedEffectiveSeo): SeoPreview =
   ...(effective.social.openGraph.image ?? effective.social.twitter.image ? { image: effective.social.openGraph.image ?? effective.social.twitter.image } : {}),
   ...(Object.keys(effective.social.openGraph).length ? { openGraph: effective.social.openGraph } : {}),
   robots: { index: effective.robots.index, follow: effective.robots.follow },
+  ...(effective.schema || effective.siteSchemas.length || effective.breadcrumbs.length ? {
+    schema: effective.siteSchemas.length || effective.breadcrumbs.length
+      ? { '@context': 'https://schema.org', '@graph': [...(effective.schema ? [effective.schema] : []), ...effective.breadcrumbs, ...effective.siteSchemas] }
+      : effective.schema,
+  } : {}),
   ...(Object.keys(effective.social.twitter).length ? { twitter: effective.social.twitter } : {}),
 })

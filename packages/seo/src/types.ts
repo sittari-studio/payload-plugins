@@ -71,11 +71,25 @@ export type SeoDocumentFieldMappings = {
   title?: string
 }
 
+export type SeoBreadcrumbItem = {
+  name: string
+  /** Absolute HTTP(S) URL, or a site-relative path resolved against `siteUrl`. */
+  url: string
+}
+
+export type ResolveBreadcrumbs = (input: {
+  collection: string
+  document: SeoDocument
+  locale: string
+  canonicalUrl?: string
+}) => readonly SeoBreadcrumbItem[] | Promise<readonly SeoBreadcrumbItem[]>
+
 export type SeoSitemapConfig = {
   enabled?: boolean
   /**
-   * Document paths required by `resolveUrl` and `lastModified` while rendering
-   * a sitemap page. Supplying them keeps large sitemap reads projected.
+   * Document paths required by `resolveUrl`, `lastModified`, and `exclude`
+   * while rendering a sitemap page. Supplying them keeps large sitemap reads
+   * projected; the callback receives exactly this projection plus SEO state.
    */
   fields?: readonly string[]
   /** Return false to omit a document after its effective SEO state is resolved. */
@@ -83,7 +97,8 @@ export type SeoSitemapConfig = {
     collection: string
     document: SeoDocument
     locale: string
-    effective: ResolvedEffectiveSeo
+    /** Sitemap resolution deliberately computes only canonical and robots state. */
+    effective: ResolvedSitemapSeo
   }) => boolean | Promise<boolean>
 }
 
@@ -93,6 +108,8 @@ export type SeoCollectionConfig = {
   media?: {
     collection: string
   }
+  /** Optional host-owned breadcrumb resolver. Invalid items are omitted. */
+  breadcrumbs?: ResolveBreadcrumbs
   schema?: Record<string, string>
   schemaType: SeoSchemaType
   sitemap?: SeoSitemapConfig
@@ -173,7 +190,16 @@ export type SeoPayload = {
   }
 }
 
+/** Optional context passed to Payload Local API reads performed for an Admin preview. */
+export type SeoLocalApiOptions = {
+  overrideAccess: false
+  req?: PayloadRequest
+  user?: unknown
+}
+
 export type SeoRobotsDirectives = {
+  /** Normalized supported directives selected in custom mode (including explicit index/follow tokens). */
+  custom?: string[]
   follow?: 'follow' | 'nofollow'
   index?: 'index' | 'noindex'
 }
@@ -196,23 +222,28 @@ export type ResolvedEffectiveSeo = {
   title?: string
   description?: string
   canonical: { mode: CanonicalMode; url?: string; external: boolean }
-  robots: Required<SeoRobotsDirectives> & { mode: RobotsMode; custom?: string[] }
+  robots: { index: 'index' | 'noindex'; follow: 'follow' | 'nofollow'; mode: RobotsMode; custom?: string[] }
   social: {
     openGraph: SeoSocialMetadata & { url?: string; type?: string; siteName?: string; locale?: string }
     twitter: SeoSocialMetadata & { card?: 'summary' | 'summary_large_image'; site?: string; creator?: string }
   }
   schema?: Record<string, unknown>
   siteSchemas: Record<string, unknown>[]
+  breadcrumbs: Record<string, unknown>[]
 }
+
+export type ResolvedSitemapSeo = Pick<ResolvedEffectiveSeo, 'canonical' | 'robots'>
 
 export type SeoPreview = {
   canonicalUrl?: string
   description?: string
   image?: string
   openGraph?: SeoSocialMetadata
-  robots: Required<SeoRobotsDirectives>
+  robots: { index: 'index' | 'noindex'; follow: 'follow' | 'nofollow'; custom?: string[] }
   title?: string
   twitter?: SeoSocialMetadata
+  /** The exact resolved schema payload returned by the public schema helper. */
+  schema?: Record<string, unknown>
 }
 
 /** Framework-neutral, omission-first output of the locale-safe resolver. */

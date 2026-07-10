@@ -14,6 +14,14 @@ const cardStyle = { background: 'var(--theme-elevation-0)', border: '1px solid v
 const mutedStyle = { color: 'var(--theme-elevation-600)', fontSize: '.875rem' }
 const clamp = (lines: number) => ({ WebkitBoxOrient: 'vertical' as const, WebkitLineClamp: lines, display: '-webkit-box', overflow: 'hidden' })
 
+/** `useDocumentInfo().apiURL` includes the current document ID; plugin endpoints are collection routes. */
+const previewEndpointUrl = (apiURL: string): string => {
+  const url = new URL(apiURL, window.location.origin)
+  url.pathname = `${url.pathname.replace(/\/$/, '').replace(/\/[^/]+$/, '')}/seo-preview`
+  url.search = ''
+  return url.toString()
+}
+
 /** Displays server-resolved previews while updating from unsaved form state. */
 export const SeoPreviews = ({ field }: UIFieldClientProps) => {
   const t = useAdminText()
@@ -28,7 +36,7 @@ export const SeoPreviews = ({ field }: UIFieldClientProps) => {
     const controller = new AbortController()
     const timer = window.setTimeout(async () => {
       try {
-        const response = await fetch(`${apiURL}/seo-preview`, {
+        const response = await fetch(previewEndpointUrl(apiURL), {
           body: JSON.stringify({ document, locale: locale?.code ?? '' }),
           credentials: 'same-origin',
           headers: { 'Content-Type': 'application/json' },
@@ -87,5 +95,11 @@ export const SeoPreviews = ({ field }: UIFieldClientProps) => {
         <div style={{ ...mutedStyle, marginTop: '.65rem' }}>{t('twitterPreview')}</div>
       </div>
     </article>
+    {preview?.schema && <article style={{ ...cardStyle, gridColumn: '1 / -1', padding: '1rem' }}>
+      <div style={mutedStyle}>{t('generatedJson')}</div>
+      <pre style={{ background: 'var(--theme-elevation-50)', border: '1px solid var(--theme-elevation-150)', borderRadius: '6px', margin: '.6rem 0 0', maxHeight: '18rem', overflow: 'auto', padding: '1rem', whiteSpace: 'pre-wrap' }}>
+        {JSON.stringify(preview.schema, null, 2)}
+      </pre>
+    </article>}
   </section>
 }

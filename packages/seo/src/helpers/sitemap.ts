@@ -1,11 +1,12 @@
 import type { SeoDocument, SeoPayload } from '../types.js'
 import { getSeoRuntimeConfig } from './config.js'
 import { resolveSeoNames } from '../plugin.js'
-import { resolveEffectiveSeo, resolveSitemapEligibility } from '../resolvers/effective.js'
+import { resolveCanonicalRobotsSeo, resolveSitemapEligibility } from '../resolvers/effective.js'
 import { isAbsoluteHttpUrl } from '../utils/validation.js'
 import { isSameSiteUrl, normalizeCanonicalUrl } from '../utils/urls.js'
 
 const PAGE_SIZE = 25_000
+const RESOLUTION_CONCURRENCY = 16
 const escapeXml = (value: string): string => value.replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[character]!)
 const xmlDocument = (body: string): string => `<?xml version="1.0" encoding="UTF-8"?>\n${body}`
 const empty = (): string => xmlDocument('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"/>')
@@ -28,19 +29,36 @@ export const renderSitemapXml = async ({ payload, collection, locale, page }: { 
     const settings = await payload.findGlobal({ slug: names.settingsGlobal, locale, fallbackLocale: false, draft: false })
     const select = sitemapSelect(collectionConfig.sitemap?.fields, names.seoField)
     const result = await payload.find({ collection, locale, fallbackLocale: false, draft: false, depth: 0, limit: PAGE_SIZE, page, ...(select ? { select } : {}) })
-    const urls = await Promise.all(result.docs.map(async (document) => {
-      const input = { collection, config, document, locale, names, settings }
-      const effective = await resolveEffectiveSeo(input)
-      if (!(await resolveSitemapEligibility({ effective, document, input }))) return null
-      let lastmod = validDate(document.updatedAt)
-      if (collectionConfig.lastModified) lastmod = validDate(await collectionConfig.lastModified({ collection, document, locale }))
-      return `<url><loc>${escapeXml(effective.canonical.url!)}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ''}</url>`
-    }))
+    const urls = await mapBounded(result.docs, RESOLUTION_CONCURRENCY, async (document) => {
+      try {
+        const input = { collection, config, document, locale, names, settings }
+        const effective = await resolveCanonicalRobotsSeo(input)
+        if (!(await resolveSitemapEligibility({ effective, document, input }))) return null
+        let lastmod = validDate(document.updatedAt)
+        if (collectionConfig.lastModified) lastmod = validDate(await collectionConfig.lastModified({ collection, document, locale }))
+        return `<url><loc>${escapeXml(effective.canonical.url!)}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ''}</url>`
+      } catch {
+        config.diagnostics?.({ area: 'sitemap', collection, documentId: typeof document.id === 'string' || typeof document.id === 'number' ? document.id : undefined, locale, message: 'Sitemap document resolution failed.' })
+        return null
+      }
+    })
     return xmlDocument(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.filter((url): url is string => Boolean(url)).join('')}</urlset>`)
   } catch {
     config.diagnostics?.({ area: 'sitemap', collection, locale, message: 'Sitemap resolution failed.' })
     return empty()
   }
+}
+
+const mapBounded = async <T, R>(items: readonly T[], concurrency: number, mapper: (item: T) => Promise<R>): Promise<R[]> => {
+  const results = new Array<R>(items.length)
+  let next = 0
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (next < items.length) {
+      const index = next++
+      results[index] = await mapper(items[index]!)
+    }
+  }))
+  return results
 }
 
 export const renderSitemapIndexXml = async ({ payload }: { payload: SeoPayload }): Promise<string> => {

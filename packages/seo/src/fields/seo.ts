@@ -8,7 +8,7 @@ import {
   type SeoCollectionConfig,
 } from '../types.js'
 import { adminLabel, adminTabLabel, adminText } from '../admin/translations.js'
-import { validateAbsoluteHttpUrl, validateJson } from '../utils/validation.js'
+import { validateCanonicalUrl, validateJson } from '../utils/validation.js'
 
 const localized = true
 const socialCards = [
@@ -26,10 +26,11 @@ const schemaTypeIs = (seoField: string, data: unknown, ...types: string[]): bool
   return Boolean(schema && typeof schema === 'object' && types.includes((schema as Record<string, unknown>).type as string))
 }
 
-const createBuiltInVisualFields = (seoField: string): Field[] => {
+const createBuiltInVisualFields = (seoField: string, imageCollection: string): Field[] => {
   const when = (...types: string[]) => (data: unknown) => schemaTypeIs(seoField, data, ...types)
   return [
     { name: 'name', type: 'text', label: adminLabel('name'), admin: { condition: when('WebPage', 'Product', 'Organization', 'LocalBusiness') } },
+    { name: 'image', type: 'upload', label: adminLabel('image'), relationTo: imageCollection },
     { name: 'about', type: 'textarea', label: adminLabel('about'), admin: { condition: when('WebPage') } },
     { name: 'headline', type: 'text', label: adminLabel('headline'), admin: { condition: when('Article') } },
     { name: 'author', type: 'text', label: adminLabel('author'), admin: { condition: when('Article') } },
@@ -72,14 +73,16 @@ export const createSeoField = ({
   collection,
   mediaCollection,
   name,
+  trailingSlashPolicy,
 }: {
   collection: SeoCollectionConfig
   mediaCollection: string
   name: string
+  trailingSlashPolicy?: 'always' | 'never'
 }): GroupField => {
   const imageCollection = collection.media?.collection ?? mediaCollection
   const customVisualFields = (collection.visualFields ?? []).map((field) => ({ ...field, localized }) as Field)
-  const visualFields = [...createBuiltInVisualFields(name), ...customVisualFields]
+  const visualFields = [...createBuiltInVisualFields(name, imageCollection), ...customVisualFields]
     .reduce<Field[]>((fields, field) => {
       const fieldName = 'name' in field ? field.name : undefined
       const index = fieldName ? fields.findIndex((candidate) => 'name' in candidate && candidate.name === fieldName) : -1
@@ -116,7 +119,7 @@ export const createSeoField = ({
                   name: 'url', type: 'text', label: adminLabel('canonicalUrl'), localized, validate: (value, { siblingData, req } = {} as never) =>
                     (siblingData as { mode?: string } | undefined)?.mode === 'manual' && !value
                       ? adminText('validationManualCanonical', req?.i18n?.language)
-                      : validateAbsoluteHttpUrl(value, { req }),
+                      : validateCanonicalUrl(value, { req }, trailingSlashPolicy),
                   admin: { condition: (_, siblingData) => siblingData?.mode === 'manual' },
                 } as TextField,
               ],

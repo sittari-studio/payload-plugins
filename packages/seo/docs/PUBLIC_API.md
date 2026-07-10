@@ -47,11 +47,16 @@ Optional collection options are:
 - `fields`: maps `title`, `description`, and `image` to document paths. Mapped
   images participate in the Open Graph and X fallback chain.
 - `schema`: maps schema properties to dot paths on the document.
+- `breadcrumbs`: optional resolver returning `{ name, url }` items. URLs may be
+  absolute or site-relative; invalid items are omitted and a `BreadcrumbList`
+  is added separately from the document schema.
 - `lastModified`: returns the last-modified date used by sitemap output.
 - `media.collection`: overrides the plugin-level upload collection for that
   collection's Open Graph and X/Twitter fields.
 - `sitemap.enabled`: excludes the collection when set to `false`.
-- `sitemap.fields`: fields selected for each sitemap document read.
+- `sitemap.fields`: fields selected for each sitemap document read. When set,
+  include every path used by `resolveUrl`, `lastModified`, and `sitemap.exclude`;
+  the callback intentionally receives that same narrow projection.
 - `sitemap.exclude`: sync or async host callback for redirects, scheduled
   content, hidden routes, or other publication rules. Return `true` to omit.
 - `visualFields`: additional named text, textarea, number, checkbox, select,
@@ -83,7 +88,11 @@ type ResolvedSeoMetadata = {
   description?: string
   canonicalUrl?: string
   alternates?: Record<string, string>
-  robots?: { index?: 'index' | 'noindex'; follow?: 'follow' | 'nofollow' }
+  robots?: {
+    index?: 'index' | 'noindex'
+    follow?: 'follow' | 'nofollow'
+    custom?: string[]
+  }
   openGraph?: { title?: string; description?: string; image?: string }
   twitter?: {
     title?: string
@@ -121,7 +130,10 @@ robots values, so host-owned preview endpoints can match rendered metadata.
 Page `seo.robots.mode` defaults to `inherit`; it never silently sets index/follow.
 Modes are `inherit`, `index-follow`, `noindex-follow`, `index-nofollow`,
 `noindex-nofollow`, and `custom`. Untouched pages therefore use the localized
-Settings `defaultRobots` mode. Custom directives may set `noindex`/`nofollow`.
+Settings `defaultRobots` mode. Custom mode preserves supported directives in
+framework-neutral metadata and the Next adapter: `noarchive`, `nosnippet`,
+`noimageindex`, `notranslate`, `max-snippet`, `max-video-preview`,
+`max-image-preview`, `unavailable_after`, plus `noindex` and `nofollow`.
 
 Canonical modes are `auto`, `manual`, and `none`. Manual values must be absolute
 HTTP(S) URLs without query strings or fragments. Same-site manual canonicals are
@@ -152,9 +164,15 @@ const schema = await renderSchemaJsonLd({
 ```
 
 Raw schema must be a JSON object—arrays, null, and primitives are rejected.
-Generated mappings cannot overwrite `@context`, `@type`, `url`, `image`, or
-`name`; only explicit `rawJson` can replace those keys. Use `serializeJsonLd`
-when embedding the returned object in an HTML script element.
+Generated-schema ownership is explicit: the plugin fixes `@context` to
+`https://schema.org`, uses the selected supported `seo.schema.type` for
+`@type`, and writes the resolved canonical as `url`. Collection mappings and
+per-document visual overrides may supply `name` and `image`; upload images are
+resolved through `resolveMediaUrl`. `rawJson` is a full replacement and owns
+all keys itself. Type-specific generated builders normalize Article authors,
+Product offers/brands, FAQ questions and answers, and LocalBusiness addresses.
+Use `serializeJsonLd` when embedding the returned object in an HTML script
+element.
 
 ## Redirects, robots, and sitemaps
 
@@ -183,8 +201,11 @@ sitemap URLs from `robots.resolveSitemapUrls` are emitted in generated mode.
 Returns XML for one sitemap chunk. Entries must be published, not deleted,
 have an eligible URL, resolve to indexable effective robots, and not be rejected
 by `sitemap.exclude`. External or absent canonicals are excluded. The page size
-is 25,000. Invalid pages, disabled collections, invalid site URLs, or resolution
-failures produce a valid empty sitemap document rather than throwing.
+is 25,000. Canonical/robots eligibility is resolved without social or JSON-LD
+work, using bounded concurrency; one bad document is omitted without dropping
+its entire chunk. Invalid pages, disabled collections, invalid site URLs, or
+top-level resolution failures produce a valid empty sitemap document rather
+than throwing.
 
 ### `renderSitemapIndexXml({ payload })`
 
@@ -200,8 +221,10 @@ Neither sitemap helper registers a route or sets an XML response header.
 
 `@krameri/payload-seo/next` exports `resolveNextMetadata(input)`. It projects
 resolved values into a structurally compatible Next.js `Metadata` object,
-including canonical and language alternates, robots booleans, and social image
-arrays. See the [Next.js guide](NEXTJS.md) for usage.
+including canonical and language alternates, robots directives, and social
+image arrays. Custom robots are emitted as a complete Next robots string so no
+supported directive is lost. Noindex, draft, deleted, external-canonical, and
+no-canonical translations are excluded from hreflang. See the [Next.js guide](NEXTJS.md) for usage.
 
 ## Other exports
 

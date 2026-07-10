@@ -25,6 +25,8 @@ export const normalizeRedirectPath = (value: unknown): string | null => {
 }
 
 import { adminText } from '../admin/translations.js'
+import { normalizeCanonicalUrl } from './urls.js'
+import type { TrailingSlashPolicy } from '../types.js'
 
 type ValidationContext = { req?: { i18n?: { language?: string } } }
 
@@ -33,6 +35,16 @@ const validationText = (key: 'validationAbsoluteHttpUrl' | 'validationJson', con
 
 export const validateAbsoluteHttpUrl = (value: unknown, context?: ValidationContext): true | string =>
   value === undefined || value === null || value === '' || isAbsoluteHttpUrl(value)
+    ? true
+    : validationText('validationAbsoluteHttpUrl', context)
+
+/** The Admin and runtime use this exact canonical contract: HTTP(S), no query or fragment. */
+export const validateCanonicalUrl = (
+  value: unknown,
+  context?: ValidationContext,
+  policy: TrailingSlashPolicy = 'never',
+): true | string =>
+  value === undefined || value === null || value === '' || normalizeCanonicalUrl(value, policy)
     ? true
     : validationText('validationAbsoluteHttpUrl', context)
 
