@@ -180,7 +180,15 @@ export default buildConfig({
         collection: 'media',
         resolveMediaUrl: ({ media }) => typeof media.url === 'string' ? media.url : null,
       },
-      resolveUrl: ({ document }) => typeof document.slug === 'string' ? `/${document.slug}` : null,
+      resolveUrl: ({ document, collection }) => {
+        if (typeof document.slug !== 'string' || !document.slug) return null;
+
+        if (collection === 'pages') {
+          return document.slug === 'home' ? '/' : `/${document.slug}`;
+        }
+
+        return null;
+      },
       resolveChunkUrl: ({ collection, locale, page }) =>
         new URL(`/sitemaps/${collection}/${locale}/${page}.xml`, siteUrl).toString(),
       access: {
