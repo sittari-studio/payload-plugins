@@ -2,7 +2,7 @@ import type { GlobalConfig } from 'payload'
 
 import { SEO_PLUGIN_MARKER, type SeoPluginAccess } from '../types.js'
 import { adminLabel, adminTabLabel } from '../admin/translations.js'
-import { validateAbsoluteHttpUrl, validateRobotsToken, validateSiteUrl } from '../utils/validation.js'
+import { validateAbsoluteHttpUrl, validateRobotsToken } from '../utils/validation.js'
 
 export const createSeoSettingsGlobal = ({ access, slug, mediaCollection }: { access?: SeoPluginAccess['settings']; slug: string; mediaCollection: string }): GlobalConfig => ({
   slug,
@@ -17,7 +17,6 @@ export const createSeoSettingsGlobal = ({ access, slug, mediaCollection }: { acc
           label: adminTabLabel('siteDefaults'),
           fields: [
             { name: 'siteName', type: 'text', label: adminLabel('siteName'), localized: true },
-            { name: 'siteUrl', type: 'text', label: adminLabel('siteUrl'), required: true, validate: validateSiteUrl },
             { name: 'titleTemplate', type: 'text', label: adminLabel('titleTemplate'), localized: true },
             { name: 'defaultDescription', type: 'textarea', label: adminLabel('defaultDescription'), localized: true },
           ],

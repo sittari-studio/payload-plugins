@@ -5,8 +5,8 @@
 Every locale-aware operation uses the active locale with Payload fallbackLocale
 set to false. This includes reading documents, document field mappings, SEO
 fields, localized Global values, URL resolution, canonical values, social
-metadata, schema input, and sitemap documents. Site URL remains one
-non-localized Global value.
+metadata, schema input, and sitemap documents. Site URL is an immutable plugin
+configuration value supplied by the host environment.
 
 The only permitted fallback order is within the same locale:
 
@@ -51,18 +51,20 @@ never creates a title by itself.
 The helper returns only an image URL returned by the configured resolveMediaUrl
 function. An unresolved relationship or a null resolver result must be omitted.
 
-Robots output uses localized document directives first, then the localized
-Global default, then omission. Index/noindex and follow/nofollow are
-represented independently so the metadata adapter can form a complete robots
-directive only from valid values.
+Robots output uses a localized document mode first, then the localized Global
+default, then `index,follow`. The explicit modes always yield a complete
+index/noindex and follow/nofollow pair. In custom mode, `noindex` and
+`nofollow` tokens are recognized; omitted tokens safely fall back to `index`
+and `follow`.
 
 ## Hreflang
 
 Hreflang is metadata-helper output only. For each configured Payload locale,
 load the document in that locale with no fallback and call the URL resolver. Add
 an alternate only when the locale-specific document and its path are valid.
-Include the active locale when valid. Do not add x-default. Never put hreflang
-entries in sitemap XML.
+Include the active locale when valid. When `hreflang.xDefaultLocale` is
+configured and that locale resolves to an eligible URL, add `x-default` with
+the same URL. Never put hreflang entries in sitemap XML.
 
 ## Schema generation
 
@@ -89,8 +91,8 @@ renderRobotsTxt reads the Global settings and developer-provided sitemap URLs.
 
 | Global mode | Output |
 | --- | --- |
-| generated | Serialize each user-agent group, then append configured Sitemap lines, then append non-empty appendText. |
-| override | Return overrideText exactly as stored; do not include generated rules, sitemap lines, or appendText. |
+| generated | Serialize each user-agent group, then append configured Sitemap lines. |
+| override | Return overrideText exactly as stored; do not include generated rules or sitemap lines. |
 
 Generated groups preserve editor order. Each group emits User-agent first,
 followed by its Allow and Disallow paths in stored order. Separate groups and

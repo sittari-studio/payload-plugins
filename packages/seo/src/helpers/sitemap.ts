@@ -3,6 +3,7 @@ import { getSeoRuntimeConfig } from './config.js'
 import { resolveSeoNames } from '../plugin.js'
 import { resolveEffectiveSeo, resolveSitemapEligibility } from '../resolvers/effective.js'
 import { isAbsoluteHttpUrl } from '../utils/validation.js'
+import { isSameSiteUrl, normalizeCanonicalUrl } from '../utils/urls.js'
 
 const PAGE_SIZE = 25_000
 const escapeXml = (value: string): string => value.replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' })[character]!)
@@ -54,8 +55,13 @@ export const renderSitemapIndexXml = async ({ payload }: { payload: SeoPayload }
       try {
         const count = await payload.find({ collection, locale: locale || undefined, fallbackLocale: false, draft: false, depth: 0, limit: 0, pagination: false })
         for (let page = 1; page <= Math.ceil((count.totalDocs ?? 0) / PAGE_SIZE); page++) {
-          const url = await config.resolveChunkUrl({ collection, locale, page })
-          if (isAbsoluteHttpUrl(url)) entries.push(`<sitemap><loc>${escapeXml(url.trim())}</loc></sitemap>`)
+          const resolvedUrl = await config.resolveChunkUrl({ collection, locale, page })
+          if (!isAbsoluteHttpUrl(resolvedUrl)) continue
+          const url = resolvedUrl.trim()
+          const normalizedUrl = isSameSiteUrl(config.siteUrl, url)
+            ? normalizeCanonicalUrl(url, config.url?.trailingSlash ?? 'never')
+            : url
+          if (normalizedUrl) entries.push(`<sitemap><loc>${escapeXml(normalizedUrl)}</loc></sitemap>`)
         }
       } catch {
         config.diagnostics?.({ area: 'sitemap', collection, locale, message: 'Sitemap index chunk resolution failed.' })

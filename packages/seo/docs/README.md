@@ -12,8 +12,8 @@ plugin usable with Next.js and other Payload frontends.
 ## Integration path
 
 1. [Install and configure the plugin in Payload](PAYLOAD_INTEGRATION.md).
-2. Set the **SEO Settings** Global in the Payload Admin, including the public
-   site URL and any defaults.
+2. Set `siteUrl` in the plugin configuration from the host environment, then
+   configure editor-managed defaults in the **SEO Settings** Global.
 3. Call the [runtime helpers](PUBLIC_API.md) from your frontend.
 4. If you use Next.js App Router, adapt them with the [Next.js examples](NEXTJS.md).
 

@@ -20,6 +20,8 @@ import {
 import { testEmailAdapter } from './helpers/testEmailAdapter.js'
 import { devUser, seed } from './seed.js'
 
+const siteUrl = process.env.SITE_URL ?? 'http://localhost:3000'
+
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
@@ -158,6 +160,7 @@ export default buildConfig({
   },
   plugins: [
     seoPlugin({
+      siteUrl,
       collections: {
         pages: {
           schemaType: 'WebPage',
@@ -179,7 +182,7 @@ export default buildConfig({
       },
       resolveUrl: ({ document }) => typeof document.slug === 'string' ? `/${document.slug}` : null,
       resolveChunkUrl: ({ collection, locale, page }) =>
-        `https://example.test/sitemaps/${collection}/${locale}/${page}.xml`,
+        new URL(`/sitemaps/${collection}/${locale}/${page}.xml`, siteUrl).toString(),
       access: {
         settings: {
           read: () => true,

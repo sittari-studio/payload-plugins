@@ -1,4 +1,4 @@
-import type { Config, Field, Plugin, TabsField } from 'payload'
+import type { Config, Endpoint, Field, Plugin, TabsField } from 'payload'
 
 import {
   DEFAULT_SEO_NAMES,
@@ -8,10 +8,12 @@ import {
   type SeoPluginConfig,
 } from './types.js'
 import { createRedirectsCollection } from './collections/redirects.js'
+import { createSeoPreviewEndpoint } from './endpoints/preview.js'
 import { createSeoField, isSupportedVisualField } from './fields/seo.js'
 import { createSeoSettingsGlobal } from './globals/seo-settings.js'
 import { SEO_RUNTIME_CONFIG_KEY } from './helpers/config.js'
 import { adminTabLabel } from './admin/translations.js'
+import { normalizeSiteUrl } from './utils/urls.js'
 
 type CollectionConfig = NonNullable<Config['collections']>[number]
 type GlobalConfig = NonNullable<Config['globals']>[number]
@@ -30,6 +32,15 @@ const hasGeneratedMarker = (value: { admin?: unknown }): boolean => {
 const hasNamedField = (field: Field, name: string): boolean => 'name' in field && field.name === name
 
 const hasGeneratedTabs = (field: Field): boolean => field.type === 'tabs' && hasGeneratedMarker(field)
+
+const hasGeneratedPreviewEndpoint = (endpoint: { custom?: unknown }): boolean =>
+  isRecord(endpoint.custom) && (endpoint.custom as SeoAdminCustom).seo?.marker === SEO_PLUGIN_MARKER
+
+const withPreviewEndpoint = (collection: CollectionConfig): Omit<Endpoint, 'root'>[] | false => {
+  if (collection.endpoints === false) return false
+  if (collection.endpoints?.some(hasGeneratedPreviewEndpoint)) return collection.endpoints
+  return [...(collection.endpoints ?? []), createSeoPreviewEndpoint(collection.slug)]
+}
 
 const findNamedField = (fields: Field[], name: string): Field | undefined => {
   for (const field of fields) {
@@ -159,6 +170,9 @@ export const validateSeoPluginConfig = (config: SeoEnabledPluginConfig): void =>
   }
   requireNonEmptyString(config.media.collection, 'media.collection')
   requireFunction(config.media.resolveMediaUrl, 'media.resolveMediaUrl')
+  if (!normalizeSiteUrl(config.siteUrl)) {
+    throw new Error('@krameri/payload-seo: siteUrl must be an absolute HTTP(S) origin without a path, query, fragment, or credentials.')
+  }
   requireFunction(config.resolveUrl, 'resolveUrl')
   requireFunction(config.resolveChunkUrl, 'resolveChunkUrl')
   if (config.url?.trailingSlash !== undefined && config.url.trailingSlash !== 'always' && config.url.trailingSlash !== 'never') {
@@ -194,6 +208,12 @@ const assertNoGeneratedNameCollisions = (incomingConfig: Config, config: SeoEnab
     const conflict = findNamedField(collection.fields, names.seoField)
     if (conflict && !hasGeneratedMarker(conflict)) {
       throw new Error(`@krameri/payload-seo: collection "${slug}" already has a field named "${names.seoField}".`)
+    }
+    if (collection.endpoints === false) {
+      throw new Error(`@krameri/payload-seo: collection "${slug}" must allow endpoints for Admin SEO previews.`)
+    }
+    if (collection.endpoints?.some((endpoint) => endpoint.path === '/seo-preview' && !hasGeneratedPreviewEndpoint(endpoint))) {
+      throw new Error(`@krameri/payload-seo: collection "${slug}" already has an endpoint at "/seo-preview".`)
     }
   }
 
@@ -247,6 +267,7 @@ export const seoPlugin =
           const seoField = createSeoField({ collection: seoConfig, mediaCollection: enabledConfig.media.collection, name: names.seoField })
           return {
             ...collection,
+            endpoints: withPreviewEndpoint(collection),
             fields: collection.fields.map((field) => field === topLevelTabs ? appendSeoTab(field, seoField) : field),
           }
         }
@@ -256,6 +277,7 @@ export const seoPlugin =
           : collection.fields
         return {
           ...collection,
+          endpoints: withPreviewEndpoint(collection),
           fields: [createSeoTabs(
             contentFields,
             createSeoField({ collection: seoConfig, mediaCollection: enabledConfig.media.collection, name: names.seoField }),

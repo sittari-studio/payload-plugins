@@ -91,7 +91,7 @@ Maintain fixtures for these cases:
 | Twitter fields absent | Use resolved OG metadata. |
 | Valid raw schema exists | Return only parsed raw schema. |
 | Invalid legacy raw schema exists | Omit schema and log; do not throw. |
-| Generated robots plus append | Preserve group order then append text. |
+| Generated robots | Preserve group order, then append configured Sitemap lines. |
 | Robots override | Return only override text. |
 | Redirect A to B and B to A | Reject the second enabled redirect. |
 | Missing localized URL | Omit canonical, hreflang entry, and sitemap entry. |

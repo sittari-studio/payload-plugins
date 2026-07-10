@@ -25,7 +25,6 @@ export const normalizeRedirectPath = (value: unknown): string | null => {
 }
 
 import { adminText } from '../admin/translations.js'
-import { normalizeSiteUrl } from './urls.js'
 
 type ValidationContext = { req?: { i18n?: { language?: string } } }
 
@@ -49,11 +48,6 @@ export const validateJson = (value: unknown, context?: ValidationContext): true 
     return validationText('validationJson', context)
   }
 }
-
-export const validateSiteUrl = (value: unknown, context?: ValidationContext): true | string =>
-  value === undefined || value === null || value === '' || normalizeSiteUrl(value)
-    ? true
-    : validationText('validationAbsoluteHttpUrl', context)
 
 export const hasLineBreak = (value: unknown): boolean => typeof value === 'string' && /[\r\n]/.test(value)
 

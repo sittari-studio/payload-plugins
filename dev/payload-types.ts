@@ -571,19 +571,28 @@ export interface SiteSetting {
 export interface SeoSetting {
   id: number;
   siteName?: string | null;
-  siteUrl: string;
   titleTemplate?: string | null;
   defaultDescription?: string | null;
   defaultOpenGraphImage?: (number | null) | Media;
   defaultTwitterCard?: ('summary' | 'summary_large_image') | null;
-  defaultRobots?: {
-    index?: ('index' | 'noindex') | null;
-    follow?: ('follow' | 'nofollow') | null;
+  defaultOpenGraphType?: string | null;
+  defaultTwitterSite?: string | null;
+  defaultTwitterCreator?: string | null;
+  defaultLocale?: string | null;
+  defaultRobots: {
+    mode: 'index-follow' | 'noindex-follow' | 'index-nofollow' | 'noindex-nofollow' | 'custom';
+    directives?: string | null;
   };
   organizationSchema?: {
     name?: string | null;
     url?: string | null;
     logo?: (number | null) | Media;
+    sameAs?:
+      | {
+          url?: string | null;
+          id?: string | null;
+        }[]
+      | null;
   };
   robots: {
     mode: 'generated' | 'override';
@@ -605,7 +614,6 @@ export interface SeoSetting {
           id?: string | null;
         }[]
       | null;
-    appendText?: string | null;
     overrideText?: string | null;
   };
   updatedAt?: string | null;
@@ -628,16 +636,19 @@ export interface SiteSettingsSelect<T extends boolean = true> {
  */
 export interface SeoSettingsSelect<T extends boolean = true> {
   siteName?: T;
-  siteUrl?: T;
   titleTemplate?: T;
   defaultDescription?: T;
   defaultOpenGraphImage?: T;
   defaultTwitterCard?: T;
+  defaultOpenGraphType?: T;
+  defaultTwitterSite?: T;
+  defaultTwitterCreator?: T;
+  defaultLocale?: T;
   defaultRobots?:
     | T
     | {
-        index?: T;
-        follow?: T;
+        mode?: T;
+        directives?: T;
       };
   organizationSchema?:
     | T
@@ -645,6 +656,12 @@ export interface SeoSettingsSelect<T extends boolean = true> {
         name?: T;
         url?: T;
         logo?: T;
+        sameAs?:
+          | T
+          | {
+              url?: T;
+              id?: T;
+            };
       };
   robots?:
     | T
@@ -668,7 +685,6 @@ export interface SeoSettingsSelect<T extends boolean = true> {
                   };
               id?: T;
             };
-        appendText?: T;
         overrideText?: T;
       };
   updatedAt?: T;

@@ -27,6 +27,7 @@ The plugin needs these active-mode options:
 | Option | Required | Description |
 | --- | --- | --- |
 | `collections` | Yes | Non-empty mapping of existing Payload collection slugs to `SeoCollectionConfig`. |
+| `siteUrl` | Yes | Immutable HTTP(S) site origin, normally supplied by the host environment. |
 | `media.collection` | Yes | Existing Payload upload collection used for default SEO images. |
 | `media.resolveMediaUrl` | Yes | Resolves a populated media document to an absolute public URL or `null`. |
 | `resolveUrl` | Yes | Resolves one document and locale to a site-relative path or `null`. |
@@ -129,16 +130,17 @@ canonical is rendered in metadata but deliberately excluded from sitemaps;
 `none` renders no canonical and is also excluded because there is no canonical
 URL to list.
 
-`siteUrl` must be an HTTP(S) origin such as `https://example.com`—not a base
-path, query, fragment, or credential-bearing URL. The plugin does not support
-site base paths in this release.
+Configure `siteUrl` in `seoPlugin`, normally from an environment variable. It
+must be an HTTP(S) origin such as `https://example.com`—not a base path, query,
+fragment, or credential-bearing URL. The plugin does not support site base
+paths in this release.
 
 ### `renderSchemaJsonLd(input)`
 
 Returns the resolved schema object or `null`. When site settings configure an
 organization and/or site name it returns an `@graph` containing the document
-schema plus Organization and WebSite schema. Organization URL falls back to
-`siteUrl`, logo uses `resolveMediaUrl`, and `sameAs` links are emitted.
+schema plus Organization and WebSite schema. Organization URL falls back to the
+configured `siteUrl`, logo uses `resolveMediaUrl`, and `sameAs` links are emitted.
 
 ```ts
 const schema = await renderSchemaJsonLd({
@@ -188,7 +190,9 @@ failures produce a valid empty sitemap document rather than throwing.
 
 Returns XML containing sitemap chunk URLs for every enabled collection and
 configured locale. It calls `resolveChunkUrl` for each non-empty chunk. With
-localization disabled, the resolver receives `locale: ''`.
+localization disabled, the resolver receives `locale: ''`. Same-site chunk URLs
+receive the configured `url.trailingSlash` normalization; external chunk URLs
+are preserved after validation.
 
 Neither sitemap helper registers a route or sets an XML response header.
 

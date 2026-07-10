@@ -40,8 +40,8 @@ translated.
 | seo.focusKeyword | text | Editor-only focus keyword; no scoring in v1. |
 | seo.canonical.mode | select | auto, manual, or none; defaults to auto. |
 | seo.canonical.url | text | Manual absolute canonical URL; only visible in manual mode. |
-| seo.robots.index | select | index or noindex. |
-| seo.robots.follow | select | follow or nofollow. |
+| seo.robots.mode | select | inherit, one of the four index/follow combinations, or custom; defaults to inherit. |
+| seo.robots.directives | text | Comma-separated custom directives; visible only in custom mode. |
 | seo.openGraph.title | text | Open Graph title override. |
 | seo.openGraph.description | textarea | Open Graph description override. |
 | seo.openGraph.image | upload | Image relation to the plugin-configured or collection-overridden upload collection. |
@@ -74,16 +74,17 @@ The plugin adds one access-controlled Global with these groups:
 | Setting | Purpose |
 | --- | --- |
 | siteName | Site-wide name for metadata and schema. |
-| siteUrl | Absolute public origin used to build canonical and sitemap URLs. |
 | titleTemplate | Title template applied only after a title is resolved. |
 | defaultDescription | Fallback meta description. |
 | defaultOpenGraphImage | Fallback Open Graph upload relation. |
 | defaultTwitterCard | Fallback Twitter/X card type. |
 | defaultRobots | Default index and follow directives. |
 | organizationSchema | Defaults used when generating organization schema. |
-| robots | Generated rules, optional append text, and optional full override. |
+| robots | Generated rules and an optional full override. |
 
-Site URL must be a valid absolute HTTP or HTTPS URL and is never localized.
+`siteUrl` is a required plugin configuration value, not a Global field. It must
+be a valid absolute HTTP or HTTPS origin and is normally supplied by the host
+environment.
 When Payload localization is enabled, siteName, titleTemplate,
 defaultDescription, defaultOpenGraphImage, defaultTwitterCard, defaultRobots,
 organizationSchema, and all robots settings are localized.
@@ -94,7 +95,6 @@ Robots settings contain:
 | --- | --- |
 | mode | generated or override. |
 | groups | Generated user-agent groups with zero or more allow and disallow paths. |
-| appendText | Optional editor text appended only to generated output. |
 | overrideText | Complete robots.txt content used only in override mode. |
 
 Developer-configured sitemap URLs are supplied to the renderer; they are not

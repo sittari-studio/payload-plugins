@@ -8,6 +8,7 @@ Next.js helpers are exported from the package next subpath.
 
 ~~~ts
 seoPlugin({
+  siteUrl: process.env.SITE_URL!,
   collections: {
     pages: {
       schemaType: 'WebPage',
@@ -47,6 +48,7 @@ SeoPluginConfig must include:
 | --- | --- |
 | enabled | Optional, defaults to true. |
 | collections | Required non-empty mapping of enabled collection slugs to collection SEO settings. |
+| siteUrl | Required immutable HTTP(S) origin, normally supplied from the host environment. |
 | media | Required plugin-level upload collection and public media URL resolver. A collection may override only the upload collection. |
 | resolveUrl | Required top-level document URL resolver. |
 | resolveChunkUrl | Required top-level resolver for absolute sitemap chunk URLs. |

@@ -90,10 +90,10 @@ export const resolveCanonical = async (input: Input, seo: SeoDocument): Promise<
   if (mode === 'manual') {
     const url = normalizeCanonicalUrl(canonical.url, policy)
     if (!url) diagnostic(input, 'canonical', 'Manual canonical is invalid.')
-    return { mode, url, external: Boolean(url && !isSameSiteUrl(input.settings.siteUrl, url)) }
+    return { mode, url, external: Boolean(url && !isSameSiteUrl(input.config.siteUrl, url)) }
   }
   try {
-    const url = combineSiteUrl(input.settings.siteUrl, await input.config.resolveUrl({ collection: input.collection, document: input.document, locale: input.locale }), policy)
+    const url = combineSiteUrl(input.config.siteUrl, await input.config.resolveUrl({ collection: input.collection, document: input.document, locale: input.locale }), policy)
     if (!url) diagnostic(input, 'canonical', 'Automatic canonical could not resolve to a site URL.')
     return { mode, url, external: false }
   } catch {
@@ -123,7 +123,7 @@ const resolvePageSchema = async (input: Input, seo: SeoDocument, canonicalUrl?: 
 export const resolveStructuredData = async (input: Input, seo: SeoDocument, canonicalUrl?: string): Promise<{ schema?: Record<string, unknown>; siteSchemas: Record<string, unknown>[] }> => {
   const schema = await resolvePageSchema(input, seo, canonicalUrl)
   const organization = object(input.settings.organizationSchema)
-  const siteUrl = normalizeSiteUrl(input.settings.siteUrl)
+  const siteUrl = normalizeSiteUrl(input.config.siteUrl)
   const name = nonEmptyString(organization.name) ?? nonEmptyString(input.settings.siteName)
   const logo = await resolveImage(organization.logo, input)
   const sameAs = Array.isArray(organization.sameAs)
@@ -192,5 +192,7 @@ export const projectSeoPreview = (effective: ResolvedEffectiveSeo): SeoPreview =
   ...(effective.description ? { description: effective.description } : {}),
   ...(effective.canonical.url ? { canonicalUrl: effective.canonical.url } : {}),
   ...(effective.social.openGraph.image ?? effective.social.twitter.image ? { image: effective.social.openGraph.image ?? effective.social.twitter.image } : {}),
+  ...(Object.keys(effective.social.openGraph).length ? { openGraph: effective.social.openGraph } : {}),
   robots: { index: effective.robots.index, follow: effective.robots.follow },
+  ...(Object.keys(effective.social.twitter).length ? { twitter: effective.social.twitter } : {}),
 })

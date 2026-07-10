@@ -26,10 +26,14 @@ import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
 
+const siteUrl = process.env.SITE_URL
+if (!siteUrl) throw new Error('SITE_URL is required')
+
 export default buildConfig({
   collections: [Pages, Posts, Media],
   plugins: [
     seoPlugin({
+      siteUrl,
       collections: {
         pages: {
           schemaType: 'WebPage',
@@ -111,9 +115,10 @@ the document has no public URL **or when that translation is unavailable or
 incomplete**. This is the hreflang eligibility contract: the plugin will not
 emit a language alternate for `null`. A valid path starts with one slash, does not
 start with `//`, and contains no query string or fragment. The plugin combines
-it with the `siteUrl` saved in SEO Settings. `siteUrl` must be an origin (for
-example `https://example.com`), so base-path deployments are intentionally not
-supported in this release.
+it with the `siteUrl` supplied to `seoPlugin`. Set it from a host environment
+variable such as `SITE_URL`; it must be an origin (for example
+`https://example.com`), so base-path deployments are intentionally not supported
+in this release.
 
 `resolveMediaUrl` receives a populated upload document and must return an
 absolute public HTTP(S) URL or `null`. When passing a document directly to a
@@ -144,8 +149,11 @@ rejected by `sitemap.exclude`.
 The production resolver is the source of truth for metadata, sitemaps, schema,
 robots, and previews. `resolveSeoPreview({ payload, collection, id, locale })`
 is server-backed and returns the same title, description, canonical, social
-image, and robots decisions as production metadata. Use it for any host-owned
-live preview surface; the editor card remains a responsive unsaved-value aid.
+image, and robots decisions as production metadata. The plugin also registers
+an authenticated `POST /api/<collection>/seo-preview` endpoint; its Admin card
+debounces unsaved form state to that endpoint, so editor previews use the same
+resolution as production. Hosts can use `resolveSeoPreview` for other live
+preview surfaces.
 
 If the collection already has a top-level Payload `tabs` field, **SEO** is
 appended to that tab set. Otherwise, the plugin creates top-level **Content**
@@ -156,13 +164,13 @@ It also creates these Payload entities:
 
 | Entity | Default slug | Notes |
 | --- | --- | --- |
-| SEO Settings Global | `seo-settings` | Site URL, metadata defaults, organization schema, and robots settings. |
+| SEO Settings Global | `seo-settings` | Metadata defaults, organization schema, and robots settings. |
 | Redirects collection | `seo-redirects` | Enabled exact-path 301/302 redirects, with loop validation. |
 
-Set a valid absolute HTTP(S) `siteUrl` in **SEO Settings** before expecting
-canonical URLs or sitemap entries. The site URL is not localized; most editor
-defaults and document SEO fields are localized when Payload localization is
-enabled.
+Set a valid absolute HTTP(S) `siteUrl` in the plugin configuration before
+expecting canonical URLs or sitemap entries. It is immutable at runtime; most
+editor defaults and document SEO fields are localized when Payload localization
+is enabled.
 
 The Settings Global and redirects collection are closed by default. The SEO
 group on each enabled document inherits normal field access unless you set the

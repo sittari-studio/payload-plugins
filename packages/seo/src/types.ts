@@ -128,6 +128,8 @@ export type SeoGeneratedNames = {
 export type SeoEnabledPluginConfig = {
   collections: Record<string, SeoCollectionConfig>
   enabled?: true
+  /** Immutable public site origin, normally supplied from the host environment. */
+  siteUrl: string
   media: {
     collection: string
     resolveMediaUrl: ResolveMediaUrl
@@ -207,8 +209,10 @@ export type SeoPreview = {
   canonicalUrl?: string
   description?: string
   image?: string
+  openGraph?: SeoSocialMetadata
   robots: Required<SeoRobotsDirectives>
   title?: string
+  twitter?: SeoSocialMetadata
 }
 
 /** Framework-neutral, omission-first output of the locale-safe resolver. */

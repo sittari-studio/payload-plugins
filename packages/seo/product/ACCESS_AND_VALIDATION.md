@@ -30,7 +30,7 @@ permissions must pass overrideAccess false to every Local API call.
 
 | Input | Required validation | Invalid result |
 | --- | --- | --- |
-| Global site URL | Absolute HTTP/HTTPS URL. | Reject save. |
+| Plugin `siteUrl` | Absolute HTTP/HTTPS origin. | Reject plugin initialization. |
 | Manual canonical URL | Absolute HTTP/HTTPS URL in manual mode. | Reject save. |
 | Generated canonical path | Valid site-relative path from resolver. | Omit output. |
 | SEO image | Valid Payload upload relation from allowed collection. | Reject invalid relation or omit unresolved output. |

@@ -70,7 +70,7 @@ const ensureSamplePage = async (payload: Payload): Promise<void> => {
           title: 'Home SEO title',
           description: 'Sample SEO description for the local dev app.',
           canonical: { mode: 'auto' },
-          robots: { index: 'index', follow: 'follow' },
+          robots: { mode: 'index-follow' },
           schema: { type: 'WebPage' },
         },
       },
@@ -87,7 +87,7 @@ const ensureSamplePage = async (payload: Payload): Promise<void> => {
         title: 'Home SEO title',
         description: 'Sample SEO description for the local dev app.',
         canonical: { mode: 'auto' },
-        robots: { index: 'index', follow: 'follow' },
+        robots: { mode: 'index-follow' },
         schema: { type: 'WebPage' },
       },
     },
@@ -99,7 +99,7 @@ const ensureSeoSettings = async (payload: Payload): Promise<void> => {
     slug: 'seo-settings',
   })
 
-  if (typeof settings.siteUrl === 'string' && settings.siteUrl) {
+  if (typeof settings.siteName === 'string' && settings.siteName) {
     return
   }
 
@@ -107,10 +107,9 @@ const ensureSeoSettings = async (payload: Payload): Promise<void> => {
     slug: 'seo-settings',
     data: {
       siteName: 'Krameri development',
-      siteUrl: 'https://example.test',
       titleTemplate: '%s | Krameri development',
       defaultDescription: 'Development content for the Payload SEO plugin.',
-      defaultRobots: { index: 'index', follow: 'follow' },
+      defaultRobots: { mode: 'index-follow' },
       robots: {
         mode: 'generated',
         groups: [{ userAgent: '*', disallow: [{ path: '/admin' }] }],

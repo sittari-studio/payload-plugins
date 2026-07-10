@@ -21,13 +21,16 @@ import {
 import { SEO_RUNTIME_CONFIG_KEY } from '../src/helpers/config.js'
 import { resolveNextMetadata } from '../src/next.js'
 import { adminLabel, adminTabLabel, adminText, adminTranslations, resolveAdminLanguage } from '../src/admin/translations.js'
-import { validateAbsoluteHttpUrl, validateJson, validateSiteUrl } from '../src/utils/validation.js'
+import { previewDocumentFromForm } from '../src/admin/preview-document.js'
+import { createSeoPreviewEndpoint } from '../src/endpoints/preview.js'
+import { validateAbsoluteHttpUrl, validateJson } from '../src/utils/validation.js'
 import { SEO_PLUGIN_MARKER, type SeoDocument, type SeoEnabledPluginConfig, type SeoPluginConfig } from '../src/types.js'
 
 const validConfig = (): SeoEnabledPluginConfig => ({
   collections: {
     pages: { schemaType: 'WebPage' },
   },
+  siteUrl: 'https://example.com',
   media: {
     collection: 'media',
     resolveMediaUrl: vi.fn(() => 'https://example.com/image.jpg'),
@@ -91,6 +94,7 @@ describe('seoPlugin', () => {
     const settings = outputConfig.globals?.find((global) => global.slug === 'seo-settings') as any
     expect(settings.fields[0].tabs.map((tab: any) => labelText(tab.label))).toEqual(['Site defaults', 'Social defaults', 'Default robots', 'Organization schema', 'robots.txt'])
     expect(outputConfig.collections?.[2]).toMatchObject({ slug: 'seo-redirects', timestamps: true })
+    expect(outputConfig.collections?.[0]?.endpoints).toContainEqual(expect.objectContaining({ method: 'post', path: '/seo-preview' }))
   })
 
   it('appends the SEO tab to an existing top-level tabs field without nesting it', async () => {
@@ -118,6 +122,11 @@ describe('seoPlugin', () => {
     expect(() => seoPlugin({ collections: {} } as SeoPluginConfig)(payloadConfig())).toThrow(
       'collections must be a non-empty mapping',
     )
+
+    const { siteUrl: _siteUrl, ...withoutSiteUrl } = validConfig()
+    expect(() => seoPlugin(withoutSiteUrl as SeoEnabledPluginConfig)(payloadConfig())).toThrow(
+      'siteUrl must be an absolute HTTP(S) origin',
+    )
   })
 
   it('validates optional sitemap field projections', () => {
@@ -134,6 +143,13 @@ describe('seoPlugin', () => {
     config.collections.posts = { schemaType: 'Article' }
 
     expect(() => seoPlugin(config)(payloadConfig())).toThrow('configured collection "posts" does not exist')
+  })
+
+  it('requires API endpoints for an enabled collection preview', () => {
+    const config = payloadConfig()
+    config.collections![0]!.endpoints = false
+
+    expect(() => seoPlugin(validConfig())(config)).toThrow('must allow endpoints for Admin SEO previews')
   })
 
   it('rejects a user-owned generated field name collision', () => {
@@ -244,7 +260,7 @@ describe('locale-safe resolver core', () => {
     config.collections.pages.fields = { title: 'title', description: 'excerpt' }
     const result = await resolveSeoMetadataCore({
       collection: 'pages', config, locale: 'es', settings: {
-        siteUrl: 'https://example.com', titleTemplate: '%s | Example', defaultDescription: 'Default description',
+        titleTemplate: '%s | Example', defaultDescription: 'Default description',
         defaultRobots: { mode: 'noindex-nofollow' },
       },
       document: { title: 'Página', excerpt: '', seo: { openGraph: {}, twitter: {} } },
@@ -271,7 +287,7 @@ describe('locale-safe resolver core', () => {
         twitter: { image: { url: 'not a url' }, card: 'summary_large_image' },
       },
     }
-    const manual = await resolveSeoMetadataCore({ collection: 'pages', config, document, locale: 'en', settings: { siteUrl: 'invalid', titleTemplate: 'no placeholder' } })
+    const manual = await resolveSeoMetadataCore({ collection: 'pages', config, document, locale: 'en', settings: { titleTemplate: 'no placeholder' } })
     expect(manual.canonicalUrl).toBe('https://canonical.example/page')
     expect(manual.openGraph?.image).toBe('https://cdn.example/og.jpg')
     expect(manual.twitter?.image).toBe('https://cdn.example/og.jpg')
@@ -286,7 +302,7 @@ describe('locale-safe resolver core', () => {
   it('uses a valid raw schema as a full replacement and omits malformed legacy JSON', async () => {
     const config = validConfig()
     const raw = await resolveSeoMetadataCore({
-      collection: 'pages', config, locale: 'en', settings: { siteUrl: 'https://example.com' },
+      collection: 'pages', config, locale: 'en', settings: {},
       document: { title: 'Ignored', seo: { schema: { rawJson: '{"@type":"Thing","name":"Raw"}' } } },
     })
     expect(raw.schema).toEqual({ '@type': 'Thing', name: 'Raw' })
@@ -301,7 +317,7 @@ describe('locale-safe resolver core', () => {
 describe('effective SEO resolution regression coverage', () => {
   const input = (overrides: Record<string, unknown> = {}) => ({
     collection: 'pages', config: validConfig(), locale: 'en',
-    settings: { siteUrl: 'https://example.com', siteName: 'Example', defaultRobots: { mode: 'noindex-follow' } } as SeoDocument,
+    settings: { siteName: 'Example', defaultRobots: { mode: 'noindex-follow' } } as SeoDocument,
     document: { id: 'p1', title: 'Page', _status: 'published', ...overrides } as SeoDocument,
   })
 
@@ -336,10 +352,10 @@ describe('effective SEO resolution regression coverage', () => {
   })
 
   it('normalizes site URL and rejects unsafe site URL/raw schema values', () => {
-    expect(validateSiteUrl('https://example.com')).toBe(true)
-    expect(validateSiteUrl('https://example.com/base')).not.toBe(true)
-    expect(validateSiteUrl('https://example.com?x=1')).not.toBe(true)
-    expect(validateSiteUrl('ftp://example.com')).not.toBe(true)
+    expect(() => seoPlugin({ ...validConfig(), siteUrl: 'https://example.com' })(payloadConfig())).not.toThrow()
+    expect(() => seoPlugin({ ...validConfig(), siteUrl: 'https://example.com/base' })(payloadConfig())).toThrow('siteUrl must be an absolute HTTP(S) origin')
+    expect(() => seoPlugin({ ...validConfig(), siteUrl: 'https://example.com?x=1' })(payloadConfig())).toThrow('siteUrl must be an absolute HTTP(S) origin')
+    expect(() => seoPlugin({ ...validConfig(), siteUrl: 'ftp://example.com' })(payloadConfig())).toThrow('siteUrl must be an absolute HTTP(S) origin')
     expect(validateJson('[]')).not.toBe(true)
     expect(validateJson('null')).not.toBe(true)
     expect(validateJson('"string"')).not.toBe(true)
@@ -393,7 +409,7 @@ describe('frontend helpers', () => {
         localization: { locales: ['en', 'es'] },
       },
       findByID: vi.fn(async ({ locale }) => ({ id: 'page-1', title: locale === 'es' ? 'Página' : 'Page' })),
-      findGlobal: vi.fn(async () => ({ siteUrl: 'https://example.com', robots: { mode: 'generated', groups: [{ userAgent: '*', disallow: [{ path: '/private&area' }] }] } })),
+      findGlobal: vi.fn(async () => ({ robots: { mode: 'generated', groups: [{ userAgent: '*', disallow: [{ path: '/private&area' }] }] } })),
       find: vi.fn(async ({ collection }) => collection === 'seo-redirects'
         ? { docs: [{ destinationType: 'internal', destination: '/new', statusCode: '301' }] }
         : { docs: [{ id: 'page-1', updatedAt: '2026-01-02T03:04:05.000Z' }], totalDocs: 1 }),
@@ -420,12 +436,23 @@ describe('frontend helpers', () => {
     expect(index).toContain('<loc>https://example.com/sitemap.xml</loc>')
   })
 
+  it('normalizes same-site sitemap index URLs with the configured trailing-slash policy', async () => {
+    const payload = runtimePayload()
+    const config = payload.config.custom[SEO_RUNTIME_CONFIG_KEY] as SeoEnabledPluginConfig
+    config.url = { trailingSlash: 'always' }
+    config.resolveChunkUrl = () => 'https://example.com/sitemap.xml'
+
+    expect(await renderSitemapIndexXml({ payload })).toContain('<loc>https://example.com/sitemap.xml/</loc>')
+
+    config.resolveChunkUrl = () => 'https://cdn.example/sitemap.xml'
+    expect(await renderSitemapIndexXml({ payload })).toContain('<loc>https://cdn.example/sitemap.xml</loc>')
+  })
+
   it('rejects CR/LF injection in generated robots and emits valid sitemap directives', async () => {
     const payload = runtimePayload()
     const config = payload.config.custom[SEO_RUNTIME_CONFIG_KEY] as SeoEnabledPluginConfig
     config.robots = { resolveSitemapUrls: () => ['https://example.com/sitemap.xml', 'https://bad.example/\nInjected: yes'] }
     payload.findGlobal = vi.fn(async () => ({
-      siteUrl: 'https://example.com',
       robots: { mode: 'generated', groups: [{ userAgent: '*\nInjected: yes', allow: [{ path: '/ok' }], disallow: [{ path: '/private\nSitemap: bad' }] }] },
     }))
     expect(await renderRobotsTxt({ payload, locale: 'en' })).toBe('Sitemap: https://example.com/sitemap.xml')
@@ -447,5 +474,58 @@ describe('frontend helpers', () => {
       collection: 'seo-redirects',
       select: { destination: true, destinationType: true, statusCode: true },
     }))
+  })
+})
+
+describe('Admin preview resolution', () => {
+  it('overlays unsaved mapped values without dropping saved document data', () => {
+    expect(previewDocumentFromForm(
+      { hero: { url: 'https://cdn.example/saved.jpg' }, nested: { keep: true } },
+      { heading: { value: 'Unsaved title' }, 'seo.canonical.mode': { value: 'none' }, 'nested.changed': { value: true } },
+    )).toEqual({
+      heading: 'Unsaved title', hero: { url: 'https://cdn.example/saved.jpg' }, nested: { changed: true, keep: true }, seo: { canonical: { mode: 'none' } },
+    })
+  })
+
+  it('uses the production resolver for authenticated unsaved Admin previews', async () => {
+    const config = validConfig()
+    config.collections.pages.fields = { title: 'heading', description: 'summary', image: 'hero' }
+    config.media.resolveMediaUrl = ({ media }) => media.url as string
+    const payload = {
+      config: { admin: { user: 'users' }, custom: { [SEO_RUNTIME_CONFIG_KEY]: config } },
+      collections: {},
+      findGlobal: vi.fn(async () => ({
+        titleTemplate: '%s | Example', defaultDescription: 'Default description', defaultRobots: { mode: 'noindex-follow' },
+      })),
+      findByID: vi.fn(),
+    }
+    const document = { heading: 'Unsaved title', hero: { url: 'https://cdn.example/hero.jpg' }, seo: { canonical: { mode: 'none' } } }
+    const endpoint = createSeoPreviewEndpoint('pages')
+    const response = await endpoint.handler({
+      json: async () => ({ document, locale: 'en' }),
+      payload,
+      user: { collection: 'users', id: 'admin' },
+    } as never)
+
+    const preview = await response.json()
+    expect(preview).toEqual(await resolveSeoPreview({ payload, collection: 'pages', document, locale: 'en' }))
+    expect(preview).toMatchObject({
+      title: 'Unsaved title | Example', description: 'Default description', image: 'https://cdn.example/hero.jpg',
+      robots: { index: 'noindex', follow: 'follow' },
+    })
+    expect(preview).not.toHaveProperty('canonicalUrl')
+  })
+
+  it('rejects unauthenticated preview requests', async () => {
+    const response = await createSeoPreviewEndpoint('pages').handler({ user: null } as never)
+    expect(response.status).toBe(401)
+  })
+
+  it('rejects authenticated users without Payload Admin access', async () => {
+    const response = await createSeoPreviewEndpoint('pages').handler({
+      payload: { collections: {}, config: { admin: { user: 'users' } } },
+      user: { collection: 'customers', id: 'customer' },
+    } as never)
+    expect(response.status).toBe(403)
   })
 })

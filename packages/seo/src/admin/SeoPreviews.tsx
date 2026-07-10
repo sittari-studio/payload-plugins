@@ -1,40 +1,61 @@
 'use client'
 
 import type { UIFieldClientProps } from 'payload'
-import { useFormFields } from '@payloadcms/ui'
+import { useDocumentInfo, useFormFields, useLocale } from '@payloadcms/ui'
+import { useEffect, useMemo, useState } from 'react'
 
+import type { SeoPreview } from '../types.js'
 import { useAdminText } from './use-admin-text.js'
-
-type Fields = Record<string, { value?: unknown }>
+import { previewDocumentFromForm, type PreviewFormFields } from './preview-document.js'
 
 const text = (value: unknown): string | undefined => typeof value === 'string' && value.trim() ? value.trim() : undefined
-
-const imageUrl = (value: unknown): string | undefined => {
-  if (!value || typeof value !== 'object') return undefined
-  return text((value as Record<string, unknown>).url)
-}
-
-const fieldValue = (fields: Fields, path: string): unknown => fields[path]?.value
 
 const cardStyle = { background: 'var(--theme-elevation-0)', border: '1px solid var(--theme-elevation-150)', borderRadius: '8px', overflow: 'hidden' }
 const mutedStyle = { color: 'var(--theme-elevation-600)', fontSize: '.875rem' }
 const clamp = (lines: number) => ({ WebkitBoxOrient: 'vertical' as const, WebkitLineClamp: lines, display: '-webkit-box', overflow: 'hidden' })
 
-/** Displays informational Google, Open Graph, and Twitter/X previews from unsaved form state. */
+/** Displays server-resolved previews while updating from unsaved form state. */
 export const SeoPreviews = ({ field }: UIFieldClientProps) => {
   const t = useAdminText()
-  const values = useFormFields(([fields]) => fields as Fields)
-  const seoField = (field.admin?.custom?.seo as { seoField?: string } | undefined)?.seoField ?? 'seo'
-  const at = (name: string) => fieldValue(values, `${seoField}.${name}`)
-  const title = text(at('title')) ?? t('previewTitle')
-  const description = text(at('description')) ?? t('previewDescription')
-  const canonicalUrl = text(at('canonical.url')) ?? 'https://example.com/page'
-  const openGraphTitle = text(at('openGraph.title')) ?? title
-  const openGraphDescription = text(at('openGraph.description')) ?? description
-  const twitterTitle = text(at('twitter.title')) ?? openGraphTitle
-  const twitterDescription = text(at('twitter.description')) ?? openGraphDescription
-  const openGraphImage = imageUrl(at('openGraph.image'))
-  const twitterImage = imageUrl(at('twitter.image')) ?? openGraphImage
+  const values = useFormFields(([fields]) => fields as PreviewFormFields)
+  const { apiURL, data } = useDocumentInfo()
+  const locale = useLocale()
+  const [preview, setPreview] = useState<SeoPreview>()
+  const document = useMemo(() => previewDocumentFromForm(data, values), [data, values])
+
+  useEffect(() => {
+    if (!apiURL) return
+    const controller = new AbortController()
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch(`${apiURL}/seo-preview`, {
+          body: JSON.stringify({ document, locale: locale?.code ?? '' }),
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
+          signal: controller.signal,
+        })
+        if (response.ok) setPreview(await response.json() as SeoPreview)
+      } catch {
+        // Preserve the last resolved preview while the editor continues to type or navigates away.
+      }
+    }, 150)
+    return () => {
+      controller.abort()
+      window.clearTimeout(timer)
+    }
+  }, [apiURL, document, locale?.code])
+
+  const title = preview?.title ?? t('previewTitle')
+  const description = preview?.description ?? t('previewDescription')
+  const canonicalUrl = preview?.canonicalUrl
+  const host = canonicalUrl ? new URL(canonicalUrl).hostname : ''
+  const openGraphTitle = preview?.openGraph?.title ?? title
+  const openGraphDescription = preview?.openGraph?.description ?? description
+  const twitterTitle = preview?.twitter?.title ?? openGraphTitle
+  const twitterDescription = preview?.twitter?.description ?? openGraphDescription
+  const openGraphImage = preview?.openGraph?.image ?? preview?.image
+  const twitterImage = preview?.twitter?.image ?? openGraphImage
 
   const PreviewImage = ({ src }: { src?: string }) => src
     ? <img alt="" src={src} style={{ aspectRatio: '1.91 / 1', display: 'block', objectFit: 'cover', width: '100%' }} />
@@ -45,7 +66,7 @@ export const SeoPreviews = ({ field }: UIFieldClientProps) => {
       <div style={mutedStyle}>{t('googleResult')}</div>
       <div style={{ alignItems: 'center', display: 'flex', gap: '.5rem', marginTop: '.75rem' }}>
         <span aria-hidden="true" style={{ alignItems: 'center', background: 'var(--theme-elevation-150)', borderRadius: '50%', display: 'flex', fontSize: '.75rem', height: '1.5rem', justifyContent: 'center', width: '1.5rem' }}>◐</span>
-        <div><div style={{ fontSize: '.875rem' }}>example.com</div><div style={{ ...clamp(1), ...mutedStyle }}>{canonicalUrl}</div></div>
+        <div>{host && <div style={{ fontSize: '.875rem' }}>{host}</div>}{canonicalUrl && <div style={{ ...clamp(1), ...mutedStyle }}>{canonicalUrl}</div>}</div>
       </div>
       <div style={{ ...clamp(2), color: 'var(--theme-success-500)', fontSize: '1.25rem', lineHeight: 1.3, marginTop: '.75rem' }}>{title}</div>
       <p style={{ ...clamp(3), color: 'var(--theme-elevation-700)', lineHeight: 1.5, marginBottom: 0 }}>{description}</p>
