@@ -47,7 +47,8 @@ two locales. Verify:
 8. Disabled redirects are not returned by lookup and do not participate in
    active redirect chains.
 9. Sitemap output includes only published documents, respects locale/page, has
-   at most 25,000 source documents per page, and contains no hreflang.
+   at most 25,000 deduplicated eligible entries per page, and emits eligible
+   localized XHTML hreflang alternates when localization is configured.
 10. Sitemap index uses configured collection/locale inventory and chunk URLs.
 
 Use an adapter appropriate for CI and ensure each test resets persisted state.

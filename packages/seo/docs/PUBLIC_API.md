@@ -200,12 +200,21 @@ sitemap URLs from `robots.resolveSitemapUrls` are emitted in generated mode.
 
 Returns XML for one sitemap chunk. Entries must be published, not deleted,
 have an eligible URL, resolve to indexable effective robots, and not be rejected
-by `sitemap.exclude`. External or absent canonicals are excluded. The page size
-is 25,000. Canonical/robots eligibility is resolved without social or JSON-LD
-work, using bounded concurrency; one bad document is omitted without dropping
-its entire chunk. Invalid pages, disabled collections, invalid site URLs, or
-top-level resolution failures produce a valid empty sitemap document rather
-than throwing.
+by `sitemap.exclude`. External and canonical-`none` pages are excluded. Entries
+are deduplicated by their final normalized canonical URL across the complete
+locale dataset: the first eligible document in Payload's stable sitemap order
+wins a collision and later documents are omitted. The 25,000-entry chunk
+boundary and sitemap index therefore use deduplicated eligible URLs, not raw
+document counts.
+
+When localization is configured, each eligible entry includes XML-escaped
+`xhtml:link` alternates using the exact same translation eligibility resolver as
+metadata. Alternates include self, eligible published/indexable translations,
+and `x-default` when configured and eligible; missing, fallback-only, draft,
+noindex, external-canonical, and canonical-`none` translations are omitted. The
+XHTML namespace is emitted only when an entry has alternates. Invalid pages,
+disabled collections, invalid site URLs, or top-level resolution failures
+produce a valid empty sitemap document rather than throwing.
 
 ### `renderSitemapIndexXml({ payload })`
 

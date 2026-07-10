@@ -25,6 +25,7 @@ import { previewDocumentFromForm } from '../src/admin/preview-document.js'
 import { createSeoPreviewEndpoint } from '../src/endpoints/preview.js'
 import { validateAbsoluteHttpUrl, validateCanonicalUrl, validateJson } from '../src/utils/validation.js'
 import { SEO_PLUGIN_MARKER, type SeoDocument, type SeoEnabledPluginConfig, type SeoPluginConfig } from '../src/types.js'
+import { releasePages, releasePayload, releaseSettings } from './fixtures.js'
 
 const validConfig = (): SeoEnabledPluginConfig => ({
   collections: {
@@ -600,5 +601,191 @@ describe('canonical write-time contract', () => {
     expect(validateCanonicalUrl('https://example.com/page/')).toBe(true)
     const result = await resolveEffectiveSeo({ collection: 'pages', config: validConfig(), locale: 'en', settings: {}, document: { seo: { canonical: { mode: 'manual', url: 'https://example.com/page/' } } } })
     expect(result.canonical.url).toBe('https://example.com/page')
+  })
+})
+
+describe('release readiness fixture scenarios', () => {
+  it.each([
+    ['page-with-defaults', releasePages.defaults, 'https://example.com/page-with-defaults', true],
+    ['page-with-noindex', releasePages.noindex, 'https://example.com/page-with-noindex', false],
+    ['page-with-manual-canonical', releasePages.manualCanonical, 'https://example.com/preferred-canonical-page', true],
+    ['page-with-external-canonical', releasePages.externalCanonical, 'https://external.example/original-article', false],
+    ['page-with-canonical-none', releasePages.canonicalNone, undefined, false],
+  ] as const)('keeps effective SEO and every output aligned for %s', async (_name, document, canonicalUrl, sitemapEligible) => {
+    const payload = releasePayload()
+    const config = payload.config!.custom![SEO_RUNTIME_CONFIG_KEY] as SeoEnabledPluginConfig
+    const effective = await resolveEffectiveSeo({ collection: 'pages', config, document, locale: 'en', settings: releaseSettings })
+    const metadata = await resolveSeoMetadata({ payload, collection: 'pages', document, locale: 'en' })
+    const preview = await resolveSeoPreview({ payload, collection: 'pages', document, locale: 'en' })
+
+    expect(effective.canonical.url).toBe(canonicalUrl)
+    expect(metadata.canonicalUrl).toBe(canonicalUrl)
+    expect(preview.canonicalUrl).toBe(canonicalUrl)
+    expect(await resolveSitemapEligibility({ effective, document, input: { collection: 'pages', config, document, locale: 'en', settings: releaseSettings } })).toBe(sitemapEligible)
+    expect(metadata.title).toBe(preview.title)
+    expect(metadata.description).toBe(preview.description)
+    expect(metadata.openGraph?.image).toBe(preview.image)
+  })
+
+  it('uses global social and organization media fallbacks through the configured media resolver', async () => {
+    const payload = releasePayload()
+    const config = payload.config!.custom![SEO_RUNTIME_CONFIG_KEY] as SeoEnabledPluginConfig
+    config.media.resolveMediaUrl = ({ media }) => `https://cdn.example/${media.id}.jpg`
+    const settings = { ...releaseSettings, organizationSchema: { name: 'Example Organization', logo: { id: 'organization-logo' } } }
+    const effective = await resolveEffectiveSeo({
+      collection: 'pages', config, locale: 'en', settings,
+      document: { ...releasePages.defaults, image: { id: 'mapped-image' } },
+    })
+    expect(effective.social.openGraph.image).toBe('https://cdn.example/mapped-image.jpg')
+    expect(effective.siteSchemas).toContainEqual(expect.objectContaining({ '@type': 'Organization', logo: 'https://cdn.example/organization-logo.jpg' }))
+  })
+
+  it('projects the default fixture into final metadata with schema and social defaults', async () => {
+    const payload = releasePayload()
+    const defaults = await resolveSeoMetadata({ payload, collection: 'pages', document: releasePages.defaults, locale: 'en' })
+    expect(defaults).toMatchObject({
+      title: 'Page With Defaults | Example Site', description: 'Mapped document description',
+      canonicalUrl: 'https://example.com/page-with-defaults', robots: { index: 'index', follow: 'follow' },
+      openGraph: { title: 'Page With Defaults | Example Site', image: 'https://example.com/media/default-og.jpg', url: 'https://example.com/page-with-defaults' },
+      twitter: { card: 'summary_large_image', image: 'https://example.com/media/default-og.jpg' },
+    })
+    expect(defaults.schema?.['@graph']).toEqual(expect.arrayContaining([
+      expect.objectContaining({ '@type': 'Organization', url: 'https://example.com', logo: 'https://example.com/media/logo.jpg' }),
+      expect.objectContaining({ '@type': 'WebSite', url: 'https://example.com' }),
+    ]))
+  })
+
+  it('uses canonical validation and robots inheritance contracts without interpreting malformed values as explicit directives', async () => {
+    const config = releasePayload().config!.custom![SEO_RUNTIME_CONFIG_KEY] as SeoEnabledPluginConfig
+    for (const url of ['javascript:alert(1)', 'mailto:test@example.com', 'data:text/plain,test', 'not a url', '/relative']) {
+      const effective = await resolveEffectiveSeo({ collection: 'pages', config, locale: 'en', settings: releaseSettings, document: { ...releasePages.defaults, seo: { canonical: { mode: 'manual', url } } } })
+      expect(effective.canonical.url).toBeUndefined()
+    }
+    const globalNoindex = { ...releaseSettings, defaultRobots: { mode: 'noindex-follow' } }
+    const inherited = await resolveEffectiveSeo({ collection: 'pages', config, locale: 'en', settings: globalNoindex, document: releasePages.defaults })
+    const malformed = await resolveEffectiveSeo({ collection: 'pages', config, locale: 'en', settings: globalNoindex, document: { ...releasePages.defaults, seo: { robots: { mode: 'invalid' } } } })
+    expect(inherited.robots).toMatchObject({ mode: 'inherit', index: 'noindex', follow: 'follow' })
+    expect(malformed.robots).toEqual(inherited.robots)
+  })
+
+  it('renders deterministic, escaped final sitemap XML and never emits noindex, external, or canonical-none entries', async () => {
+    const payload = releasePayload()
+    const xml = await renderSitemapXml({ payload, collection: 'pages', locale: 'en', page: 1 })
+    expect(xml).toContain('<loc>https://example.com/page-with-defaults</loc>')
+    expect(xml).toContain('<loc>https://example.com/preferred-canonical-page</loc>')
+    expect(xml).not.toContain('page-with-manual-canonical')
+    expect(xml).not.toContain('page-with-noindex')
+    expect(xml).not.toContain('external.example')
+    expect(xml).not.toContain('page-with-canonical-none')
+    expect(xml).toMatch(/^<\?xml version="1.0" encoding="UTF-8"\?>\n<urlset xmlns="http:\/\/www\.sitemaps\.org\/schemas\/sitemap\/0\.9" xmlns:xhtml="http:\/\/www\.w3\.org\/1999\/xhtml">.*<\/urlset>$/)
+    expect(xml.indexOf('page-with-defaults')).toBeLessThan(xml.indexOf('preferred-canonical-page'))
+  })
+
+  it('emits only published, indexable localized alternates and keeps their absolute URLs locale-specific', async () => {
+    const payload = releasePayload()
+    const english = await resolveSeoMetadata({ payload, collection: 'pages', id: 'localized', locale: 'en' })
+    const french = await resolveSeoMetadata({ payload, collection: 'pages', id: 'localized', locale: 'fr' })
+    expect(english).toMatchObject({ canonicalUrl: 'https://example.com/localized-page', alternates: { en: 'https://example.com/localized-page', fr: 'https://example.com/page-localisee', 'x-default': 'https://example.com/localized-page' } })
+    expect(french).toMatchObject({ canonicalUrl: 'https://example.com/page-localisee', alternates: { en: 'https://example.com/localized-page', fr: 'https://example.com/page-localisee' } })
+
+    for (const fr of [
+      { ...releasePages.localizedFr, _status: 'draft' },
+      { ...releasePages.localizedFr, seo: { robots: { mode: 'noindex-follow' } } },
+      {},
+    ]) {
+      expect((await resolveSeoMetadata({ payload: releasePayload({ fr }), collection: 'pages', id: 'localized', locale: 'en' })).alternates).toEqual({ en: 'https://example.com/localized-page', 'x-default': 'https://example.com/localized-page' })
+    }
+  })
+
+  it('uses a single-locale alternate set when Payload localization is not configured', async () => {
+    const payload = releasePayload()
+    payload.config!.localization = undefined
+    expect((await resolveSeoMetadata({ payload, collection: 'pages', id: 'localized', locale: 'en' })).alternates)
+      .toEqual({ en: 'https://example.com/localized-page', 'x-default': 'https://example.com/localized-page' })
+  })
+
+  it('keeps the documented direct-document contract explicit: caller-provided drafts are trusted for the active locale', async () => {
+    const payload = releasePayload()
+    const draft = { ...releasePages.defaults, _status: 'draft' }
+    expect(await resolveSeoMetadata({ payload, collection: 'pages', document: draft, locale: 'en' }))
+      .toMatchObject({ canonicalUrl: 'https://example.com/page-with-defaults' })
+    expect(payload.findByID).not.toHaveBeenCalledWith(expect.objectContaining({ locale: 'en' }))
+    expect(payload.findByID).toHaveBeenCalledWith(expect.objectContaining({ id: 'defaults', locale: 'fr', draft: false }))
+  })
+
+  it.each(['[]', '"string"', '42', 'true', 'null'])('rejects raw JSON-LD primitives and arrays: %s', async (rawJson) => {
+    const config = releasePayload().config!.custom![SEO_RUNTIME_CONFIG_KEY] as SeoEnabledPluginConfig
+    const result = await resolveSeoMetadataCore({ collection: 'pages', config, locale: 'en', settings: {}, document: { seo: { schema: { rawJson } } } })
+    expect(result.schema).toBeUndefined()
+  })
+
+  it.each([
+    [24_999, 1], [25_000, 1], [25_001, 2],
+  ])('creates sitemap index chunks at the %i-document boundary', async (totalDocs, chunks) => {
+    const payload = releasePayload()
+    payload.config!.localization = undefined
+    payload.find = vi.fn(async ({ collection, limit, page }) => {
+      if (collection !== 'pages') return { docs: [], totalDocs: 0 }
+      if (limit === 0) return { docs: [], totalDocs }
+      const start = ((page as number) - 1) * 25_000
+      const size = Math.max(0, Math.min(25_000, totalDocs - start))
+      return {
+        docs: Array.from({ length: size }, (_, index) => ({ id: start + index, _status: 'published', slug: `chunk-${start + index}` })),
+        totalDocs,
+      }
+    })
+    const xml = await renderSitemapIndexXml({ payload })
+    expect(xml.match(/<sitemap>/g)).toHaveLength(chunks)
+  })
+
+  it('renders a valid empty sitemap when the requested page has no documents', async () => {
+    const payload = releasePayload()
+    payload.find = vi.fn(async () => ({ docs: [], totalDocs: 0 }))
+    await expect(renderSitemapXml({ payload, collection: 'pages', locale: 'en', page: 1 }))
+      .resolves.toBe('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>')
+  })
+
+  it('XML-escapes sitemap locations containing valid path characters', async () => {
+    const payload = releasePayload()
+    payload.find = vi.fn(async () => ({ docs: [{ ...releasePages.defaults, slug: 'research&development' }], totalDocs: 1 }))
+    await expect(renderSitemapXml({ payload, collection: 'pages', locale: 'en', page: 1 }))
+      .resolves.toContain('<loc>https://example.com/research&amp;development</loc>')
+  })
+
+  it('deduplicates final normalized canonical URLs with the first stable document as winner', async () => {
+    const payload = releasePayload()
+    payload.config!.localization = undefined
+    payload.find = vi.fn(async ({ collection, limit }) => collection === 'pages' && limit === 0
+      ? { docs: [], totalDocs: 3 }
+      : {
+          docs: [
+            { id: 'first', _status: 'published', slug: 'first', seo: { canonical: { mode: 'manual', url: 'https://example.com/shared/' } }, updatedAt: '2026-01-01T00:00:00.000Z' },
+            { id: 'second', _status: 'published', slug: 'second', seo: { canonical: { mode: 'manual', url: 'https://example.com/shared' } }, updatedAt: '2026-02-01T00:00:00.000Z' },
+            { id: 'auto', _status: 'published', slug: 'shared', updatedAt: '2026-03-01T00:00:00.000Z' },
+          ], totalDocs: 3,
+        })
+    const xml = await renderSitemapXml({ payload, collection: 'pages', locale: 'en', page: 1 })
+    expect(xml.match(/<loc>https:\/\/example\.com\/shared<\/loc>/g)).toHaveLength(1)
+    expect(xml).toContain('<lastmod>2026-01-01T00:00:00.000Z</lastmod>')
+    expect(xml).not.toContain('2026-02-01')
+    expect(xml).not.toContain('2026-03-01')
+  })
+
+  it('uses the metadata alternate map verbatim in localized sitemap XHTML links', async () => {
+    const payload = releasePayload()
+    const metadata = await resolveSeoMetadata({ payload, collection: 'pages', id: 'localized', locale: 'en' })
+    const xml = await renderSitemapXml({ payload, collection: 'pages', locale: 'en', page: 1 })
+    expect(xml).toContain('xmlns:xhtml="http://www.w3.org/1999/xhtml"')
+    for (const [locale, url] of Object.entries(metadata.alternates!)) {
+      expect(xml).toContain(`<xhtml:link rel="alternate" hreflang="${locale}" href="${url}"/>`)
+    }
+  })
+
+  it('does not add the XHTML namespace for a non-localized sitemap', async () => {
+    const payload = releasePayload()
+    payload.config!.localization = undefined
+    const xml = await renderSitemapXml({ payload, collection: 'pages', locale: '', page: 1 })
+    expect(xml).not.toContain('xmlns:xhtml')
+    expect(xml).not.toContain('<xhtml:link')
   })
 })

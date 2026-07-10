@@ -59,12 +59,14 @@ and `follow`.
 
 ## Hreflang
 
-Hreflang is metadata-helper output only. For each configured Payload locale,
-load the document in that locale with no fallback and call the URL resolver. Add
-an alternate only when the locale-specific document and its path are valid.
-Include the active locale when valid. When `hreflang.xDefaultLocale` is
-configured and that locale resolves to an eligible URL, add `x-default` with
-the same URL. Never put hreflang entries in sitemap XML.
+For each configured Payload locale, load the document in that locale with no
+fallback and call the URL resolver. Add an alternate only when the
+locale-specific document is published, indexable, canonically eligible, and its
+path is valid. Include the active locale when valid. When
+`hreflang.xDefaultLocale` is configured and that locale resolves to an eligible
+URL, add `x-default` with the same URL. Metadata and localized sitemap entries
+share this exact eligibility resolver; sitemap XML emits these values as
+`xhtml:link` alternates and adds the XHTML namespace only when needed.
 
 ## Schema generation
 
@@ -116,11 +118,15 @@ renderSitemapXml requires collection, locale, and one-based page. It:
 
 1. queries only the configured collection's published documents for that locale
    with no fallback;
-2. chunks source documents at 25,000 per page;
-3. resolves each document URL and omits entries whose URL is invalid;
-4. emits loc and, when reliable, lastmod;
-5. XML-escapes all values and emits valid sitemap urlset XML;
-6. emits no hreflang alternates.
+2. resolves eligible canonical URLs across the complete locale dataset, then
+   deduplicates normalized final canonicals; the first document in stable
+   Payload order wins each collision;
+3. chunks deduplicated eligible entries at 25,000 per page;
+4. resolves each document URL and omits entries whose URL is invalid;
+5. emits loc and, when reliable, lastmod;
+6. XML-escapes all values and emits valid sitemap urlset XML;
+7. emits XHTML hreflang alternates with the same eligibility and x-default
+   policy as metadata when localization is configured.
 
 updatedAt is the default reliable last-modified value. A collection
 last-modified resolver may replace it; invalid dates omit lastmod. Source
@@ -136,7 +142,7 @@ full document for existing resolvers.
 renderSitemapIndexXml accepts the Payload instance but no collection, locale,
 or page arguments from the route handler. It derives all enabled sitemap
 collections and configured locales from plugin configuration, calculates
-published-document page counts, calls the top-level resolveChunkUrl for each
+deduplicated eligible-entry page counts, calls the top-level resolveChunkUrl for each
 non-empty page, and returns sitemapindex XML. sitemap.enabled defaults to true
 for configured collections. Collections and locales without a published source
 document are excluded. Invalid chunk URLs are omitted and logged.
