@@ -241,7 +241,7 @@ export type SeoPreview = {
   openGraph?: SeoSocialMetadata
   robots: { index: 'index' | 'noindex'; follow: 'follow' | 'nofollow'; custom?: string[] }
   title?: string
-  twitter?: SeoSocialMetadata
+  twitter?: SeoSocialMetadata & { card?: 'summary' | 'summary_large_image'; site?: string; creator?: string }
   /** The exact resolved schema payload returned by the public schema helper. */
   schema?: Record<string, unknown>
 }

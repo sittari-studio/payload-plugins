@@ -178,7 +178,10 @@ export default buildConfig({
       },
       media: {
         collection: 'media',
-        resolveMediaUrl: ({ media }) => typeof media.url === 'string' ? media.url : null,
+        resolveMediaUrl: ({ media }) => {
+          if (typeof media.url !== 'string' || !media.url) return null
+          return new URL(media.url, siteUrl).toString()
+        },
       },
       resolveUrl: ({ document, collection }) => {
         if (typeof document.slug !== 'string' || !document.slug) return null;

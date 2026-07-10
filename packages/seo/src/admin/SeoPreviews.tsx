@@ -14,6 +14,10 @@ const cardStyle = { background: 'var(--theme-elevation-0)', border: '1px solid v
 const mutedStyle = { color: 'var(--theme-elevation-600)', fontSize: '.875rem' }
 const clamp = (lines: number) => ({ WebkitBoxOrient: 'vertical' as const, WebkitLineClamp: lines, display: '-webkit-box', overflow: 'hidden' })
 
+const PreviewImage = ({ aspectRatio, missingLabel, src }: { aspectRatio: string; missingLabel: string; src?: string }) => src
+  ? <img alt="" src={src} style={{ aspectRatio, display: 'block', objectFit: 'cover', width: '100%' }} />
+  : <div style={{ alignItems: 'center', aspectRatio, background: 'linear-gradient(135deg, var(--theme-elevation-100), var(--theme-elevation-200))', color: 'var(--theme-elevation-600)', display: 'flex', justifyContent: 'center' }}>{missingLabel}</div>
+
 /** `useDocumentInfo().apiURL` includes the current document ID; plugin endpoints are collection routes. */
 const previewEndpointUrl = (apiURL: string): string => {
   const url = new URL(apiURL, window.location.origin)
@@ -64,12 +68,9 @@ export const SeoPreviews = ({ field }: UIFieldClientProps) => {
   const twitterDescription = preview?.twitter?.description ?? openGraphDescription
   const openGraphImage = preview?.openGraph?.image ?? preview?.image
   const twitterImage = preview?.twitter?.image ?? openGraphImage
+  const twitterAspectRatio = preview?.twitter?.card === 'summary' ? '1 / 1' : '2 / 1'
 
-  const PreviewImage = ({ src }: { src?: string }) => src
-    ? <img alt="" src={src} style={{ aspectRatio: '1.91 / 1', display: 'block', objectFit: 'cover', width: '100%' }} />
-    : <div style={{ alignItems: 'center', aspectRatio: '1.91 / 1', background: 'linear-gradient(135deg, var(--theme-elevation-100), var(--theme-elevation-200))', color: 'var(--theme-elevation-600)', display: 'flex', justifyContent: 'center' }}>{t('previewImageMissing')}</div>
-
-  return <section aria-label={t('previewAriaLabel')} style={{ display: 'grid', gap: '1.25rem', gridTemplateColumns: 'repeat(auto-fit, minmax(18rem, 1fr))' }}>
+  return <section aria-label={t('previewAriaLabel')} style={{ display: 'grid', gap: '1.25rem', maxWidth: '42rem', width: '100%' }}>
     <article style={{ ...cardStyle, padding: '1.25rem' }}>
       <div style={mutedStyle}>{t('googleResult')}</div>
       <div style={{ alignItems: 'center', display: 'flex', gap: '.5rem', marginTop: '.75rem' }}>
@@ -80,7 +81,7 @@ export const SeoPreviews = ({ field }: UIFieldClientProps) => {
       <p style={{ ...clamp(3), color: 'var(--theme-elevation-700)', lineHeight: 1.5, marginBottom: 0 }}>{description}</p>
     </article>
     <article style={cardStyle}>
-      <PreviewImage src={openGraphImage} />
+      <PreviewImage aspectRatio="1.91 / 1" missingLabel={t('previewImageMissing')} src={openGraphImage} />
       <div style={{ padding: '1rem' }}>
         <div style={mutedStyle}>{t('openGraphPreview')}</div>
         <div style={{ ...clamp(2), fontSize: '1.1rem', fontWeight: 600, marginTop: '.4rem' }}>{openGraphTitle}</div>
@@ -88,7 +89,7 @@ export const SeoPreviews = ({ field }: UIFieldClientProps) => {
       </div>
     </article>
     <article style={cardStyle}>
-      <PreviewImage src={twitterImage} />
+      <PreviewImage aspectRatio={twitterAspectRatio} missingLabel={t('previewImageMissing')} src={twitterImage} />
       <div style={{ borderTop: '1px solid var(--theme-elevation-150)', padding: '1rem' }}>
         <div style={{ ...clamp(2), fontWeight: 600 }}>{twitterTitle}</div>
         <div style={{ ...clamp(2), ...mutedStyle, marginTop: '.35rem' }}>{twitterDescription}</div>

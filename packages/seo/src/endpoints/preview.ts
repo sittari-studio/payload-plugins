@@ -32,6 +32,71 @@ const merge = (base: SeoDocument, overlay: SeoDocument): SeoDocument => Object.e
   return result
 }, { ...base })
 
+const relationId = (value: unknown): string | number | undefined =>
+  typeof value === 'string' || typeof value === 'number' ? value : undefined
+
+const readPath = (document: SeoDocument, path: string): unknown =>
+  path.split('.').filter(Boolean).reduce<unknown>((value, segment) =>
+    value !== null && typeof value === 'object' && !Array.isArray(value)
+      ? (value as SeoDocument)[segment]
+      : undefined,
+  document)
+
+const writePath = (document: SeoDocument, path: string, value: unknown): void => {
+  const segments = path.split('.').filter(Boolean)
+  if (!segments.length) return
+  let target: SeoDocument = document
+  for (const segment of segments.slice(0, -1)) {
+    const current = target[segment]
+    if (!isPlainJsonObject(current)) target[segment] = {}
+    target = target[segment] as SeoDocument
+  }
+  target[segments.at(-1)!] = value
+}
+
+/** Payload Admin serializes upload fields as IDs. Resolve only the preview image
+ * inputs so the configured media URL callback receives the media document it expects. */
+const hydratePreviewMedia = async ({
+  collection,
+  config,
+  document,
+  locale,
+  req,
+}: {
+  collection: string
+  config: ReturnType<typeof getSeoRuntimeConfig>
+  document: SeoDocument
+  locale: string
+  req: any
+}): Promise<SeoDocument> => {
+  if (!config) return document
+  const mediaCollection = config.collections[collection]?.media?.collection ?? config.media.collection
+  const paths = ['seo.openGraph.image', 'seo.twitter.image']
+  const mappedImage = config.collections[collection]?.fields?.image
+  if (mappedImage) paths.push(mappedImage)
+
+  await Promise.all(paths.map(async (path) => {
+    const id = relationId(readPath(document, path))
+    if (id === undefined) return
+    try {
+      const media = await (req.payload as SeoPayload).findByID({
+        collection: mediaCollection,
+        id,
+        locale,
+        fallbackLocale: false,
+        depth: 0,
+        overrideAccess: false,
+        req,
+        user: req.user,
+      })
+      writePath(document, path, media)
+    } catch {
+      // Keep the unresolved ID. The shared resolver will omit it safely.
+    }
+  }))
+  return document
+}
+
 const localeIsConfigured = (payload: SeoPayload, locale: string): boolean => {
   const configured = payload.config?.localization?.locales
   // Payload has no locale registry when localization is disabled. In that
@@ -99,10 +164,17 @@ export const createSeoPreviewEndpoint = (collection: string): Omit<Endpoint, 'ro
     }
     if (!(await hasPreviewAccess(req, collection, names.seoField, persisted))) return Response.json({ message: 'Forbidden' }, { status: 403 })
 
+    const previewDocument = await hydratePreviewMedia({
+      collection,
+      config,
+      document: persisted ? merge(persisted, document) : document,
+      locale,
+      req,
+    })
     return Response.json(await resolveSeoPreview({
       payload: req.payload as unknown as SeoPayload,
       collection,
-      document: persisted ? merge(persisted, document) : document,
+      document: previewDocument,
       locale,
     }))
   },

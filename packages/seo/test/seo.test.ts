@@ -568,6 +568,33 @@ describe('Admin preview resolution', () => {
     expect(preview).not.toHaveProperty('canonicalUrl')
   })
 
+  it('hydrates upload IDs before resolving Admin preview media', async () => {
+    const config = validConfig()
+    config.collections.pages.fields = { image: 'hero' }
+    config.media.resolveMediaUrl = ({ media }) => media.url as string
+    const findByID = vi.fn(async ({ collection, id }) => {
+      if (collection === 'media') return { id, url: `https://cdn.example/${id}.jpg` }
+      throw new Error('unexpected document lookup')
+    })
+    const payload = {
+      config: { admin: { user: 'users' }, collections: [{ slug: 'pages', fields: [{ name: 'seo', type: 'group', fields: [] }] }], custom: { [SEO_RUNTIME_CONFIG_KEY]: config } },
+      collections: {}, findGlobal: vi.fn(async () => ({})), findByID,
+    }
+    const response = await createSeoPreviewEndpoint('pages').handler({
+      json: async () => ({ document: { hero: 'mapped', seo: { openGraph: { image: 'open-graph' }, twitter: { image: 'twitter' } } }, locale: 'en' }),
+      payload,
+      user: { collection: 'users', id: 'admin' },
+    } as never)
+
+    expect(await response.json()).toMatchObject({
+      image: 'https://cdn.example/open-graph.jpg',
+      openGraph: { image: 'https://cdn.example/open-graph.jpg' },
+      twitter: { image: 'https://cdn.example/twitter.jpg' },
+    })
+    expect(findByID).toHaveBeenCalledTimes(3)
+    expect(findByID).toHaveBeenCalledWith(expect.objectContaining({ collection: 'media', id: 'open-graph', overrideAccess: false }))
+  })
+
   it('rejects unauthenticated preview requests', async () => {
     const response = await createSeoPreviewEndpoint('pages').handler({ user: null } as never)
     expect(response.status).toBe(401)
