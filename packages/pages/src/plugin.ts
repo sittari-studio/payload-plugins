@@ -83,6 +83,8 @@ const createDefaultSlugField = ({
       name: 'slugInstruction',
       type: 'ui',
       admin: {
+        disableListColumn: true,
+        disableBulkEdit: true,
         components: {
           Field: '@krameri/payload-pages/client#SlugInstruction',
         },
