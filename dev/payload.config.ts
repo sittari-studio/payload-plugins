@@ -7,6 +7,7 @@ import { buildConfig } from 'payload'
 import sharp from 'sharp'
 
 import { linkFieldPlugin, linkField } from '@krameri/payload-link-field'
+import { pagesPlugin } from '@krameri/payload-pages'
 import { seoPlugin } from '@krameri/payload-seo'
 
 import { uk } from '@payloadcms/translations/languages/uk'
@@ -95,34 +96,6 @@ export default buildConfig({
         }),
       ],
     },
-    {
-      slug: 'pages',
-      admin: {
-        defaultColumns: ['title', 'slug', 'updatedAt'],
-        useAsTitle: 'title',
-      },
-      labels: {
-        singular: 'Page',
-        plural: 'Pages',
-      },
-      fields: [
-        {
-          name: 'title',
-          type: 'text',
-          required: true,
-        },
-        {
-          name: 'slug',
-          type: 'text',
-          index: true,
-          required: true,
-        },
-        {
-          name: 'content',
-          type: 'richText',
-        },
-      ],
-    },
   ],
   db: sqliteAdapter({
     client: {
@@ -159,6 +132,7 @@ export default buildConfig({
     await seed(payload)
   },
   plugins: [
+    pagesPlugin(),
     seoPlugin({
       siteUrl,
       collections: {
@@ -208,6 +182,7 @@ export default buildConfig({
         },
       },
     }),
+
     linkFieldPlugin({
       resolveDocumentUrl: async ({ collectionSlug, document, payload }) => {
         return `/${collectionSlug}/${document?.slug}`

@@ -201,22 +201,32 @@ export interface LinkFieldTest {
 export interface Page {
   id: number;
   title: string;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
   slug: string;
-  content?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
+  pageType: 'standardContent' | 'flexible';
+  standardContent?: {
+    content?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
         version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
+      };
+      [k: string]: unknown;
+    } | null;
+  };
+  flexible?: {
+    blocks?: unknown[] | null;
+  };
   seo: {
     title?: string | null;
     description?: string | null;
@@ -434,8 +444,19 @@ export interface LinkFieldTestSelect<T extends boolean = true> {
  */
 export interface PagesSelect<T extends boolean = true> {
   title?: T;
+  generateSlug?: T;
   slug?: T;
-  content?: T;
+  pageType?: T;
+  standardContent?:
+    | T
+    | {
+        content?: T;
+      };
+  flexible?:
+    | T
+    | {
+        blocks?: T | {};
+      };
   seo?:
     | T
     | {

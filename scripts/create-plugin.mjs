@@ -86,7 +86,7 @@ await writeFile(
       },
       devDependencies: {
         payload: '^3.0.0',
-        typescript: 'latest',
+        typescript: '5.9.3',
         vitest: '4.1.9',
       },
       publishConfig: {

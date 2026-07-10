@@ -1,7 +1,7 @@
 {
-  "name": "@krameri/payload-seo",
+  "name": "@krameri/payload-pages",
   "version": "0.1.0",
-  "description": "PayloadCMS seo plugin.",
+  "description": "PayloadCMS pages plugin.",
   "type": "module",
   "license": "MIT",
   "main": "./dist/index.js",
@@ -15,10 +15,6 @@
     "./types": {
       "types": "./dist/exports/types.d.ts",
       "import": "./dist/exports/types.js"
-    },
-    "./next": {
-      "types": "./dist/next.d.ts",
-      "import": "./dist/next.js"
     },
     "./client": {
       "types": "./dist/exports/client.d.ts",
@@ -41,20 +37,15 @@
     "clean": "rm -rf dist *.tsbuildinfo",
     "prepublishOnly": "pnpm run clean && pnpm run build"
   },
-  "dependencies": {
-    "@payloadcms/ui": "^3.0.0"
-  },
   "peerDependencies": {
-    "payload": "^3.0.0",
-    "react": "^19.0.0"
+    "payload": "^3.0.0"
   },
   "devDependencies": {
-    "@payloadcms/db-sqlite": "3.85.2",
-    "@types/react": "^19.0.0",
-    "react": "^19.0.0",
     "payload": "^3.0.0",
     "typescript": "5.9.3",
-    "vitest": "4.1.9"
+    "vitest": "4.1.9",
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0"
   },
   "publishConfig": {
     "access": "public"
@@ -64,6 +55,10 @@
     "payloadcms",
     "payload-plugin",
     "cms",
-    "seo"
-  ]
+    "pages"
+  ],
+  "dependencies": {
+    "@payloadcms/ui": "^3.0.0",
+    "slugify": "^1.6.9"
+  }
 }

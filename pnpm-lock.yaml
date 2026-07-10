@@ -32,6 +32,9 @@ importers:
       '@krameri/payload-link-field':
         specifier: workspace:*
         version: link:../packages/link-field
+      '@krameri/payload-pages':
+        specifier: workspace:*
+        version: link:../packages/pages
       '@krameri/payload-seo':
         specifier: workspace:*
         version: link:../packages/seo
@@ -77,13 +80,38 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 4.1.9
-        version: 4.1.9(@types/node@26.1.0)(happy-dom@20.10.6)(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(sass@1.77.4)(tsx@4.22.4))
+        version: 4.1.9(@types/node@26.1.0)(happy-dom@20.10.6)(vite@8.1.3(@types/node@26.1.0)(esbuild@0.25.12)(sass@1.77.4)(tsx@4.22.4))
 
   packages/link-field:
     dependencies:
       '@payloadcms/ui':
         specifier: ^3.0.0
         version: 3.85.2(@types/react@19.2.17)(monaco-editor@0.55.1)(next@16.2.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sass@1.77.4))(payload@3.85.2(graphql@16.14.2)(typescript@5.9.3))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.17
+      payload:
+        specifier: ^3.0.0
+        version: 3.85.2(graphql@16.14.2)(typescript@5.9.3)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 4.1.9
+        version: 4.1.9(@types/node@26.1.0)(happy-dom@20.10.6)(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(sass@1.77.4)(tsx@4.22.4))
+
+  packages/pages:
+    dependencies:
+      '@payloadcms/ui':
+        specifier: ^3.0.0
+        version: 3.85.2(@types/react@19.2.17)(monaco-editor@0.55.1)(next@16.2.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sass@1.77.4))(payload@3.85.2(graphql@16.14.2)(typescript@5.9.3))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)
+      slugify:
+        specifier: ^1.6.9
+        version: 1.6.9
     devDependencies:
       '@types/react':
         specifier: ^19.0.0
@@ -124,7 +152,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 4.1.9
-        version: 4.1.9(@types/node@26.1.0)(happy-dom@20.10.6)(vite@8.1.3(@types/node@26.1.0)(esbuild@0.25.12)(sass@1.77.4)(tsx@4.22.4))
+        version: 4.1.9(@types/node@26.1.0)(happy-dom@20.10.6)(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(sass@1.77.4)(tsx@4.22.4))
 
   packages/shared:
     devDependencies:
@@ -2851,6 +2879,10 @@ packages:
   slash@3.0.0:
     resolution: {integrity: sha512-g9Q1haeby36OSStwb4ntCGGGaKsaVSjQ68fBxoQcutl5fS1vuY18H3wSt3jFyFtrkx+Kz0V1G85A4MyAdDMi2Q==}
     engines: {node: '>=8'}
+
+  slugify@1.6.9:
+    resolution: {integrity: sha512-vZ7rfeehZui7wQs438JXBckYLkIIdfHOXsaVEUMyS5fHo1483l1bMdo0EDSWYclY0yZKFOipDy4KHuKs6ssvdg==}
+    engines: {node: '>=8.0.0'}
 
   sonic-boom@4.2.1:
     resolution: {integrity: sha512-w6AxtubXa2wTXAUsZMMWERrsIRAdrK0Sc+FUytWvYAhBJLyuI4llrMIC1DtlNSdI99EI86KZum2MMq3EAZlF9Q==}
@@ -6076,6 +6108,8 @@ snapshots:
   sisteransi@1.0.5: {}
 
   slash@3.0.0: {}
+
+  slugify@1.6.9: {}
 
   sonic-boom@4.2.1:
     dependencies:
