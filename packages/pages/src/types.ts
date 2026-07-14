@@ -1,4 +1,4 @@
-import type { Field, RowField, TextField } from 'payload'
+import type { CollectionConfig, Field, RowField } from 'payload'
 
 export type PageTypeConfig = {
   fields: Field[]
@@ -13,11 +13,10 @@ export type PagesPluginConfig = {
 
   /** Enable or disable the plugin. */
   enabled?: boolean
-
-
-
-  /** Extend or replace the final fields of the pages collection. */
-  fields?: (args: { defaultFields: Field[] }) => Field[]
+  /** Enable or disable localization of the title field. */
+  localizeTitle?: boolean
+  /** Extend or replace the final config of the pages collection. */
+  overrides?: (defaultCollection: CollectionConfig) => CollectionConfig
 
   /** Extend, remove, or replace the default page types. */
   pageTypes?: (args: { defaultPageTypes: PageTypes }) => PageTypes
@@ -25,5 +24,3 @@ export type PagesPluginConfig = {
   /** Override the default slug field. */
   slugField?: (args: { defaultSlugField: RowField }) => RowField
 }
-
-

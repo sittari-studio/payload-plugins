@@ -20,6 +20,7 @@ const createDefaultPageTypes = (blockSlugs: string[]): PageTypes => ({
           "uk": 'Контент'
         },
         type: 'richText',
+        localized: true,
       },
     ],
   },
@@ -148,6 +149,7 @@ const createPagesCollection = (pluginConfig: PagesPluginConfig): CollectionConfi
         uk: 'Заголовок'
       },
       required: true,
+      localized: pluginConfig?.localizeTitle ?? true,
     },
     slugField,
     {
@@ -168,7 +170,7 @@ const createPagesCollection = (pluginConfig: PagesPluginConfig): CollectionConfi
     ...createPageTypeFields(pageTypes),
   ]
 
-  return {
+  const config: CollectionConfig = {
     slug: 'pages',
     admin: {
       useAsTitle: 'title',
@@ -185,8 +187,20 @@ const createPagesCollection = (pluginConfig: PagesPluginConfig): CollectionConfi
         uk: 'Сторінки'
       }
     },
-    fields: pluginConfig.fields?.({ defaultFields }) ?? defaultFields,
+    versions: {
+      drafts: {
+        autosave: {
+          interval: 500,
+        },
+      },
+    },
+    fields: defaultFields,
   }
+
+  if (pluginConfig.overrides) {
+    return pluginConfig.overrides(config)
+  }
+  return config
 }
 
 export const pagesPlugin =

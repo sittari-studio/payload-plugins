@@ -39,13 +39,16 @@ export default buildConfig({
         },
       }),
 
-      fields: ({ defaultFields }) => [
-        ...defaultFields,
-        {
-          name: "internalName",
-          type: "text",
-        },
-      ],
+      overrides: (defaultCollection) => ({
+        ...defaultCollection,
+        fields: [
+          ...defaultCollection.fields,
+          {
+            name: "internalName",
+            type: "text",
+          },
+        ],
+      }),
     }),
   ],
   collections: [],

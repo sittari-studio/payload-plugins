@@ -30,7 +30,15 @@ describe('pagesPlugin', () => {
 
     expect(outputConfig.collections).toHaveLength(2)
     expect(outputConfig.collections?.[0]).toBe(existingCollection)
-    expect(getPagesCollection(outputConfig)).toBeDefined()
+    expect(getPagesCollection(outputConfig)).toMatchObject({
+      versions: {
+        drafts: {
+          autosave: {
+            interval: 500,
+          },
+        },
+      },
+    })
   })
 
   it('returns the incoming config when disabled', () => {
@@ -110,16 +118,19 @@ describe('pagesPlugin', () => {
     })
   })
 
-  it('allows the slug field and final fields to be overridden', () => {
+  it('allows the slug field and final collection config to be overridden', () => {
     const outputConfig = pagesPlugin({
       slugField: ({ defaultSlugField }) => ({
         ...defaultSlugField,
         admin: { position: 'sidebar' },
       }),
-      fields: ({ defaultFields }) => [
-        ...defaultFields,
-        { name: 'internalName', type: 'text' },
-      ],
+      overrides: (defaultCollection) => ({
+        ...defaultCollection,
+        fields: [
+          ...defaultCollection.fields,
+          { name: 'internalName', type: 'text' },
+        ],
+      }),
     })({ collections: [] } as unknown as Config)
     const pages = getPagesCollection(outputConfig)
 
