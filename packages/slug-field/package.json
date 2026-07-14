@@ -1,7 +1,7 @@
 {
-  "name": "@sittari/payload-pages",
-  "version": "0.2.1",
-  "description": "PayloadCMS pages plugin.",
+  "name": "@sittari/payload-slug-field",
+  "version": "0.2.0",
+  "description": "Configurable slug field factory for Payload CMS.",
   "type": "module",
   "license": "MIT",
   "main": "./dist/index.js",
@@ -37,15 +37,20 @@
     "clean": "rm -rf dist *.tsbuildinfo",
     "prepublishOnly": "pnpm run clean && pnpm run build"
   },
+  "dependencies": {
+    "@payloadcms/ui": "^3.0.0",
+    "slugify": "^1.6.9"
+  },
   "peerDependencies": {
-    "payload": "^3.0.0"
+    "payload": "^3.0.0",
+    "react": "^19.0.0"
   },
   "devDependencies": {
-    "payload": "^3.0.0",
-    "typescript": "5.9.3",
-    "vitest": "4.1.9",
     "@types/react": "^19.0.0",
-    "react": "^19.0.0"
+    "payload": "^3.0.0",
+    "react": "^19.0.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.9"
   },
   "publishConfig": {
     "access": "public"
@@ -53,11 +58,7 @@
   "keywords": [
     "payload",
     "payloadcms",
-    "payload-plugin",
-    "cms",
-    "pages"
-  ],
-  "dependencies": {
-    "@sittari/payload-slug-field": "workspace:*"
-  }
+    "field",
+    "slug"
+  ]
 }

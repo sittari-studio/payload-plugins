@@ -107,7 +107,7 @@ Each page type creates a group field named after its object key. The group is sh
 
 ### Override the slug field
 
-The callback receives the complete default row created by Payload's `slugField()` helper:
+The callback receives the complete default row created by `createSlugField()` from `@sittari/payload-slug-field`:
 
 ```ts
 pagesPlugin({
@@ -121,7 +121,7 @@ pagesPlugin({
 });
 ```
 
-The default slug row is required, localized, positioned in the sidebar, and generated from `title`. Its slugifier lowercases text, replaces separators with hyphens, and removes unsupported characters.
+The default slug row is required, localized, positioned in the sidebar, and generated from `title`. It includes the Pages-specific instruction for the home page. For standalone use or to configure a different instruction, import `createSlugField` from `@sittari/payload-slug-field`.
 
 ### Override the collection
 

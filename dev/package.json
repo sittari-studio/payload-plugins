@@ -14,6 +14,7 @@
     "@sittari/payload-link-field": "workspace:*",
     "@sittari/payload-seo": "workspace:*",
     "@sittari/payload-pages": "workspace:*",
+    "@sittari/payload-slug-field": "workspace:*",
     "@payloadcms/db-sqlite": "^3.0.0",
     "@payloadcms/next": "^3.0.0",
     "@payloadcms/richtext-lexical": "^3.0.0",

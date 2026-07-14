@@ -34,7 +34,7 @@ describe('pagesPlugin', () => {
       versions: {
         drafts: {
           autosave: {
-            interval: 500,
+            interval: 375,
           },
         },
       },

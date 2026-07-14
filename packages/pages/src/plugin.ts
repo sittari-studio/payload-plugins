@@ -1,6 +1,5 @@
-import type { CollectionConfig, Config, Field, TextField, UIField } from 'payload'
-import { slugField } from 'payload'
-import slugify from 'slugify'
+import type { CollectionConfig, Config, Field } from 'payload'
+import { createSlugField } from '@sittari/payload-slug-field'
 
 import type { PagesPluginConfig, PageTypes } from './types.js'
 
@@ -58,65 +57,12 @@ const createDefaultPageTypes = (blockSlugs: string[]): PageTypes => ({
   },
 })
 
-const createDefaultSlugField = ({
-  useAsSlug = 'title',
-}) => slugField({
-  useAsSlug,
-  required: true,
-  localized: true,
-  position: 'sidebar',
-
-  overrides: (defaultField) => {
-    const slugIndex = defaultField.fields.findIndex(
-      (field) =>
-        field.type === 'text' &&
-        'name' in field &&
-        field.name === 'slug',
-    )
-
-    if (slugIndex === -1) {
-      return defaultField
-    }
-
-    const field = defaultField.fields[slugIndex] as TextField
-
-    const instructionField: UIField = {
-      name: 'slugInstruction',
-      type: 'ui',
-      admin: {
-        disableListColumn: true,
-        disableBulkEdit: true,
-        components: {
-          Field: '@sittari/payload-pages/client#SlugInstruction',
-        },
-      },
-    }
-
-    defaultField.fields.splice(
-      slugIndex,
-      1,
-      {
-        ...field,
-        label: {
-          en: 'Slug',
-          ru: 'Слаг',
-          uk: 'Слаг',
-        },
-      },
-      instructionField,
-    )
-
-    return defaultField
+const createDefaultSlugField = () => createSlugField({
+  instruction: {
+    en: 'For the home page, set the slug to "home".',
+    ru: 'Для главной страницы установите слаг "home".',
+    uk: 'Для головної сторінки встановіть слаг "home".',
   },
-
-  slugify: ({ valueToSlugify }) =>
-    typeof valueToSlugify === 'string' && valueToSlugify.length > 0
-      ? slugify(valueToSlugify, {
-        lower: true,
-        replacement: '-',
-        strict: true,
-      })
-      : '',
 })
 
 const createPageTypeFields = (pageTypes: PageTypes): Field[] =>
@@ -136,7 +82,7 @@ const createPagesCollection = (pluginConfig: PagesPluginConfig): CollectionConfi
   const defaultPageTypes = createDefaultPageTypes(pluginConfig.blockSlugs ?? [])
   const pageTypes = pluginConfig.pageTypes?.({ defaultPageTypes }) ?? defaultPageTypes
 
-  const defaultSlugField = createDefaultSlugField({})
+  const defaultSlugField = createDefaultSlugField()
   const slugField = pluginConfig.slugField?.({ defaultSlugField }) ?? defaultSlugField
 
   const defaultFields: Field[] = [
@@ -190,9 +136,12 @@ const createPagesCollection = (pluginConfig: PagesPluginConfig): CollectionConfi
     versions: {
       drafts: {
         autosave: {
-          interval: 500,
+          interval: 375,
         },
+        localizeStatus: true,
+        schedulePublish: true,
       },
+      maxPerDoc: 50,
     },
     fields: defaultFields,
   }
