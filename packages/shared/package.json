@@ -1,5 +1,5 @@
 {
-  "name": "@krameri/payload-shared",
+  "name": "@sittari/payload-shared",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

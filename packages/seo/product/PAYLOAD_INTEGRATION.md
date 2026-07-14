@@ -14,7 +14,7 @@ The default generated names are:
 | SEO group field | seo |
 | Settings Global slug | seo-settings |
 | Redirects collection slug | seo-redirects |
-| Generated marker | @krameri/payload-seo |
+| Generated marker | @sittari/payload-seo |
 
 Changing generated names is a configuration migration, not an automatic data
 migration.

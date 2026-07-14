@@ -1,5 +1,5 @@
 {
-  "name": "@krameri/payload-seo",
+  "name": "@sittari/payload-seo",
   "version": "0.1.0",
   "description": "PayloadCMS seo plugin.",
   "type": "module",

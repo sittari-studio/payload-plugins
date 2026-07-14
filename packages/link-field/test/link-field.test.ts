@@ -31,7 +31,7 @@ describe('linkField', () => {
 
     expect(field.type).toBe('group')
     expect((field as { name: string }).name).toBe('link')
-    expect(field.admin?.components?.Field).toBe('@krameri/payload-link-field/client#LinkField')
+    expect(field.admin?.components?.Field).toBe('@sittari/payload-link-field/client#LinkField')
     expect(field.admin?.custom?.linkField).toMatchObject({
       appearance: 'drawer',
       marker: LINK_FIELD_MARKER,

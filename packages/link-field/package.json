@@ -1,5 +1,5 @@
 {
-  "name": "@krameri/payload-link-field",
+  "name": "@sittari/payload-link-field",
   "version": "0.1.0",
   "description": "PayloadCMS link-field plugin.",
   "type": "module",

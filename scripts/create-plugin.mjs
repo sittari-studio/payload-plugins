@@ -12,7 +12,7 @@ if (!rawName) {
 }
 
 const name = rawName
-  .replace(/^@krameri\//, '')
+  .replace(/^@sittari\//, '')
   .replace(/^payload-plugin-/, '')
   .replace(/^plugin-/, '')
   .toLowerCase()
@@ -34,7 +34,7 @@ const camelName = pascalName[0].toLowerCase() + pascalName.slice(1)
 const exportName = `${camelName}Plugin`
 const pluginConfigName = `${pascalName}PluginConfig`
 
-const packageName = `@krameri/payload-${name}`
+const packageName = `@sittari/payload-${name}`
 const packageDir = path.join(process.cwd(), 'packages', name)
 
 if (existsSync(packageDir)) {

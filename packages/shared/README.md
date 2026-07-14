@@ -1,3 +1,3 @@
-# @krameri/payload-shared
+# @sittari/payload-shared
 
 Shared helpers for Krameri PayloadCMS plugins.

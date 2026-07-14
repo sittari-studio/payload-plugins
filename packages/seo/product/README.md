@@ -1,7 +1,7 @@
-# @krameri/payload-seo documentation
+# @sittari/payload-seo documentation
 
 This directory is the implementation and maintenance specification for
-@krameri/payload-seo, a Payload CMS v3 plugin. These documents define and
+@sittari/payload-seo, a Payload CMS v3 plugin. These documents define and
 maintain its v1 behavior.
 
 The plugin stores and manages SEO data in Payload. It does not create public
@@ -31,7 +31,7 @@ expected v1 implementation unless a documented exception is approved.
 ## V1 invariants
 
 - Payload CMS v3 is the only supported CMS version.
-- The public package name is @krameri/payload-seo.
+- The public package name is @sittari/payload-seo.
 - SEO data lives on the enabled document, not in a separate SEO collection.
 - The plugin never registers a public HTTP route.
 - A developer-supplied URL resolver is required and is configured once at the

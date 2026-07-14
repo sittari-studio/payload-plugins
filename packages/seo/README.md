@@ -1,4 +1,4 @@
-# @krameri/payload-seo
+# @sittari/payload-seo
 
 Locale-safe SEO fields, metadata resolution, robots, exact redirects, and
 sitemap helpers for Payload CMS v3. Its Admin UI supports English, Russian,
@@ -7,14 +7,14 @@ and Ukrainian. The plugin does not register public routes.
 ## Install
 
 ```bash
-pnpm add @krameri/payload-seo
+pnpm add @sittari/payload-seo
 ```
 
 ## Usage
 
 ```ts
 import { buildConfig } from 'payload'
-import { seoPlugin } from '@krameri/payload-seo'
+import { seoPlugin } from '@sittari/payload-seo'
 
 export default buildConfig({
   plugins: [seoPlugin({

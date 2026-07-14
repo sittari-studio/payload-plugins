@@ -1,5 +1,5 @@
 {
-  "name": "@krameri/payload-pages",
+  "name": "@sittari/payload-pages",
   "version": "0.1.0",
   "description": "PayloadCMS pages plugin.",
   "type": "module",

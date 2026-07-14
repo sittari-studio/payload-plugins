@@ -90,27 +90,27 @@ const appendSeoTab = (tabs: TabsField, seoField: Field): TabsField => ({
 
 const requireNonEmptyString = (value: unknown, label: string): void => {
   if (typeof value !== 'string' || value.trim() === '') {
-    throw new Error(`@krameri/payload-seo: ${label} must be a non-empty string.`)
+    throw new Error(`@sittari/payload-seo: ${label} must be a non-empty string.`)
   }
 }
 
 const requireFunction = (value: unknown, label: string): void => {
   if (typeof value !== 'function') {
-    throw new Error(`@krameri/payload-seo: ${label} must be a function.`)
+    throw new Error(`@sittari/payload-seo: ${label} must be a function.`)
   }
 }
 
 const validateMappings = (value: unknown, label: string): void => {
   if (value === undefined) return
   if (!isRecord(value) || Object.values(value).some((path) => typeof path !== 'string' || !path)) {
-    throw new Error(`@krameri/payload-seo: ${label} must map names to non-empty dot paths.`)
+    throw new Error(`@sittari/payload-seo: ${label} must map names to non-empty dot paths.`)
   }
 }
 
 const validateSitemapFields = (value: unknown, label: string): void => {
   if (value === undefined) return
   if (!Array.isArray(value) || value.some((path) => typeof path !== 'string' || path.trim() === '')) {
-    throw new Error(`@krameri/payload-seo: ${label} must be an array of non-empty field paths.`)
+    throw new Error(`@sittari/payload-seo: ${label} must be an array of non-empty field paths.`)
   }
 }
 
@@ -124,24 +124,24 @@ export const resolveSeoNames = (names?: SeoPluginConfig['names']) => ({
 /** Validates the plugin-owned configuration before any Payload config is changed. */
 export const validateSeoPluginConfig = (config: SeoEnabledPluginConfig): void => {
   if (!isRecord(config)) {
-    throw new Error('@krameri/payload-seo: plugin configuration must be an object.')
+    throw new Error('@sittari/payload-seo: plugin configuration must be an object.')
   }
 
   if (config.enabled !== undefined && config.enabled !== true) {
-    throw new Error('@krameri/payload-seo: enabled must be a boolean.')
+    throw new Error('@sittari/payload-seo: enabled must be a boolean.')
   }
 
   if (!isRecord(config.collections) || Object.keys(config.collections).length === 0) {
-    throw new Error('@krameri/payload-seo: collections must be a non-empty mapping.')
+    throw new Error('@sittari/payload-seo: collections must be a non-empty mapping.')
   }
 
   for (const [slug, collection] of Object.entries(config.collections)) {
     requireNonEmptyString(slug, 'collection slug')
     if (!isRecord(collection)) {
-      throw new Error(`@krameri/payload-seo: collections.${slug} must be an object.`)
+      throw new Error(`@sittari/payload-seo: collections.${slug} must be an object.`)
     }
     requireNonEmptyString(collection.schemaType, `collections.${slug}.schemaType`)
-    if (!validSchemaTypes.has(collection.schemaType)) throw new Error(`@krameri/payload-seo: collections.${slug}.schemaType is not supported.`)
+    if (!validSchemaTypes.has(collection.schemaType)) throw new Error(`@sittari/payload-seo: collections.${slug}.schemaType is not supported.`)
     validateMappings(collection.fields, `collections.${slug}.fields`)
     validateMappings(collection.schema, `collections.${slug}.schema`)
     if (collection.breadcrumbs !== undefined) requireFunction(collection.breadcrumbs, `collections.${slug}.breadcrumbs`)
@@ -150,34 +150,34 @@ export const validateSeoPluginConfig = (config: SeoEnabledPluginConfig): void =>
     }
     if (collection.media !== undefined) {
       if (!isRecord(collection.media)) {
-        throw new Error(`@krameri/payload-seo: collections.${slug}.media must be an object.`)
+        throw new Error(`@sittari/payload-seo: collections.${slug}.media must be an object.`)
       }
       requireNonEmptyString(collection.media.collection, `collections.${slug}.media.collection`)
     }
     if (collection.sitemap !== undefined) {
       if (!isRecord(collection.sitemap) || (collection.sitemap.enabled !== undefined && typeof collection.sitemap.enabled !== 'boolean')) {
-        throw new Error(`@krameri/payload-seo: collections.${slug}.sitemap.enabled must be a boolean.`)
+        throw new Error(`@sittari/payload-seo: collections.${slug}.sitemap.enabled must be a boolean.`)
       }
       validateSitemapFields(collection.sitemap.fields, `collections.${slug}.sitemap.fields`)
       if (collection.sitemap.exclude !== undefined) requireFunction(collection.sitemap.exclude, `collections.${slug}.sitemap.exclude`)
     }
     if (collection.visualFields?.some((field) => !isSupportedVisualField(field))) {
-      throw new Error(`@krameri/payload-seo: collections.${slug}.visualFields may only contain named text, textarea, number, checkbox, select, date, or upload fields.`)
+      throw new Error(`@sittari/payload-seo: collections.${slug}.visualFields may only contain named text, textarea, number, checkbox, select, date, or upload fields.`)
     }
   }
 
   if (!isRecord(config.media)) {
-    throw new Error('@krameri/payload-seo: media must be an object.')
+    throw new Error('@sittari/payload-seo: media must be an object.')
   }
   requireNonEmptyString(config.media.collection, 'media.collection')
   requireFunction(config.media.resolveMediaUrl, 'media.resolveMediaUrl')
   if (!normalizeSiteUrl(config.siteUrl)) {
-    throw new Error('@krameri/payload-seo: siteUrl must be an absolute HTTP(S) origin without a path, query, fragment, or credentials.')
+    throw new Error('@sittari/payload-seo: siteUrl must be an absolute HTTP(S) origin without a path, query, fragment, or credentials.')
   }
   requireFunction(config.resolveUrl, 'resolveUrl')
   requireFunction(config.resolveChunkUrl, 'resolveChunkUrl')
   if (config.url?.trailingSlash !== undefined && config.url.trailingSlash !== 'always' && config.url.trailingSlash !== 'never') {
-    throw new Error('@krameri/payload-seo: url.trailingSlash must be "always" or "never".')
+    throw new Error('@sittari/payload-seo: url.trailingSlash must be "always" or "never".')
   }
   if (config.hreflang?.xDefaultLocale !== undefined) requireNonEmptyString(config.hreflang.xDefaultLocale, 'hreflang.xDefaultLocale')
   if (config.diagnostics !== undefined) requireFunction(config.diagnostics, 'diagnostics')
@@ -188,14 +188,14 @@ export const validateSeoPluginConfig = (config: SeoEnabledPluginConfig): void =>
   requireNonEmptyString(names.redirectsCollection, 'names.redirectsCollection')
 
   if (config.robots !== undefined && (!isRecord(config.robots) || (config.robots.resolveSitemapUrls !== undefined && typeof config.robots.resolveSitemapUrls !== 'function'))) {
-    throw new Error('@krameri/payload-seo: robots.resolveSitemapUrls must be a function.')
+    throw new Error('@sittari/payload-seo: robots.resolveSitemapUrls must be a function.')
   }
 }
 
 const getSelectedCollection = (collections: CollectionConfig[], slug: string): CollectionConfig => {
   const collection = collections.find((candidate) => candidate.slug === slug)
   if (!collection) {
-    throw new Error(`@krameri/payload-seo: configured collection "${slug}" does not exist in Payload config.`)
+    throw new Error(`@sittari/payload-seo: configured collection "${slug}" does not exist in Payload config.`)
   }
   return collection
 }
@@ -208,38 +208,38 @@ const assertNoGeneratedNameCollisions = (incomingConfig: Config, config: SeoEnab
     const collection = getSelectedCollection(collections, slug)
     const conflict = findNamedField(collection.fields, names.seoField)
     if (conflict && !hasGeneratedMarker(conflict)) {
-      throw new Error(`@krameri/payload-seo: collection "${slug}" already has a field named "${names.seoField}".`)
+      throw new Error(`@sittari/payload-seo: collection "${slug}" already has a field named "${names.seoField}".`)
     }
     if (collection.endpoints === false) {
-      throw new Error(`@krameri/payload-seo: collection "${slug}" must allow endpoints for Admin SEO previews.`)
+      throw new Error(`@sittari/payload-seo: collection "${slug}" must allow endpoints for Admin SEO previews.`)
     }
     if (collection.endpoints?.some((endpoint) => endpoint.path === '/seo-preview' && !hasGeneratedPreviewEndpoint(endpoint))) {
-      throw new Error(`@krameri/payload-seo: collection "${slug}" already has an endpoint at "/seo-preview".`)
+      throw new Error(`@sittari/payload-seo: collection "${slug}" already has an endpoint at "/seo-preview".`)
     }
   }
 
   const settings = (incomingConfig.globals ?? []).find((global) => global.slug === names.settingsGlobal)
   if (settings && !hasGeneratedMarker(settings as GlobalConfig)) {
-    throw new Error(`@krameri/payload-seo: a Global named "${names.settingsGlobal}" already exists.`)
+    throw new Error(`@sittari/payload-seo: a Global named "${names.settingsGlobal}" already exists.`)
   }
 
   const redirects = collections.find((collection) => collection.slug === names.redirectsCollection)
   if (redirects && !hasGeneratedMarker(redirects)) {
-    throw new Error(`@krameri/payload-seo: a collection named "${names.redirectsCollection}" already exists.`)
+    throw new Error(`@sittari/payload-seo: a collection named "${names.redirectsCollection}" already exists.`)
   }
 }
 
 const assertMediaCollectionsExist = (incomingConfig: Config, config: SeoEnabledPluginConfig): void => {
   const slugs = new Set((incomingConfig.collections ?? []).map((collection) => collection.slug))
   const required = [config.media.collection, ...Object.values(config.collections).flatMap((collection) => collection.media?.collection ? [collection.media.collection] : [])]
-  for (const slug of required) if (!slugs.has(slug)) throw new Error(`@krameri/payload-seo: media collection "${slug}" does not exist in Payload config.`)
+  for (const slug of required) if (!slugs.has(slug)) throw new Error(`@sittari/payload-seo: media collection "${slug}" does not exist in Payload config.`)
 }
 
 export const seoPlugin =
   (pluginConfig: SeoPluginConfig = {} as SeoPluginConfig): Plugin =>
   (incomingConfig: Config): Config => {
     if (!isRecord(pluginConfig)) {
-      throw new Error('@krameri/payload-seo: plugin configuration must be an object.')
+      throw new Error('@sittari/payload-seo: plugin configuration must be an object.')
     }
 
     if (pluginConfig.enabled === false) {

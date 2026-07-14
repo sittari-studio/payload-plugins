@@ -1,11 +1,11 @@
-# @krameri/payload-link-field
+# @sittari/payload-link-field
 
 PayloadCMS link-field plugin.
 
 ## Install
 
 ```bash
-pnpm add @krameri/payload-link-field
+pnpm add @sittari/payload-link-field
 ```
 
 ## Usage
@@ -13,12 +13,12 @@ pnpm add @krameri/payload-link-field
 Import the admin stylesheet from your Payload admin CSS file:
 
 ```css
-@import "@krameri/payload-link-field/admin.css";
+@import "@sittari/payload-link-field/admin.css";
 ```
 
 ```ts
 import { buildConfig } from "payload";
-import { linkField, linkFieldPlugin } from "@krameri/payload-link-field";
+import { linkField, linkFieldPlugin } from "@sittari/payload-link-field";
 
 export default buildConfig({
   plugins: [

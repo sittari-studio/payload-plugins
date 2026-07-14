@@ -1,13 +1,13 @@
 # Krameri Payload Plugins
 
-Monorepo for PayloadCMS plugins published under the `@krameri` npm scope.
+Monorepo for PayloadCMS plugins published under the `@sittari` npm scope.
 
 ## Packages
 
 | Package | Description |
 | --- | --- |
-| `@krameri/payload-shared` | Shared helpers for Krameri Payload plugins. |
-| `@krameri/payload-seo` | Locale-safe SEO fields, English/Russian/Ukrainian Admin UI, and framework-neutral metadata, robots, redirect, and sitemap helpers. |
+| `@sittari/payload-shared` | Shared helpers for Krameri Payload plugins. |
+| `@sittari/payload-seo` | Locale-safe SEO fields, English/Russian/Ukrainian Admin UI, and framework-neutral metadata, robots, redirect, and sitemap helpers. |
 
 The `dev` workspace is a private local Payload app for testing packages during development.
 
@@ -15,7 +15,7 @@ The `dev` workspace is a private local Payload app for testing packages during d
 
 - Node.js 20+
 - pnpm 11+
-- npm account with access to the `@krameri` scope
+- npm account with access to the `@sittari` scope
 
 ## Install
 
@@ -57,7 +57,7 @@ pnpm test
 pnpm create:plugin sitemap
 ```
 
-This creates `packages/sitemap` with package name `@krameri/payload-sitemap`.
+This creates `packages/sitemap` with package name `@sittari/payload-sitemap`.
 
 ## Publish
 
@@ -81,7 +81,7 @@ Every public scoped package includes:
 
 ```ts
 import { buildConfig } from 'payload'
-import { seoPlugin } from '@krameri/payload-seo'
+import { seoPlugin } from '@sittari/payload-seo'
 
 export default buildConfig({
   plugins: [

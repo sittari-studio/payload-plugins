@@ -29,15 +29,6 @@ importers:
 
   dev:
     dependencies:
-      '@krameri/payload-link-field':
-        specifier: workspace:*
-        version: link:../packages/link-field
-      '@krameri/payload-pages':
-        specifier: workspace:*
-        version: link:../packages/pages
-      '@krameri/payload-seo':
-        specifier: workspace:*
-        version: link:../packages/seo
       '@payloadcms/db-sqlite':
         specifier: ^3.0.0
         version: 3.85.2(payload@3.85.2(graphql@16.14.2)(typescript@5.9.3))
@@ -50,6 +41,15 @@ importers:
       '@payloadcms/translations':
         specifier: ^3.85.2
         version: 3.85.2
+      '@sittari/payload-link-field':
+        specifier: workspace:*
+        version: link:../packages/link-field
+      '@sittari/payload-pages':
+        specifier: workspace:*
+        version: link:../packages/pages
+      '@sittari/payload-seo':
+        specifier: workspace:*
+        version: link:../packages/seo
       next:
         specifier: ^16.0.0
         version: 16.2.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sass@1.77.4)

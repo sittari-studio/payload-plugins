@@ -86,7 +86,7 @@ const createDefaultSlugField = ({
         disableListColumn: true,
         disableBulkEdit: true,
         components: {
-          Field: '@krameri/payload-pages/client#SlugInstruction',
+          Field: '@sittari/payload-pages/client#SlugInstruction',
         },
       },
     }

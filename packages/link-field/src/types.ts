@@ -71,7 +71,7 @@ export type ResolveUrlHookArgs = FieldHookArgs<
   LinkFieldValue
 >
 
-export const LINK_FIELD_MARKER = '@krameri/payload-link-field'
+export const LINK_FIELD_MARKER = '@sittari/payload-link-field'
 
 export const LINK_FIELD_ADMIN_COMPONENT =
-  '@krameri/payload-link-field/client#LinkField'
+  '@sittari/payload-link-field/client#LinkField'

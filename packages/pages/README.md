@@ -1,18 +1,18 @@
-# @krameri/payload-pages
+# @sittari/payload-pages
 
 A small for-internal-use Payload CMS plugin that adds a `pages` collection with configurable page types.
 
 ## Install
 
 ```bash
-pnpm add @krameri/payload-pages
+pnpm add @sittari/payload-pages
 ```
 
 ## Usage
 
 ```ts
 import { buildConfig } from "payload";
-import { pagesPlugin } from "@krameri/payload-pages";
+import { pagesPlugin } from "@sittari/payload-pages";
 
 export default buildConfig({
   plugins: [

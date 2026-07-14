@@ -15,10 +15,10 @@ import {
   resolveSitemapEligibility,
   resolveSeoMetadata,
   seoPlugin,
-} from '@krameri/payload-seo'
+} from '@sittari/payload-seo'
 ```
 
-Types are exported from both the package root and `@krameri/payload-seo/types`.
+Types are exported from both the package root and `@sittari/payload-seo/types`.
 
 ## `seoPlugin(options)`
 
@@ -228,7 +228,7 @@ Neither sitemap helper registers a route or sets an XML response header.
 
 ## Next.js adapter
 
-`@krameri/payload-seo/next` exports `resolveNextMetadata(input)`. It projects
+`@sittari/payload-seo/next` exports `resolveNextMetadata(input)`. It projects
 resolved values into a structurally compatible Next.js `Metadata` object,
 including canonical and language alternates, robots directives, and social
 image arrays. Custom robots are emitted as a complete Next robots string so no

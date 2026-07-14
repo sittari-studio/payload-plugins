@@ -1,6 +1,6 @@
-# Integrating `@krameri/payload-seo`
+# Integrating `@sittari/payload-seo`
 
-`@krameri/payload-seo` adds localized SEO editing fields to selected Payload
+`@sittari/payload-seo` adds localized SEO editing fields to selected Payload
 collections, a site-wide SEO settings Global, and a redirects collection. It
 also exports server helpers that resolve metadata and render robots and sitemap
 content.

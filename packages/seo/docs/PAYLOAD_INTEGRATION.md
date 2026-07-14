@@ -5,7 +5,7 @@
 Install the package in a Payload CMS v3 application with React 19:
 
 ```bash
-pnpm add @krameri/payload-seo
+pnpm add @sittari/payload-seo
 ```
 
 The configured plugin collections and media collection must already be present
@@ -20,7 +20,7 @@ localized URLs.
 
 ```ts
 import { buildConfig } from 'payload'
-import { seoPlugin } from '@krameri/payload-seo'
+import { seoPlugin } from '@sittari/payload-seo'
 
 import { Media } from './collections/Media'
 import { Pages } from './collections/Pages'

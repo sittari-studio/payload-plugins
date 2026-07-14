@@ -11,9 +11,9 @@
     "clean": "rm -rf .next dist payload-types.ts payload.dev.sqlite media"
   },
   "dependencies": {
-    "@krameri/payload-link-field": "workspace:*",
-    "@krameri/payload-seo": "workspace:*",
-    "@krameri/payload-pages": "workspace:*",
+    "@sittari/payload-link-field": "workspace:*",
+    "@sittari/payload-seo": "workspace:*",
+    "@sittari/payload-pages": "workspace:*",
     "@payloadcms/db-sqlite": "^3.0.0",
     "@payloadcms/next": "^3.0.0",
     "@payloadcms/richtext-lexical": "^3.0.0",

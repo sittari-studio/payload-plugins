@@ -2,7 +2,7 @@
 
 ## Product summary
 
-@krameri/payload-seo is a reusable SEO plugin for Payload CMS v3. Developers
+@sittari/payload-seo is a reusable SEO plugin for Payload CMS v3. Developers
 enable it on arbitrary collections and configure collection-specific URL and
 schema behavior. Editors then manage localized SEO data in Payload Admin.
 

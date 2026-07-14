@@ -12,7 +12,7 @@ loaded document, so the page query can be shared with page rendering.
 ```ts
 import type { Metadata } from 'next'
 import { getPayload } from 'payload'
-import { resolveNextMetadata } from '@krameri/payload-seo/next'
+import { resolveNextMetadata } from '@sittari/payload-seo/next'
 
 import config from '@payload-config'
 
@@ -57,7 +57,7 @@ explicit locale or define a deliberate default.
 
 ```ts
 import { getPayload } from 'payload'
-import { renderRobotsTxt } from '@krameri/payload-seo'
+import { renderRobotsTxt } from '@sittari/payload-seo'
 
 import config from '@payload-config'
 
@@ -80,7 +80,7 @@ route:
 
 ```ts
 import { getPayload } from 'payload'
-import { renderSitemapIndexXml } from '@krameri/payload-seo'
+import { renderSitemapIndexXml } from '@sittari/payload-seo'
 
 import config from '@payload-config'
 
@@ -99,7 +99,7 @@ chunk handler calls `renderSitemapXml` with validated route parameters:
 
 ```ts
 import { getPayload } from 'payload'
-import { renderSitemapXml } from '@krameri/payload-seo'
+import { renderSitemapXml } from '@sittari/payload-seo'
 
 import config from '@payload-config'
 
@@ -138,7 +138,7 @@ Payload database adapter.
 ```ts
 import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
-import { findSeoRedirect } from '@krameri/payload-seo'
+import { findSeoRedirect } from '@sittari/payload-seo'
 
 import config from '@payload-config'
 

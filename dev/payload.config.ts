@@ -6,9 +6,9 @@ import { fileURLToPath } from 'node:url'
 import { buildConfig } from 'payload'
 import sharp from 'sharp'
 
-import { linkFieldPlugin, linkField } from '@krameri/payload-link-field'
-import { pagesPlugin } from '@krameri/payload-pages'
-import { seoPlugin } from '@krameri/payload-seo'
+import { linkFieldPlugin, linkField } from '@sittari/payload-link-field'
+import { pagesPlugin } from '@sittari/payload-pages'
+import { seoPlugin } from '@sittari/payload-seo'
 
 import { uk } from '@payloadcms/translations/languages/uk'
 import {

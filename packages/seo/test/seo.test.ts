@@ -81,13 +81,13 @@ describe('seoPlugin', () => {
     const schema = seoTabs.tabs.find((tab: any) => labelText(tab.label) === 'Schema').fields[0]
     expect(schema.fields.find((field: any) => field.name === 'rawJson')).toMatchObject({
       admin: {
-        components: { Field: '@krameri/payload-seo/client#ResetRawJson' },
+        components: { Field: '@sittari/payload-seo/client#ResetRawJson' },
         custom: { seo: { collectionSchema: {}, defaultType: 'WebPage' } },
       },
     })
     expect(schema.fields.find((field: any) => field.name === 'values')).toMatchObject({
       admin: {
-        components: { Field: '@krameri/payload-seo/client#SchemaValueOverrides' },
+        components: { Field: '@sittari/payload-seo/client#SchemaValueOverrides' },
         custom: { seo: { schemaMappings: {} } },
       },
     })

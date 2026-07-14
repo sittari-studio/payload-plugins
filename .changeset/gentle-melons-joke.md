@@ -1,6 +1,6 @@
 ---
-"@krameri/payload-pages": patch
-"@krameri/payload-seo": patch
+"@sittari/payload-pages": patch
+"@sittari/payload-seo": patch
 ---
 
 Initial release
