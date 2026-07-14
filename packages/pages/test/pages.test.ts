@@ -9,6 +9,13 @@ const getPagesCollection = (config: Config) =>
 const getNamedField = (fields: Field[], name: string) =>
   fields.find((field) => 'name' in field && field.name === name)
 
+const getRowContainingField = (fields: Field[], name: string) =>
+  fields.find(
+    (field) =>
+      field.type === 'row' &&
+      field.fields.some((child) => 'name' in child && child.name === name),
+  )
+
 describe('pagesPlugin', () => {
   it('adds the pages collection and preserves existing collections', () => {
     const existingCollection = {
@@ -49,8 +56,18 @@ describe('pagesPlugin', () => {
     expect(pageType).toMatchObject({
       type: 'select',
       options: [
-        { label: 'Standard Content', value: 'standardContent' },
-        { label: 'Flexible', value: 'flexible' },
+        {
+          label: {
+            en: 'Standard Content',
+            ru: 'Стандартный контент',
+            uk: 'Стандартний контент',
+          },
+          value: 'standardContent',
+        },
+        {
+          label: { en: 'Flexible', ru: 'Конструктор', uk: 'Конструктор' },
+          value: 'flexible',
+        },
       ],
     })
     expect(flexible).toMatchObject({
@@ -82,9 +99,13 @@ describe('pagesPlugin', () => {
     })({ collections: [] } as unknown as Config)
     const pages = getPagesCollection(outputConfig)
 
+    expect(getNamedField(pages?.fields ?? [], 'pageType')).toMatchObject({
+      options: expect.arrayContaining([{ label: 'Blog Index', value: 'blogIndex' }]),
+    })
+
     expect(getNamedField(pages?.fields ?? [], 'blogIndex')).toMatchObject({
       type: 'group',
-      label: 'Blog Index',
+      label: false,
       fields: [{ name: 'heading', type: 'text' }],
     })
   })
@@ -102,9 +123,10 @@ describe('pagesPlugin', () => {
     })({ collections: [] } as unknown as Config)
     const pages = getPagesCollection(outputConfig)
 
-    expect(getNamedField(pages?.fields ?? [], 'slug')).toMatchObject({
-      name: 'slug',
+    expect(getRowContainingField(pages?.fields ?? [], 'slug')).toMatchObject({
+      type: 'row',
       admin: { position: 'sidebar' },
+      fields: expect.arrayContaining([expect.objectContaining({ name: 'slug' })]),
     })
     expect(getNamedField(pages?.fields ?? [], 'internalName')).toMatchObject({
       type: 'text',
