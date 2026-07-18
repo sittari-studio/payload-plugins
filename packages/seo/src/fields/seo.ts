@@ -1,10 +1,10 @@
 import type { GroupField, TextField } from 'payload'
 
 import { SEO_DOCUMENT_SCHEMA_MANAGER_ADMIN_COMPONENT, SEO_PLUGIN_MARKER, SEO_PREVIEWS_ADMIN_COMPONENT, type SeoCollectionConfig } from '../types.js'
-import type { SeoSchemaVariable } from '../schema/types.js'
+import type { JsonObject, SeoSchemaVariable } from '../schema/types.js'
 import { adminLabel, adminTabLabel, adminText } from '../admin/translations.js'
 import { validateCanonicalUrl } from '../utils/validation.js'
-import { validateJsonPatch } from '../schema/json.js'
+import { validateJsonPatch, validateSchemaObject } from '../schema/json.js'
 
 const localized = true
 const socialCards = [
@@ -58,6 +58,15 @@ export const createSeoField = ({ collection, collectionSlug, mediaCollection, na
           { name: 'card', type: 'select', label: adminLabel('card'), localized, options: socialCards }, { name: 'site', type: 'text', label: adminLabel('twitter'), localized }, { name: 'creator', type: 'text', label: adminLabel('author'), localized },
         ] }] },
         { label: adminTabLabel('schema'), fields: [
+          { name: 'documentSchemas', type: 'array', label: adminLabel('documentSchemas'), admin: { hidden: true }, fields: [
+            { name: 'schemaId', type: 'text', required: true, admin: { hidden: true } },
+            { name: 'name', type: 'text', required: true, admin: { hidden: true } },
+            { name: 'schema', type: 'json', required: true, defaultValue: {}, admin: { hidden: true }, validate: (value, { req } = {} as never) => {
+              const result = validateSchemaObject(value)
+              return result === true ? true : adminText(result.includes('@context') ? 'validationSchemaContext' : 'validationSchemaRoot', req?.i18n?.language)
+            } },
+            { name: 'valueOverrides', type: 'json', localized, admin: { hidden: true }, validate: (value, { req, siblingData } = {} as never) => validateJsonPatch(value, { scalarValuesOnly: true, source: (siblingData as Record<string, unknown> | undefined)?.schema as JsonObject | undefined }) === true ? true : adminText('validationSchemaPatch', req?.i18n?.language) },
+          ] },
           { name: 'schemaInstances', type: 'array', label: adminLabel('schema'), admin: { hidden: true }, fields: [
             { name: 'templateId', type: 'text', required: true, admin: { hidden: true } },
             { name: 'overrides', type: 'json', localized, admin: { hidden: true }, validate: (value, { req } = {} as never) => validateJsonPatch(value, { scalarValuesOnly: true }) === true ? true : adminText('validationSchemaPatch', req?.i18n?.language) },

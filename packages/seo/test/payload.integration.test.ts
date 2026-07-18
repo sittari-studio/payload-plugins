@@ -78,6 +78,15 @@ afterAll(async () => {
 })
 
 describe('real Payload SEO persistence', () => {
+  it('persists and resolves a custom schema owned by one document', async () => {
+    const page = await payload.create({ collection: 'pages', locale: 'en', data: {
+      title: 'One-off', slug: 'one-off', seo: { documentSchemas: [{ schemaId: 'one-off-schema', name: 'One-off thing', schema: { '@type': 'Thing', name: '$title', url: '$canonicalUrl' } }] },
+    } })
+    const saved = await payload.findByID({ collection: 'pages', id: page.id, locale: 'en', fallbackLocale: false, draft: false })
+    expect(saved.seo?.documentSchemas).toMatchObject([{ schemaId: 'one-off-schema', name: 'One-off thing' }])
+    expect((await resolveSeoMetadata({ payload: seoPayload(), collection: 'pages', id: page.id, locale: 'en' })).schema).toMatchObject({ '@type': 'Thing', name: 'One-off', url: 'https://example.com/one-off' })
+  })
+
   it('seeds every current default, keeps repeated references, and cascades template deletion', async () => {
     await payload.updateGlobal({ slug: 'seo-settings', locale: 'en', data: {
       collectionSchemas: [{ collection: 'pages', templates: [
@@ -180,6 +189,7 @@ describe('real Payload SEO persistence', () => {
   it('rejects invalid persisted schema, robots, and canonical values through generated Payload fields', async () => {
     const data = { title: 'Invalid', slug: 'invalid' }
     await expect(payload.updateGlobal({ slug: 'seo-settings', locale: 'en', data: { globalSchemas: [{ templateId: 'bad', name: 'Bad', schema: [] as never }] } })).rejects.toThrow()
+    await expect(payload.create({ collection: 'pages', locale: 'en', data: { title: 'Bad custom schema', slug: 'bad-custom-schema', seo: { documentSchemas: [{ schemaId: 'bad', name: 'Bad', schema: [] as never }] } } })).rejects.toThrow()
     await expect(payload.updateGlobal({ slug: 'seo-settings', locale: 'en', data: { globalSchemas: [
       { templateId: 'duplicate', name: 'First', schema: { '@type': 'Thing' } },
       { templateId: 'duplicate', name: 'Second', schema: { '@type': 'Thing' } },

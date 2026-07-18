@@ -60,7 +60,7 @@ export type {
   SeoPreview,
   ResolvedSeoMetadata,
 } from './types.js'
-export type { JsonObject, JsonValue, SeoCollectionSchemaTemplates, SeoGlobalSchemaOverride, SeoJsonPatchOperation, SeoSchemaInstance, SeoSchemaTemplate, SeoSchemaVariable } from './schema/types.js'
+export type { JsonObject, JsonValue, SeoCollectionSchemaTemplates, SeoDocumentSchema, SeoGlobalSchemaOverride, SeoJsonPatchOperation, SeoSchemaInstance, SeoSchemaTemplate, SeoSchemaVariable } from './schema/types.js'
 export type { SeoRedirect } from './helpers/redirects.js'
 
 export { seoPlugin as default } from './plugin.js'

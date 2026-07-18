@@ -23,12 +23,16 @@ and endpoints are preserved.
 
 ## Document data
 
+- `seo.documentSchemas` stores complete schemas owned by one document. Each row
+  has a stable `schemaId`, name, root-object `schema`, and localized scalar
+  `valueOverrides`. These schemas do not become reusable Settings templates.
 - `seo.schemaInstances` stores ordered stable template references. Repeating a
   template is valid. Each row carries localized, replace-only scalar JSON Patch
   overrides.
 - `seo.globalSchemaOverrides` stores localized patches keyed by global schema
   ID. Global references are implicit and cannot be removed from a document.
-- Template choice and JSON shape are shared across locales. A patch must target
+- Template choice and JSON shape, including document-owned schema shape, are
+  shared across locales. A patch must target
   an existing scalar and preserve its JSON type; only replacement values are
   localized.
 

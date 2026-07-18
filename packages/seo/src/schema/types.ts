@@ -25,6 +25,15 @@ export type SeoSchemaInstance = {
   overrides?: SeoJsonPatchOperation[]
 }
 
+/** A complete schema owned by one document instead of Settings. */
+export type SeoDocumentSchema = {
+  schemaId: string
+  name: string
+  schema: JsonObject
+  /** Localized value-only changes to the document-owned schema structure. */
+  valueOverrides?: SeoJsonPatchOperation[]
+}
+
 export type SeoGlobalSchemaOverride = {
   schemaId: string
   overrides?: SeoJsonPatchOperation[]

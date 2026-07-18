@@ -15,7 +15,7 @@ import { isAbsoluteHttpUrl } from '../utils/validation.js'
 import { normalizeRobotsDirectives } from '../utils/robots.js'
 import { composeSchemaGraph, resolveSchemaList } from '../schema/resolve.js'
 import { isJsonObject } from '../schema/json.js'
-import type { JsonObject, SeoCollectionSchemaTemplates, SeoGlobalSchemaOverride, SeoSchemaInstance, SeoSchemaTemplate } from '../schema/types.js'
+import type { JsonObject, SeoCollectionSchemaTemplates, SeoDocumentSchema, SeoGlobalSchemaOverride, SeoSchemaInstance, SeoSchemaTemplate } from '../schema/types.js'
 
 type Input = {
   collection: string
@@ -114,7 +114,7 @@ const schemaObject = (value: unknown): JsonObject | undefined => {
 
 const template = (value: unknown): SeoSchemaTemplate | undefined => {
   if (!isJsonObject(value)) return undefined
-  const id = value.templateId ?? value.id
+  const id = value.templateId ?? value.schemaId ?? value.id
   const schema = schemaObject(value.schema)
   return typeof id === 'string' && typeof value.name === 'string' && schema
     ? { id, name: value.name, schema, ...(Array.isArray(value.valueOverrides) ? { valueOverrides: value.valueOverrides as SeoSchemaTemplate['valueOverrides'] } : {}), ...(value.isDefault === true ? { isDefault: true } : {}) }
@@ -122,10 +122,10 @@ const template = (value: unknown): SeoSchemaTemplate | undefined => {
 }
 
 export const resolveStructuredData = async (input: Input, seo: SeoDocument, canonicalUrl?: string): Promise<{ schemas: JsonObject[] }> => {
-  const parseTemplates = (items: unknown, scope: 'Collection' | 'Global'): SeoSchemaTemplate[] => Array.isArray(items) ? items.flatMap((item) => {
+  const parseTemplates = (items: unknown, scope: 'Collection' | 'Document' | 'Global'): SeoSchemaTemplate[] => Array.isArray(items) ? items.flatMap((item) => {
     const parsed = template(item)
     if (parsed) return [parsed]
-    const id = isJsonObject(item) && typeof (item.templateId ?? item.id) === 'string' ? String(item.templateId ?? item.id) : 'unknown'
+    const id = isJsonObject(item) && typeof (item.templateId ?? item.schemaId ?? item.id) === 'string' ? String(item.templateId ?? item.schemaId ?? item.id) : 'unknown'
     diagnostic(input, 'schema', `${scope} schema "${id}" is invalid and was omitted.`)
     return []
   }) : []
@@ -134,10 +134,11 @@ export const resolveStructuredData = async (input: Input, seo: SeoDocument, cano
   const group = groups.find((item) => item && item.collection === input.collection)
   const templates = parseTemplates(group?.templates, 'Collection')
   const instances = Array.isArray(seo.schemaInstances) ? seo.schemaInstances as SeoSchemaInstance[] : []
+  const documentSchemas = parseTemplates(seo.documentSchemas, 'Document').map(({ id, name, schema, valueOverrides }) => ({ schemaId: id, name, schema, valueOverrides }) satisfies SeoDocumentSchema)
   const globalOverrides = Array.isArray(seo.globalSchemaOverrides) ? seo.globalSchemaOverrides as SeoGlobalSchemaOverride[] : []
   return { schemas: resolveSchemaList({
-    globalSchemas, globalOverrides, templates, instances, document: input.document, canonicalUrl,
-    onError: ({ id, reason, scope }) => diagnostic(input, 'schema', `${scope === 'global' ? 'Global' : 'Collection'} schema "${id}" is ${reason === 'missing' ? 'missing' : 'invalid'} and was omitted.`),
+    globalSchemas, globalOverrides, templates, instances, documentSchemas, document: input.document, canonicalUrl,
+    onError: ({ id, reason, scope }) => diagnostic(input, 'schema', `${scope === 'global' ? 'Global' : scope === 'document' ? 'Document' : 'Collection'} schema "${id}" is ${reason === 'missing' ? 'missing' : 'invalid'} and was omitted.`),
   }) }
 }
 

@@ -23,12 +23,14 @@ import { useAdminText } from "../use-admin-text.js";
 import { SchemaCard } from "./SchemaCard.js";
 import { SchemaDrawer } from "./SchemaDrawer.js";
 import { SchemaEditorPanel } from "./SchemaEditorPanel.js";
+import { StarterPicker } from "./StarterPicker.js";
 import {
   createClientId,
   isLocalizedSchemaLocale,
   schemaTypeLabel,
   type EditorDraft,
   type SchemaManagerCustom,
+  type StoredDocumentSchema,
   type StoredGlobalOverride,
   type StoredSchemaInstance,
   type StoredSchemaTemplate,
@@ -38,7 +40,8 @@ import { usePayloadArray } from "./usePayloadArray.js";
 
 type EditTarget =
   | { kind: "global"; template: StoredSchemaTemplate }
-  | { index: number; kind: "instance"; template: StoredSchemaTemplate };
+  | { index: number; kind: "instance"; template: StoredSchemaTemplate }
+  | { index?: number; kind: "document" };
 
 const effective = (
   template: StoredSchemaTemplate,
@@ -78,15 +81,19 @@ export const DocumentSchemaManager = ({
   const instancesArray = usePayloadArray<StoredSchemaInstance>({
     path: `${parentPath}.schemaInstances`,
   });
+  const documentSchemasArray = usePayloadArray<StoredDocumentSchema>({
+    path: `${parentPath}.documentSchemas`,
+  });
   const globalsArray = usePayloadArray<StoredGlobalOverride>({
     path: `${parentPath}.globalSchemaOverrides`,
   });
   const instances = instancesArray.rows;
+  const documentSchemas = documentSchemasArray.rows;
   const globalOverrides = globalsArray.rows;
   const [templates, setTemplates] = useState<TemplateEndpointResponse>();
   const [loadError, setLoadError] = useState<string>();
   const [loading, setLoading] = useState(true);
-  const [stage, setStage] = useState<"editor" | "templates">("templates");
+  const [stage, setStage] = useState<"editor" | "picker" | "templates">("templates");
   const [editTarget, setEditTarget] = useState<EditTarget>();
   const [draft, setDraft] = useState<EditorDraft>();
   const [baseDraft, setBaseDraft] = useState<EditorDraft>();
@@ -101,8 +108,6 @@ export const DocumentSchemaManager = ({
       }),
     [drawerDepth, path],
   );
-  // Structural document patches cannot be localized safely. Documents may only replace scalar values.
-  const structuralLocked = true;
 
   useEffect(() => {
     if (!collection) return;
@@ -149,7 +154,31 @@ export const DocumentSchemaManager = ({
     setDraft(undefined);
     openModal(drawerSlug);
   };
+  const openDocumentPicker = (element: HTMLElement) => {
+    returnFocus.current = element;
+    setStage("picker");
+    setEditTarget({ kind: "document" });
+    setDraft(undefined);
+    setBaseDraft(undefined);
+    openModal(drawerSlug);
+  };
   const openEditor = (target: EditTarget, element: HTMLElement) => {
+    if (target.kind === "document") {
+      const stored = target.index === undefined ? undefined : documentSchemas[target.index];
+      if (!stored) return;
+      const base = structuredClone(stored.schema);
+      returnFocus.current = element;
+      setEditTarget(target);
+      setBaseDraft({ name: stored.name, schema: base, templateId: stored.schemaId });
+      setDraft({
+        name: stored.name,
+        schema: effective({ templateId: stored.schemaId, name: stored.name, schema: stored.schema, valueOverrides: stored.valueOverrides }),
+        templateId: stored.schemaId,
+      });
+      setStage("editor");
+      openModal(drawerSlug);
+      return;
+    }
     const overrides =
       target.kind === "global"
         ? globalOverrides.find(
@@ -166,6 +195,12 @@ export const DocumentSchemaManager = ({
     setStage("editor");
     openModal(drawerSlug);
   };
+  const chooseStarter = (name: string, schema: JsonObject) => {
+    const schemaId = createClientId();
+    setDraft({ name, schema, templateId: schemaId });
+    setBaseDraft({ name, schema: structuredClone(schema), templateId: schemaId });
+    setStage("editor");
+  };
   const useTemplate = (template: StoredSchemaTemplate) => {
     instancesArray.add({
       id: createClientId(),
@@ -175,8 +210,27 @@ export const DocumentSchemaManager = ({
   };
   const save = () => {
     if (!editTarget || !draft || !baseDraft) return;
+    if (editTarget.kind === "document") {
+      if (!draft.name.trim()) return;
+      const existing = editTarget.index === undefined ? undefined : documentSchemas[editTarget.index];
+      const stored: StoredDocumentSchema = localized && existing
+        ? {
+            ...existing,
+            valueOverrides: diffEffectiveSchema(existing.schema, draft.schema, { scalarValuesOnly: true }),
+          }
+        : {
+            ...(existing ?? {}),
+            schemaId: draft.templateId,
+            name: draft.name.trim(),
+            schema: structuredClone(draft.schema),
+          };
+      if (editTarget.index === undefined) documentSchemasArray.add(stored);
+      else documentSchemasArray.replace(editTarget.index, stored);
+      close();
+      return;
+    }
     const overrides = diffEffectiveSchema(baseDraft.schema, draft.schema, {
-      scalarValuesOnly: structuralLocked,
+      scalarValuesOnly: true,
     });
     if (editTarget.kind === "instance") {
       instancesArray.replace(editTarget.index, {
@@ -217,6 +271,18 @@ export const DocumentSchemaManager = ({
       (item) => item.schemaId === schemaId,
     );
     if (index >= 0) globalsArray.remove(index);
+  };
+  const duplicateDocumentSchema = (index: number) => {
+    const source = documentSchemas[index];
+    documentSchemasArray.add({
+      ...structuredClone(source),
+      id: createClientId(),
+      schemaId: createClientId(),
+      name: `${source.name} ${t("copySuffix")}`,
+    }, index + 1);
+  };
+  const removeDocumentSchema = (index: number) => {
+    if (globalThis.confirm(t("confirmDeleteSchema"))) documentSchemasArray.remove(index);
   };
   const collectionTemplates = templates?.collectionTemplates ?? [];
   const localized = isLocalizedSchemaLocale({
@@ -428,12 +494,45 @@ export const DocumentSchemaManager = ({
           )}
         </div>
       </div>
+      <div className="st-grid st-gap-base-70">
+        <div className="st-flex st-items-center st-justify-between st-gap-base max-[600px]:st-flex-col max-[600px]:st-items-stretch">
+          <div>
+            <h3>{t("documentSchemas")}</h3>
+            <p>{t("documentSchemasDescription")}</p>
+          </div>
+          <Button
+            buttonStyle="primary"
+            disabled={readOnly || localized}
+            onClick={(event) => openDocumentPicker(event.currentTarget as HTMLElement)}
+            size="small"
+            type="button"
+          >
+            + {t("createDocumentSchema")}
+          </Button>
+        </div>
+        <div className="st-grid st-gap-base-45">
+          {documentSchemas.length ? documentSchemas.map((item, index) => (
+            <SchemaCard
+              actions={<>
+                <Button buttonStyle="transparent" disabled={readOnly} margin={false} onClick={(event) => openEditor({ index, kind: "document" }, event.currentTarget as HTMLElement)} type="button">{t("edit")}</Button>
+                <Button buttonStyle="transparent" disabled={readOnly || localized} margin={false} onClick={() => duplicateDocumentSchema(index)} type="button">{t("duplicate")}</Button>
+                <Button buttonStyle="transparent" disabled={readOnly || localized || index === 0} margin={false} onClick={() => documentSchemasArray.move(index, index - 1)} type="button">↑</Button>
+                <Button buttonStyle="transparent" disabled={readOnly || localized || index === documentSchemas.length - 1} margin={false} onClick={() => documentSchemasArray.move(index, index + 1)} type="button">↓</Button>
+                <Button buttonStyle="transparent" className="!st-text-error-500 hover:!st-bg-error-100 hover:!st-text-error-700" disabled={readOnly || localized} margin={false} onClick={() => removeDocumentSchema(index)} type="button">{t("delete")}</Button>
+              </>}
+              badges={<><Pill pillStyle="success" size="small">{schemaTypeLabel(effective({ templateId: item.schemaId, name: item.name, schema: item.schema, valueOverrides: item.valueOverrides }))}</Pill><Pill pillStyle="light-gray" size="small">{t("documentScope")}</Pill></>}
+              key={item.id ?? item.schemaId}
+              name={item.name}
+            />
+          )) : <Banner>{t("noDocumentSchemas")}</Banner>}
+        </div>
+      </div>
       <SchemaDrawer
         onCancel={close}
         onSave={stage === "editor" ? save : undefined}
-        saveDisabled={readOnly}
+        saveDisabled={readOnly || !draft?.name.trim()}
         slug={drawerSlug}
-        title={stage === "templates" ? t("chooseSchema") : t("editValues")}
+        title={stage === "templates" ? t("chooseSchema") : stage === "picker" ? t("chooseStarter") : editTarget?.kind === "document" ? t("editSchema") : t("editValues")}
       >
         {stage === "templates" ? (
           <div>
@@ -459,6 +558,8 @@ export const DocumentSchemaManager = ({
               })}
             </div>
           </div>
+        ) : stage === "picker" ? (
+          <StarterPicker onChoose={chooseStarter} />
         ) : draft ? (
           <SchemaEditorPanel
             baseDraft={baseDraft}
@@ -466,7 +567,7 @@ export const DocumentSchemaManager = ({
             onChange={setDraft}
             readOnly={readOnly}
             showLocalizedNotice={localized}
-            structuralLocked={structuralLocked}
+            structuralLocked={editTarget?.kind !== "document" || localized}
             variables={custom?.collectionVariables?.[collection] ?? []}
           />
         ) : null}

@@ -152,13 +152,15 @@ describe('editor-managed schema core', () => {
       globalOverrides: [{ schemaId: 'global', overrides: [{ op: 'replace', path: '/name', value: '$siteName' }] }],
       templates: [{ id: 'article', name: 'Article', schema: { '@type': 'Article', headline: '$title', url: '$canonicalUrl' } }],
       instances: [{ templateId: 'article' }, { templateId: 'article', overrides: [{ op: 'replace', path: '/headline', value: 'Second: $title' }] }],
+      documentSchemas: [{ schemaId: 'document', name: 'Document', schema: { '@type': 'Thing', name: 'Only $title' }, valueOverrides: [{ op: 'replace', path: '/name', value: 'Localized $title' }] }],
       document: { title: 'Story', siteName: 'Example' }, canonicalUrl: 'https://example.com/story',
     })
-    expect(schemas).toHaveLength(3)
+    expect(schemas).toHaveLength(4)
     expect(schemas[0]).toMatchObject({ name: 'Example' })
     expect(schemas[0]).not.toHaveProperty('url')
     expect(schemas[1]).toMatchObject({ url: 'https://example.com/story' })
     expect(schemas[2]).toMatchObject({ headline: 'Second: Story' })
+    expect(schemas[3]).toEqual({ '@type': 'Thing', name: 'Localized Story' })
     expect(composeSchemaGraph(schemas)).toEqual({ '@context': 'https://schema.org', '@graph': schemas })
   })
 

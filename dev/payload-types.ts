@@ -260,6 +260,31 @@ export interface Page {
       site?: string | null;
       creator?: string | null;
     };
+    documentSchemas?:
+      | {
+          schemaId: string;
+          name: string;
+          schema:
+            | {
+                [k: string]: unknown;
+              }
+            | unknown[]
+            | string
+            | number
+            | boolean
+            | null;
+          valueOverrides?:
+            | {
+                [k: string]: unknown;
+              }
+            | unknown[]
+            | string
+            | number
+            | boolean
+            | null;
+          id?: string | null;
+        }[]
+      | null;
     schemaInstances?:
       | {
           templateId: string;
@@ -600,6 +625,15 @@ export interface PagesSelect<T extends boolean = true> {
               card?: T;
               site?: T;
               creator?: T;
+            };
+        documentSchemas?:
+          | T
+          | {
+              schemaId?: T;
+              name?: T;
+              schema?: T;
+              valueOverrides?: T;
+              id?: T;
             };
         schemaInstances?:
           | T

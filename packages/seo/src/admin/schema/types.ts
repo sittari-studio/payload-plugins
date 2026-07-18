@@ -21,6 +21,14 @@ export type StoredSchemaInstance = {
   overrides?: SeoJsonPatchOperation[]
 }
 
+export type StoredDocumentSchema = {
+  id?: string
+  schemaId: string
+  name: string
+  schema: JsonObject
+  valueOverrides?: SeoJsonPatchOperation[]
+}
+
 export type StoredGlobalOverride = {
   id?: string
   schemaId: string

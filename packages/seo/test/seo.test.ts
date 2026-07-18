@@ -79,10 +79,11 @@ describe('seoPlugin', () => {
     const seoTabs = seoField.fields.find((field: any) => field.type === 'tabs')
     expect(seoTabs.tabs.map((tab: any) => labelText(tab.label))).toEqual(['General', 'Canonical', 'Robots', 'Open Graph', 'X / Twitter', 'Schema', 'Previews'])
     const schemaFields = seoTabs.tabs.find((tab: any) => labelText(tab.label) === 'Schema').fields
-    expect(schemaFields.map((field: any) => field.name)).toEqual(['schemaInstances', 'globalSchemaOverrides', 'schemaManager'])
-    expect(schemaFields.slice(0, 2).every((field: any) => field.admin.hidden)).toBe(true)
-    expect(schemaFields[0].fields.find((field: any) => field.name === 'templateId').admin.hidden).toBe(true)
-    expect(schemaFields[2]).toMatchObject({ admin: { components: { Field: '@sittari/payload-seo/client#DocumentSchemaManager' } } })
+    expect(schemaFields.map((field: any) => field.name)).toEqual(['documentSchemas', 'schemaInstances', 'globalSchemaOverrides', 'schemaManager'])
+    expect(schemaFields.slice(0, 3).every((field: any) => field.admin.hidden)).toBe(true)
+    expect(schemaFields[0].fields.find((field: any) => field.name === 'schemaId').admin.hidden).toBe(true)
+    expect(schemaFields[1].fields.find((field: any) => field.name === 'templateId').admin.hidden).toBe(true)
+    expect(schemaFields[3]).toMatchObject({ admin: { components: { Field: '@sittari/payload-seo/client#DocumentSchemaManager' } } })
     const settings = outputConfig.globals?.find((global) => global.slug === 'seo-settings') as any
     expect(settings.fields[0].tabs.map((tab: any) => labelText(tab.label))).toEqual(['Site defaults', 'Social defaults', 'Default robots', 'Schema', 'robots.txt'])
     const settingsSchemaFields = settings.fields[0].tabs.find((tab: any) => labelText(tab.label) === 'Schema').fields
@@ -411,6 +412,12 @@ describe('effective SEO resolution regression coverage', () => {
     const effective = await resolveEffectiveSeo(value)
     expect(effective.schemas).toEqual([{ '@type': 'Article', headline: 'Story', url: 'https://example.com/page' }])
     expect(serializeJsonLd({ name: '</script><script>' })).not.toContain('</script>')
+  })
+
+  it('resolves complete schemas stored on one document', async () => {
+    const value = input({ title: 'Custom', seo: { documentSchemas: [{ schemaId: 'custom', name: 'Custom thing', schema: { '@type': 'Thing', name: '$title', url: '$canonicalUrl' } }] } })
+    const effective = await resolveEffectiveSeo(value)
+    expect(effective.schemas).toContainEqual({ '@type': 'Thing', name: 'Custom', url: 'https://example.com/page' })
   })
 
   it('reports resolver failures without exposing document contents', async () => {
