@@ -1,9 +1,10 @@
 "use client";
 
 import {
+  Banner,
   Button,
-  FieldLabel,
   formatDrawerSlug,
+  Pill,
   useConfig,
   useLocale,
   useModal,
@@ -264,24 +265,35 @@ export const SettingsSchemaManager = ({
       <SchemaCard
         actions={
           <>
-            <button
+            <Button
+              buttonStyle="transparent"
               disabled={readOnly}
+              margin={false}
               onClick={(event) =>
-                beginEdit(nextScope, index, template, event.currentTarget)
+                beginEdit(
+                  nextScope,
+                  index,
+                  template,
+                  event.currentTarget as HTMLElement,
+                )
               }
               type="button"
             >
               {t("edit")}
-            </button>
-            <button
+            </Button>
+            <Button
+              buttonStyle="transparent"
               disabled={disabled}
+              margin={false}
               onClick={() => duplicate(nextScope, index)}
               type="button"
             >
               {t("duplicate")}
-            </button>
-            <button
+            </Button>
+            <Button
+              buttonStyle="transparent"
               disabled={disabled || index === 0}
+              margin={false}
               onClick={() =>
                 nextScope === "global"
                   ? globalArray.move(index, index - 1)
@@ -295,9 +307,11 @@ export const SettingsSchemaManager = ({
               type="button"
             >
               ↑
-            </button>
-            <button
+            </Button>
+            <Button
+              buttonStyle="transparent"
               disabled={disabled || index === items.length - 1}
+              margin={false}
               onClick={() =>
                 nextScope === "global"
                   ? globalArray.move(index, index + 1)
@@ -311,29 +325,33 @@ export const SettingsSchemaManager = ({
               type="button"
             >
               ↓
-            </button>
-            <button
-              className="!st-text-error-500"
+            </Button>
+            <Button
+              buttonStyle="transparent"
+              className="!st-text-error-500 hover:!st-bg-error-100 hover:!st-text-error-700"
               disabled={disabled}
+              margin={false}
               onClick={() => remove(nextScope, index)}
               type="button"
             >
               {t("delete")}
-            </button>
+            </Button>
           </>
         }
         badges={
           <>
-            <span className="st-inline-flex st-rounded-full st-bg-success-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-success-700">
+            <Pill pillStyle="success" size="small">
               {schemaTypeLabel(effectiveTemplate(template))}
-            </span>
-            <span className="st-inline-flex st-rounded-full st-bg-elevation-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-elevation-800">
+            </Pill>
+            <Pill pillStyle="light-gray" size="small">
               {nextScope === "global"
                 ? t("globalScope")
                 : collectionName(selectedCollection)}
-            </span>
+            </Pill>
             {template.isDefault ? (
-              <span className="st-inline-flex st-rounded-full st-bg-warning-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-warning-700">{t("default")}</span>
+              <Pill pillStyle="warning" size="small">
+                {t("default")}
+              </Pill>
             ) : null}
           </>
         }
@@ -346,23 +364,28 @@ export const SettingsSchemaManager = ({
     <section className="st-mb-base-150 st-grid st-gap-base [&_.field-type]:st-mb-0 [&_h3]:st-m-0 [&_h4]:st-m-0 [&_p]:st-mt-[.35rem] [&_p]:st-mb-0 [&_p]:st-text-elevation-600">
       <div
         aria-label={t("schema")}
-        className="st-flex st-gap-base-25 st-overflow-x-auto st-border-0 st-border-b st-border-solid st-border-elevation-150 [&_button]:st-mb-[-1px] [&_button]:st-cursor-pointer [&_button]:st-border-0 [&_button]:st-border-b-2 [&_button]:st-border-solid [&_button]:st-border-b-transparent [&_button]:st-bg-transparent [&_button]:st-px-base-75 [&_button]:st-py-base-55 [&_button]:st-font-[inherit] [&_button]:st-font-semibold [&_button]:st-text-elevation-600 [&_button:hover]:st-text-foreground [&_button:focus-visible]:st-rounded-sm [&_button:focus-visible]:st-outline [&_button:focus-visible]:st-outline-2 [&_button:focus-visible]:st-outline-offset-[-2px] [&_button:focus-visible]:st-outline-success-400 max-[600px]:[&_button]:st-flex-[1_0_auto]"
+        className="default-list-view-tabs"
         role="tablist"
       >
         {(["global", "collection"] as const).map((tab) => (
-          <button
-            aria-controls={`seo-schema-${tab}-panel`}
-            aria-selected={activeTab === tab}
-            className={activeTab === tab ? "!st-border-b-success-500 !st-text-foreground" : undefined}
+          <Button
+            buttonStyle="tab"
+            className={`default-list-view-tabs__button${activeTab === tab ? " default-list-view-tabs__button--active" : ""}`}
+            disabled={activeTab === tab}
+            extraButtonProps={{
+              "aria-controls": `seo-schema-${tab}-panel`,
+              "aria-selected": activeTab === tab,
+              role: "tab",
+              tabIndex: activeTab === tab ? 0 : -1,
+            }}
             id={`seo-schema-${tab}-tab`}
             key={tab}
+            margin={false}
             onClick={() => setActiveTab(tab)}
-            role="tab"
-            tabIndex={activeTab === tab ? 0 : -1}
             type="button"
           >
             {tab === "global" ? t("globalSchemas") : t("collectionSchemas")}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -391,9 +414,7 @@ export const SettingsSchemaManager = ({
             {globalSchemas.length ? (
               cards(globalSchemas, "global")
             ) : (
-              <div className="st-rounded-md st-border st-border-dashed st-border-elevation-250 st-bg-elevation-50 st-p-base st-text-center">
-                <p>{t("noGlobalSchemas")}</p>
-              </div>
+              <Banner>{t("noGlobalSchemas")}</Banner>
             )}
           </div>
         </div>
@@ -408,22 +429,24 @@ export const SettingsSchemaManager = ({
         <div className="st-grid st-grid-cols-[minmax(150px,220px)_minmax(0,1fr)] st-items-start st-gap-base max-[600px]:st-grid-cols-1">
           <nav
             aria-label={t("enabledCollection")}
-            className="st-grid st-gap-1 st-rounded-md st-border st-border-solid st-border-elevation-150 st-bg-elevation-50 st-p-1.5 max-[600px]:st-flex max-[600px]:st-overflow-x-auto [&_button]:st-cursor-pointer [&_button]:st-overflow-hidden [&_button]:st-text-ellipsis [&_button]:st-whitespace-nowrap [&_button]:st-rounded-sm [&_button]:st-border-0 [&_button]:st-bg-transparent [&_button]:st-p-base-55 [&_button]:st-text-left [&_button]:st-font-[inherit] [&_button]:st-text-elevation-700 [&_button:hover]:st-bg-elevation-100 [&_button:hover]:st-text-foreground max-[600px]:[&_button]:st-flex-none"
+            className="st-grid st-gap-1 st-rounded-md st-border st-border-solid st-border-elevation-150 st-bg-elevation-50 st-p-1.5 max-[600px]:st-flex max-[600px]:st-overflow-x-auto"
           >
             {collections.map((collection) => (
-              <button
-                aria-current={
-                  selectedCollection === collection ? "page" : undefined
+              <Button
+                buttonStyle={
+                  selectedCollection === collection ? "subtle" : "transparent"
                 }
-                className={
-                  selectedCollection === collection ? "!st-bg-elevation-800 !st-text-elevation-0" : undefined
-                }
+                extraButtonProps={{
+                  "aria-current":
+                    selectedCollection === collection ? "page" : undefined,
+                }}
                 key={collection}
+                margin={false}
                 onClick={() => setSelectedCollection(collection)}
                 type="button"
               >
                 {collectionName(collection)}
-              </button>
+              </Button>
             ))}
           </nav>
           <div className="st-grid st-min-w-0 st-gap-base-70">
@@ -445,9 +468,7 @@ export const SettingsSchemaManager = ({
               {templates.length ? (
                 cards(templates, "collection")
               ) : (
-                <div className="st-rounded-md st-border st-border-dashed st-border-elevation-250 st-bg-elevation-50 st-p-base st-text-center">
-                  <p>{t("noCollectionSchemas")}</p>
-                </div>
+                <Banner>{t("noCollectionSchemas")}</Banner>
               )}
             </div>
           </div>

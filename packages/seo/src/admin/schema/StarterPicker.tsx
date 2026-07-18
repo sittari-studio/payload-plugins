@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, TextareaInput } from "@payloadcms/ui";
+import { Banner, Button, Card, TextareaInput } from "@payloadcms/ui";
 import { useState } from "react";
 
 import {
@@ -47,8 +47,9 @@ export const StarterPicker = ({
   if (importing)
     return (
       <div className="st-grid st-max-w-[820px] st-gap-base [&_h3]:st-m-0 [&_p]:st-mt-[.35rem] [&_p]:st-mb-0 [&_p]:st-text-elevation-600">
-        <button
-          className="st-w-max st-cursor-pointer st-rounded-sm st-border-0 st-bg-transparent st-px-2 st-py-1.5 st-text-foreground hover:st-bg-elevation-100"
+        <Button
+          buttonStyle="transparent"
+          margin={false}
           onClick={() => {
             setImporting(false);
             setError(undefined);
@@ -57,7 +58,7 @@ export const StarterPicker = ({
           type="button"
         >
           ← {t("backToStarters")}
-        </button>
+        </Button>
         <h3 className="st-m-0">{t("importJson")}</h3>
         <p>{t("importJsonDescription")}</p>
         <TextareaInput
@@ -73,12 +74,9 @@ export const StarterPicker = ({
           value={raw}
         />
         {error ? (
-          <p
-            className={`st-rounded-sm st-p-base-55 ${contextSchema ? "st-bg-warning-100 !st-text-warning-800" : "st-bg-error-100 !st-text-error-700"}`}
-            role={contextSchema ? "status" : "alert"}
-          >
+          <Banner type={contextSchema ? "default" : "error"}>
             {error}
-          </p>
+          </Banner>
         ) : null}
         <div className="st-flex st-flex-wrap st-items-center st-gap-1">
           {contextSchema ? (
@@ -113,49 +111,37 @@ export const StarterPicker = ({
       </div>
       <div className="st-mt-base st-grid st-grid-cols-2 st-gap-base max-[850px]:st-grid-cols-1">
         {STARTERS.map((starter) => (
-          <article
-            className="st-flex st-min-h-[126px] st-items-end st-justify-between st-gap-base st-rounded-md st-border st-border-solid st-border-elevation-150 st-bg-elevation-0 st-p-base hover:st-border-elevation-400 hover:st-shadow-card"
+          <Card
+            actions={<Button buttonStyle="secondary" onClick={() => onChoose(starter, createSchemaStarter(starter))} size="small" type="button">{t("use")}</Button>}
             key={starter}
-          >
-            <h4 className="st-m-0">{starter}</h4>
-            <Button
-              buttonStyle="secondary"
-              onClick={() => onChoose(starter, createSchemaStarter(starter))}
-              size="small"
-              type="button"
-            >
-              {t("use")}
-            </Button>
-          </article>
+            title={starter}
+            titleAs="h4"
+          />
         ))}
-        <article className="st-flex st-min-h-[126px] st-items-end st-justify-between st-gap-base st-rounded-md st-border st-border-solid st-border-elevation-150 st-bg-elevation-0 st-p-base hover:st-border-elevation-400 hover:st-shadow-card">
-          <div>
-            <h4>{t("startScratch")}</h4>
-            <p>{t("startScratchDescription")}</p>
-          </div>
-          <Button
+        <Card
+          actions={<Button
             buttonStyle="secondary"
             onClick={() => onChoose(t("untitledSchema"), {})}
             size="small"
             type="button"
           >
             {t("use")}
-          </Button>
-        </article>
-        <article className="st-flex st-min-h-[126px] st-items-end st-justify-between st-gap-base st-rounded-md st-border st-border-solid st-border-elevation-150 st-bg-elevation-0 st-p-base hover:st-border-elevation-400 hover:st-shadow-card">
-          <div>
-            <h4>{t("importJson")}</h4>
-            <p>{t("importJsonDescription")}</p>
-          </div>
-          <Button
+          </Button>}
+          title={`${t("startScratch")} — ${t("startScratchDescription")}`}
+          titleAs="h4"
+        />
+        <Card
+          actions={<Button
             buttonStyle="secondary"
             onClick={() => setImporting(true)}
             size="small"
             type="button"
           >
             {t("use")}
-          </Button>
-        </article>
+          </Button>}
+          title={`${t("importJson")} — ${t("importJsonDescription")}`}
+          titleAs="h4"
+        />
       </div>
     </div>
   );

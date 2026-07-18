@@ -1,2 +1,65 @@
 @tailwind components;
 @tailwind utilities;
+
+.seo-schema-card {
+  overflow-x: auto;
+}
+
+.seo-schema-card .card {
+  align-items: center;
+}
+
+.seo-schema-card .card__title {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+}
+
+.seo-schema-card .card__actions {
+  flex: none;
+}
+
+.seo-schema-compact-field .field-type {
+  height: 100%;
+  margin-bottom: 0;
+}
+
+.seo-schema-compact-field .field-type__wrap,
+.seo-schema-compact-field input {
+  height: 100%;
+}
+
+.seo-schema-select,
+.seo-schema-select .field-type__wrap,
+.seo-schema-select .react-select-container,
+.seo-schema-select .react-select {
+  height: 100%;
+  min-height: 0;
+}
+
+.seo-schema-select .rs__control {
+  height: 100% !important;
+  max-height: 100% !important;
+  min-height: 0 !important;
+  padding: 0 calc(var(--base) * 0.5) !important;
+}
+
+.seo-schema-drawer .drawer__content {
+  max-width: 1440px;
+}
+
+.seo-schema-drawer .drawer__content-children {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.seo-schema-drawer .drawer__header {
+  flex-shrink: 0;
+}
+
+.seo-variable-option .btn__content {
+  display: block;
+  text-align: left;
+}

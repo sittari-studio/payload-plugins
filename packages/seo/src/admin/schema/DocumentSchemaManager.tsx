@@ -1,9 +1,11 @@
 "use client";
 
 import {
+  Banner,
   Button,
-  FieldLabel,
+  Card,
   formatDrawerSlug,
+  Pill,
   useConfig,
   useDocumentInfo,
   useLocale,
@@ -229,11 +231,7 @@ export const DocumentSchemaManager = ({
   return (
     <section className="st-mb-base-150 st-grid st-gap-base [&_.field-type]:st-mb-0 [&_h3]:st-m-0 [&_h4]:st-m-0 [&_p]:st-mt-[.35rem] [&_p]:st-mb-0 [&_p]:st-text-elevation-600">
       {loading ? <p>{t("loadingSchemas")}</p> : null}
-      {loadError ? (
-        <p className="st-rounded-sm st-bg-error-100 st-p-base-55 !st-text-error-700" role="alert">
-          {loadError}
-        </p>
-      ) : null}
+      {loadError ? <Banner type="error">{loadError}</Banner> : null}
       {templates?.globalSchemas.length ? (
         <div className="st-grid st-gap-base-70">
           <h3>{t("appliedGlobally")}</h3>
@@ -249,26 +247,30 @@ export const DocumentSchemaManager = ({
                 <SchemaCard
                   actions={
                     <>
-                      <button
+                      <Button
+                        buttonStyle="transparent"
                         disabled={readOnly}
+                        margin={false}
                         onClick={(event) =>
                           openEditor(
                             { kind: "global", template },
-                            event.currentTarget,
+                            event.currentTarget as HTMLElement,
                           )
                         }
                         type="button"
                       >
                         {t("editValues")}
-                      </button>
+                      </Button>
                       {customized ? (
-                        <button
+                        <Button
+                          buttonStyle="transparent"
                           disabled={readOnly}
+                          margin={false}
                           onClick={() => resetGlobal(template.templateId)}
                           type="button"
                         >
                           {t("resetOverrides")}
-                        </button>
+                        </Button>
                       ) : null}
                       <span
                         className="st-px-1.5"
@@ -280,16 +282,16 @@ export const DocumentSchemaManager = ({
                   }
                   badges={
                     <>
-                      <span className="st-inline-flex st-rounded-full st-bg-success-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-success-700">
+                      <Pill pillStyle="success" size="small">
                         {schemaTypeLabel(effective(template))}
-                      </span>
-                      <span className="st-inline-flex st-rounded-full st-bg-elevation-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-elevation-800">
+                      </Pill>
+                      <Pill pillStyle="light-gray" size="small">
                         {t("appliedGlobally")}
-                      </span>
+                      </Pill>
                       {customized ? (
-                        <span className="st-inline-flex st-rounded-full st-bg-blue-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-blue-700">
+                        <Pill pillStyle="light" size="small">
                           {t("customized")}
-                        </span>
+                        </Pill>
                       ) : null}
                     </>
                   }
@@ -329,75 +331,87 @@ export const DocumentSchemaManager = ({
                   actions={
                     <>
                       {template ? (
-                        <button
+                        <Button
+                          buttonStyle="transparent"
                           disabled={readOnly}
+                          margin={false}
                           onClick={(event) =>
                             openEditor(
                               { index, kind: "instance", template },
-                              event.currentTarget,
+                              event.currentTarget as HTMLElement,
                             )
                           }
                           type="button"
                         >
                           {t("editValues")}
-                        </button>
+                        </Button>
                       ) : null}
-                      <button
+                      <Button
+                        buttonStyle="transparent"
                         disabled={readOnly}
+                        margin={false}
                         onClick={() => duplicateInstance(index)}
                         type="button"
                       >
                         {t("duplicate")}
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        buttonStyle="transparent"
                         disabled={readOnly || index === 0}
+                        margin={false}
                         onClick={() => moveInstance(index, -1)}
                         type="button"
                       >
                         ↑
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        buttonStyle="transparent"
                         disabled={readOnly || index === instances.length - 1}
+                        margin={false}
                         onClick={() => moveInstance(index, 1)}
                         type="button"
                       >
                         ↓
-                      </button>
+                      </Button>
                       {customized ? (
-                        <button
+                        <Button
+                          buttonStyle="transparent"
                           disabled={readOnly}
+                          margin={false}
                           onClick={() => resetInstance(index)}
                           type="button"
                         >
                           {t("resetOverrides")}
-                        </button>
+                        </Button>
                       ) : null}
-                      <button
-                        className="!st-text-error-500"
+                      <Button
+                        buttonStyle="transparent"
+                        className="!st-text-error-500 hover:!st-bg-error-100 hover:!st-text-error-700"
                         disabled={readOnly}
+                        margin={false}
                         onClick={() => removeInstance(index)}
                         type="button"
                       >
                         {t("remove")}
-                      </button>
+                      </Button>
                     </>
                   }
                   badges={
                     <>
-                      <span className="st-inline-flex st-rounded-full st-bg-success-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-success-700">
+                      <Pill pillStyle="success" size="small">
                         {template
                           ? schemaTypeLabel(effective(template))
                           : t("missingTemplate")}
-                      </span>
+                      </Pill>
                       {template?.isDefault ? (
-                        <span className="st-inline-flex st-rounded-full st-bg-warning-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-warning-700">
+                        <Pill pillStyle="warning" size="small">
                           {t("default")}
-                        </span>
+                        </Pill>
                       ) : null}
                       {customized ? (
-                        <span className="st-inline-flex st-rounded-full st-bg-blue-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-blue-700">
+                        <Pill pillStyle="light" size="small">
                           {t("customized")}
-                        </span>
+                        </Pill>
                       ) : null}
                     </>
                   }
@@ -410,9 +424,7 @@ export const DocumentSchemaManager = ({
               );
             })
           ) : (
-            <div className="st-rounded-md st-border st-border-dashed st-border-elevation-250 st-bg-elevation-50 st-p-base st-text-center">
-              <p>{t("noSchemasInUse")}</p>
-            </div>
+            <Banner>{t("noSchemasInUse")}</Banner>
           )}
         </div>
       </div>
@@ -437,30 +449,12 @@ export const DocumentSchemaManager = ({
                   (item) => item.templateId === template.templateId,
                 ).length;
                 return (
-                  <article
-                    className="st-flex st-min-h-[126px] st-items-end st-justify-between st-gap-base st-rounded-md st-border st-border-solid st-border-elevation-150 st-bg-elevation-0 st-p-base hover:st-border-elevation-400 hover:st-shadow-card"
+                  <Card
+                    actions={<Button buttonStyle="secondary" onClick={() => useTemplate(template)} size="small" type="button">{count ? t("useAgain") : t("use")}</Button>}
                     key={template.templateId}
-                  >
-                    <div>
-                      <span className="st-inline-flex st-rounded-full st-bg-success-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-success-700">
-                        {schemaTypeLabel(effective(template))}
-                      </span>
-                      <h4>{template.name}</h4>
-                      {template.isDefault ? (
-                        <span className="st-inline-flex st-rounded-full st-bg-warning-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-warning-700">
-                          {t("default")}
-                        </span>
-                      ) : null}
-                    </div>
-                    <Button
-                      buttonStyle="secondary"
-                      onClick={() => useTemplate(template)}
-                      size="small"
-                      type="button"
-                    >
-                      {count ? t("useAgain") : t("use")}
-                    </Button>
-                  </article>
+                    title={`${template.name} · ${schemaTypeLabel(effective(template))}${template.isDefault ? ` · ${t("default")}` : ""}`}
+                    titleAs="h4"
+                  />
                 );
               })}
             </div>

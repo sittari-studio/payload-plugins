@@ -1,7 +1,7 @@
 "use client";
 
 import type { UIFieldClientProps } from "payload";
-import { useDocumentInfo, useFormFields, useLocale } from "@payloadcms/ui";
+import { Button, useDocumentInfo, useFormFields, useLocale } from "@payloadcms/ui";
 import { useEffect, useMemo, useState } from "react";
 
 import type { SeoPreview } from "../types.js";
@@ -271,20 +271,15 @@ export const SeoPreviews = ({ field }: UIFieldClientProps) => {
             }}
           >
             <div style={mutedStyle}>{t("generatedJson")}</div>
-            <button
+            <Button
+              buttonStyle="secondary"
+              margin={false}
               onClick={() => void copySchema()}
-              style={{
-                background: "transparent",
-                border: "1px solid var(--theme-elevation-300)",
-                borderRadius: "4px",
-                color: "inherit",
-                cursor: "pointer",
-                padding: ".35rem .6rem",
-              }}
+              size="small"
               type="button"
             >
               {schemaCopied ? t("copied") : t("copy")}
-            </button>
+            </Button>
           </div>
           <pre
             style={{

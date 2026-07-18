@@ -1,15 +1,18 @@
 'use client'
 
+import { Button, TextInput } from '@payloadcms/ui'
 import { useMemo, useRef, useState } from 'react'
+import type { ChangeEvent, RefObject } from 'react'
 
 import { insertVariableAtCaret } from '../../schema/editor.js'
 import type { SeoSchemaVariable } from '../../schema/types.js'
 import { useAdminText } from '../use-admin-text.js'
 
-export const VariableInput = ({ disabled, onChange, onFocus, value, variables }: {
+export const VariableInput = ({ disabled, onChange, onFocus, path, value, variables }: {
   disabled?: boolean
   onChange: (value: string) => void
   onFocus?: () => void
+  path: string
   value: string
   variables: SeoSchemaVariable[]
 }) => {
@@ -42,16 +45,19 @@ export const VariableInput = ({ disabled, onChange, onFocus, value, variables }:
     })
   }
 
-  return <div className="st-relative st-h-full st-min-w-0 st-flex-1">
-    <input
+  return <div
       aria-autocomplete="list"
       aria-controls={matches.length ? 'seo-schema-variable-list' : undefined}
       aria-expanded={matches.length > 0}
-      className="st-h-full st-min-h-0 st-w-full st-appearance-none st-box-border st-rounded-sm st-border st-border-solid st-border-elevation-150 st-bg-input st-px-base-50 st-font-body st-text-[inherit] st-leading-normal st-text-elevation-800 st-transition-[border-color,box-shadow] st-duration-100 hover:enabled:st-border-elevation-250 focus:st-border-elevation-400 focus:st-outline-none focus:st-shadow-focus disabled:st-cursor-not-allowed disabled:st-bg-elevation-50 disabled:st-text-elevation-450"
-      disabled={disabled}
-      onChange={(event) => { onChange(event.target.value); updateQuery(event.target) }}
-      onClick={(event) => updateQuery(event.currentTarget)}
-      onFocus={(event) => { onFocus?.(); updateQuery(event.currentTarget) }}
+      className="seo-schema-compact-field st-relative st-h-full st-min-w-0 st-flex-1"
+      onBlur={(event) => { if (event.target instanceof HTMLInputElement) setQuery(undefined) }}
+      onClick={(event) => { if (event.target instanceof HTMLInputElement) updateQuery(event.target) }}
+      onFocus={(event) => { if (event.target instanceof HTMLInputElement) { onFocus?.(); updateQuery(event.target) } }}
+      role="combobox"
+    >
+    <TextInput
+      inputRef={inputRef as RefObject<HTMLInputElement>}
+      onChange={(event: ChangeEvent<HTMLInputElement>) => { onChange(event.target.value); updateQuery(event.target) }}
       onKeyDown={(event) => {
         if (!matches.length) return
         if (event.key === 'ArrowDown') { event.preventDefault(); setActive((index) => (index + 1) % matches.length) }
@@ -59,14 +65,14 @@ export const VariableInput = ({ disabled, onChange, onFocus, value, variables }:
         else if (event.key === 'Enter') { event.preventDefault(); choose(matches[active]) }
         else if (event.key === 'Escape') { event.preventDefault(); setQuery(undefined) }
       }}
-      ref={inputRef}
-      role="combobox"
+      path={path}
+      readOnly={disabled}
       value={value}
     />
     {matches.length ? <div className="st-absolute st-left-0 st-right-0 st-top-[calc(100%+4px)] st-z-30 st-grid st-max-h-[260px] st-min-w-[180px] st-overflow-auto st-rounded-sm st-border st-border-solid st-border-elevation-200 st-bg-elevation-0 st-shadow-popover" id="seo-schema-variable-list" role="listbox">
-      {matches.map((variable, index) => <button aria-selected={index === active} className={`st-grid st-cursor-pointer st-gap-0.5 st-border-0 st-bg-transparent st-px-2.5 st-py-2 st-text-left ${index === active ? 'st-bg-elevation-100' : ''}`} key={`${variable.collection}:${variable.path}`} onMouseDown={(event) => event.preventDefault()} onClick={() => choose(variable)} role="option" type="button">
-        <span>{variable.label}</span><code className="st-text-[11px] st-text-blue-600">${variable.path}</code><small className="st-text-elevation-500">{variable.collection}{variable.availableInEveryCollection === false ? ` · ${t('notEveryCollection')}` : ''}</small>
-      </button>)}
+      {matches.map((variable, index) => <Button buttonStyle={index === active ? 'tab' : 'transparent'} className="seo-variable-option st-w-full st-px-2.5 st-py-2 st-text-left" extraButtonProps={{ 'aria-selected': index === active, role: 'option' }} key={`${variable.collection}:${variable.path}`} margin={false} onMouseDown={(event) => event.preventDefault()} onClick={() => choose(variable)} size="small" type="button">
+        <span className="st-grid st-gap-0.5"><span>{variable.label}</span><code className="st-text-[11px] st-text-blue-600">${variable.path}</code><small className="st-text-elevation-500">{variable.collection}{variable.availableInEveryCollection === false ? ` · ${t('notEveryCollection')}` : ''}</small></span>
+      </Button>)}
     </div> : null}
   </div>
 }
