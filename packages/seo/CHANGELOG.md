@@ -1,5 +1,11 @@
 # @sittari/payload-seo
 
+## 0.2.1
+
+### Patch Changes
+
+- Fix collapsibles being forced to be 56px
+
 ## 0.2.0
 
 ### Minor Changes
