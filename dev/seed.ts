@@ -107,15 +107,15 @@ const ensureSeoSettings = async (payload: Payload): Promise<void> => {
   await payload.updateGlobal({
     slug: 'seo-settings',
     data: {
-      siteName: 'Krameri development',
-      titleTemplate: '%s | Krameri development',
+      siteName: 'Sittari development',
+      titleTemplate: '%s | Sittari development',
       defaultDescription: 'Development content for the Payload SEO plugin.',
       defaultRobots: { mode: 'index-follow' },
       collectionSchemas: [{
         collection: 'pages',
         templates: [{ templateId: 'web-page', name: 'WebPage', schema: { '@type': 'WebPage', name: '$title', description: '$excerpt' }, isDefault: true }],
       }],
-      globalSchemas: [{ templateId: 'website', name: 'WebSite', schema: { '@type': 'WebSite', name: 'Krameri development' } }],
+      globalSchemas: [{ templateId: 'website', name: 'WebSite', schema: { '@type': 'WebSite', name: 'Sittari development' } }],
       robots: {
         mode: 'generated',
         groups: [{ userAgent: '*', disallow: [{ path: '/admin' }] }],

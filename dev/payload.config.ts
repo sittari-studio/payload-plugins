@@ -33,7 +33,7 @@ if (!process.env.ROOT_DIR) {
 const databaseURL =
   process.env.DATABASE_URL ||
   (process.env.NODE_ENV === 'test'
-    ? `file:${path.resolve(os.tmpdir(), `krameri-payload-plugins-${process.pid}.sqlite`)}`
+    ? `file:${path.resolve(os.tmpdir(), `Sittari-payload-plugins-${process.pid}.sqlite`)}`
     : `file:${path.resolve(dirname, 'payload.dev.sqlite')}`)
 
 process.env.DATABASE_URL = databaseURL
