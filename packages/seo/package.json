@@ -36,7 +36,7 @@
   ],
   "scripts": {
     "build": "pnpm run clean && pnpm run build:types && pnpm run build:js && pnpm run build:css",
-    "build:css": "cp src/admin.css dist/admin.css",
+    "build:css": "tailwindcss -c tailwind.config.mjs -i src/admin.css -o dist/admin.css --minify",
     "build:js": "tsc -p tsconfig.build.json --declaration false --declarationMap false",
     "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
     "typecheck": "tsc --noEmit",
@@ -56,8 +56,9 @@
   "devDependencies": {
     "@payloadcms/db-sqlite": "3.85.2",
     "@types/react": "^19.0.0",
-    "react": "^19.0.0",
     "payload": "^3.0.0",
+    "react": "^19.0.0",
+    "tailwindcss": "3.4.17",
     "typescript": "5.9.3",
     "vitest": "4.1.9"
   },

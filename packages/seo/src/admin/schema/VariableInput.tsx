@@ -42,12 +42,12 @@ export const VariableInput = ({ disabled, onChange, onFocus, value, variables }:
     })
   }
 
-  return <div className="seo-schema-variable-input">
+  return <div className="st-relative st-h-full st-min-w-0 st-flex-1">
     <input
       aria-autocomplete="list"
       aria-controls={matches.length ? 'seo-schema-variable-list' : undefined}
       aria-expanded={matches.length > 0}
-      className="seo-schema-native-input"
+      className="st-h-full st-min-h-0 st-w-full st-appearance-none st-box-border st-rounded-sm st-border st-border-solid st-border-elevation-150 st-bg-input st-px-base-50 st-font-body st-text-[inherit] st-leading-normal st-text-elevation-800 st-transition-[border-color,box-shadow] st-duration-100 hover:enabled:st-border-elevation-250 focus:st-border-elevation-400 focus:st-outline-none focus:st-shadow-focus disabled:st-cursor-not-allowed disabled:st-bg-elevation-50 disabled:st-text-elevation-450"
       disabled={disabled}
       onChange={(event) => { onChange(event.target.value); updateQuery(event.target) }}
       onClick={(event) => updateQuery(event.currentTarget)}
@@ -63,9 +63,9 @@ export const VariableInput = ({ disabled, onChange, onFocus, value, variables }:
       role="combobox"
       value={value}
     />
-    {matches.length ? <div className="seo-schema-variable-menu" id="seo-schema-variable-list" role="listbox">
-      {matches.map((variable, index) => <button aria-selected={index === active} className={index === active ? 'is-active' : undefined} key={`${variable.collection}:${variable.path}`} onMouseDown={(event) => event.preventDefault()} onClick={() => choose(variable)} role="option" type="button">
-        <span>{variable.label}</span><code>${variable.path}</code><small>{variable.collection}{variable.availableInEveryCollection === false ? ` · ${t('notEveryCollection')}` : ''}</small>
+    {matches.length ? <div className="st-absolute st-left-0 st-right-0 st-top-[calc(100%+4px)] st-z-30 st-grid st-max-h-[260px] st-min-w-[180px] st-overflow-auto st-rounded-sm st-border st-border-solid st-border-elevation-200 st-bg-elevation-0 st-shadow-popover" id="seo-schema-variable-list" role="listbox">
+      {matches.map((variable, index) => <button aria-selected={index === active} className={`st-grid st-cursor-pointer st-gap-0.5 st-border-0 st-bg-transparent st-px-2.5 st-py-2 st-text-left ${index === active ? 'st-bg-elevation-100' : ''}`} key={`${variable.collection}:${variable.path}`} onMouseDown={(event) => event.preventDefault()} onClick={() => choose(variable)} role="option" type="button">
+        <span>{variable.label}</span><code className="st-text-[11px] st-text-blue-600">${variable.path}</code><small className="st-text-elevation-500">{variable.collection}{variable.availableInEveryCollection === false ? ` · ${t('notEveryCollection')}` : ''}</small>
       </button>)}
     </div> : null}
   </div>

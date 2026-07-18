@@ -227,18 +227,18 @@ export const DocumentSchemaManager = ({
   );
 
   return (
-    <section className="seo-schema-manager">
+    <section className="st-mb-base-150 st-grid st-gap-base [&_.field-type]:st-mb-0 [&_h3]:st-m-0 [&_h4]:st-m-0 [&_p]:st-mt-[.35rem] [&_p]:st-mb-0 [&_p]:st-text-elevation-600">
       {loading ? <p>{t("loadingSchemas")}</p> : null}
       {loadError ? (
-        <p className="seo-schema-error" role="alert">
+        <p className="st-rounded-sm st-bg-error-100 st-p-base-55 !st-text-error-700" role="alert">
           {loadError}
         </p>
       ) : null}
       {templates?.globalSchemas.length ? (
-        <div className="seo-schema-manager__group">
+        <div className="st-grid st-gap-base-70">
           <h3>{t("appliedGlobally")}</h3>
           <p>{t("appliedGloballyDescription")}</p>
-          <div className="seo-schema-card-list">
+          <div className="st-grid st-gap-base-45">
             {templates.globalSchemas.map((template) => {
               const customized = globalOverrides.some(
                 (item) =>
@@ -271,7 +271,7 @@ export const DocumentSchemaManager = ({
                         </button>
                       ) : null}
                       <span
-                        className="seo-schema-lock"
+                        className="st-px-1.5"
                         title={t("globalLocked")}
                       >
                         🔒
@@ -280,14 +280,14 @@ export const DocumentSchemaManager = ({
                   }
                   badges={
                     <>
-                      <span className="seo-schema-type-badge">
+                      <span className="st-inline-flex st-rounded-full st-bg-success-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-success-700">
                         {schemaTypeLabel(effective(template))}
                       </span>
-                      <span className="seo-schema-scope-badge">
+                      <span className="st-inline-flex st-rounded-full st-bg-elevation-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-elevation-800">
                         {t("appliedGlobally")}
                       </span>
                       {customized ? (
-                        <span className="seo-schema-custom-badge">
+                        <span className="st-inline-flex st-rounded-full st-bg-blue-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-blue-700">
                           {t("customized")}
                         </span>
                       ) : null}
@@ -301,8 +301,8 @@ export const DocumentSchemaManager = ({
           </div>
         </div>
       ) : null}
-      <div className="seo-schema-manager__group">
-        <div className="seo-schema-manager__toolbar">
+      <div className="st-grid st-gap-base-70">
+        <div className="st-flex st-items-center st-justify-between st-gap-base max-[600px]:st-flex-col max-[600px]:st-items-stretch">
           <div>
             <h3>{t("schemaInUse")}</h3>
             <p>{t("schemaInUseDescription")}</p>
@@ -319,7 +319,7 @@ export const DocumentSchemaManager = ({
             + {t("addSchema")}
           </Button>
         </div>
-        <div className="seo-schema-card-list">
+        <div className="st-grid st-gap-base-45">
           {instances.length ? (
             instances.map((instance, index) => {
               const template = byId.get(instance.templateId);
@@ -373,7 +373,7 @@ export const DocumentSchemaManager = ({
                         </button>
                       ) : null}
                       <button
-                        className="is-danger"
+                        className="!st-text-error-500"
                         disabled={readOnly}
                         onClick={() => removeInstance(index)}
                         type="button"
@@ -384,18 +384,18 @@ export const DocumentSchemaManager = ({
                   }
                   badges={
                     <>
-                      <span className="seo-schema-type-badge">
+                      <span className="st-inline-flex st-rounded-full st-bg-success-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-success-700">
                         {template
                           ? schemaTypeLabel(effective(template))
                           : t("missingTemplate")}
                       </span>
                       {template?.isDefault ? (
-                        <span className="seo-schema-default-badge">
+                        <span className="st-inline-flex st-rounded-full st-bg-warning-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-warning-700">
                           {t("default")}
                         </span>
                       ) : null}
                       {customized ? (
-                        <span className="seo-schema-custom-badge">
+                        <span className="st-inline-flex st-rounded-full st-bg-blue-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-blue-700">
                           {t("customized")}
                         </span>
                       ) : null}
@@ -410,7 +410,7 @@ export const DocumentSchemaManager = ({
               );
             })
           ) : (
-            <div className="seo-schema-empty">
+            <div className="st-rounded-md st-border st-border-dashed st-border-elevation-250 st-bg-elevation-50 st-p-base st-text-center">
               <p>{t("noSchemasInUse")}</p>
             </div>
           )}
@@ -425,29 +425,29 @@ export const DocumentSchemaManager = ({
       >
         {stage === "templates" ? (
           <div>
-            <div className="seo-schema-section-heading">
+            <div className="st-flex st-items-center st-justify-between st-gap-base max-[600px]:st-flex-col max-[600px]:st-items-stretch">
               <div>
                 <h3>{t("availableSchemas")}</h3>
                 <p>{t("availableSchemasDescription")}</p>
               </div>
             </div>
-            <div className="seo-schema-starter-grid">
+            <div className="st-mt-base st-grid st-grid-cols-2 st-gap-base max-[850px]:st-grid-cols-1">
               {collectionTemplates.map((template) => {
                 const count = instances.filter(
                   (item) => item.templateId === template.templateId,
                 ).length;
                 return (
                   <article
-                    className="seo-schema-starter-card"
+                    className="st-flex st-min-h-[126px] st-items-end st-justify-between st-gap-base st-rounded-md st-border st-border-solid st-border-elevation-150 st-bg-elevation-0 st-p-base hover:st-border-elevation-400 hover:st-shadow-card"
                     key={template.templateId}
                   >
                     <div>
-                      <span className="seo-schema-type-badge">
+                      <span className="st-inline-flex st-rounded-full st-bg-success-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-success-700">
                         {schemaTypeLabel(effective(template))}
                       </span>
                       <h4>{template.name}</h4>
                       {template.isDefault ? (
-                        <span className="seo-schema-default-badge">
+                        <span className="st-inline-flex st-rounded-full st-bg-warning-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-warning-700">
                           {t("default")}
                         </span>
                       ) : null}

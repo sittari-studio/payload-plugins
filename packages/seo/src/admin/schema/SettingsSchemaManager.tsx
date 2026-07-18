@@ -313,7 +313,7 @@ export const SettingsSchemaManager = ({
               ↓
             </button>
             <button
-              className="is-danger"
+              className="!st-text-error-500"
               disabled={disabled}
               onClick={() => remove(nextScope, index)}
               type="button"
@@ -324,16 +324,16 @@ export const SettingsSchemaManager = ({
         }
         badges={
           <>
-            <span className="seo-schema-type-badge">
+            <span className="st-inline-flex st-rounded-full st-bg-success-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-success-700">
               {schemaTypeLabel(effectiveTemplate(template))}
             </span>
-            <span className="seo-schema-scope-badge">
+            <span className="st-inline-flex st-rounded-full st-bg-elevation-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-elevation-800">
               {nextScope === "global"
                 ? t("globalScope")
                 : collectionName(selectedCollection)}
             </span>
             {template.isDefault ? (
-              <span className="seo-schema-default-badge">{t("default")}</span>
+              <span className="st-inline-flex st-rounded-full st-bg-warning-100 st-px-2 st-py-[5px] st-text-[11px] st-leading-none st-text-warning-700">{t("default")}</span>
             ) : null}
           </>
         }
@@ -343,17 +343,17 @@ export const SettingsSchemaManager = ({
     ));
 
   return (
-    <section className="seo-schema-manager">
+    <section className="st-mb-base-150 st-grid st-gap-base [&_.field-type]:st-mb-0 [&_h3]:st-m-0 [&_h4]:st-m-0 [&_p]:st-mt-[.35rem] [&_p]:st-mb-0 [&_p]:st-text-elevation-600">
       <div
         aria-label={t("schema")}
-        className="seo-schema-settings-tabs"
+        className="st-flex st-gap-base-25 st-overflow-x-auto st-border-0 st-border-b st-border-solid st-border-elevation-150 [&_button]:st-mb-[-1px] [&_button]:st-cursor-pointer [&_button]:st-border-0 [&_button]:st-border-b-2 [&_button]:st-border-solid [&_button]:st-border-b-transparent [&_button]:st-bg-transparent [&_button]:st-px-base-75 [&_button]:st-py-base-55 [&_button]:st-font-[inherit] [&_button]:st-font-semibold [&_button]:st-text-elevation-600 [&_button:hover]:st-text-foreground [&_button:focus-visible]:st-rounded-sm [&_button:focus-visible]:st-outline [&_button:focus-visible]:st-outline-2 [&_button:focus-visible]:st-outline-offset-[-2px] [&_button:focus-visible]:st-outline-success-400 max-[600px]:[&_button]:st-flex-[1_0_auto]"
         role="tablist"
       >
         {(["global", "collection"] as const).map((tab) => (
           <button
             aria-controls={`seo-schema-${tab}-panel`}
             aria-selected={activeTab === tab}
-            className={activeTab === tab ? "is-active" : undefined}
+            className={activeTab === tab ? "!st-border-b-success-500 !st-text-foreground" : undefined}
             id={`seo-schema-${tab}-tab`}
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -372,8 +372,8 @@ export const SettingsSchemaManager = ({
         id="seo-schema-global-panel"
         role="tabpanel"
       >
-        <div className="seo-schema-manager__group">
-          <div className="seo-schema-manager__toolbar">
+        <div className="st-grid st-gap-base-70">
+          <div className="st-flex st-items-center st-justify-between st-gap-base max-[600px]:st-flex-col max-[600px]:st-items-stretch">
             <p>{t("globalSchemasDescription")}</p>
             <Button
               buttonStyle="primary"
@@ -387,11 +387,11 @@ export const SettingsSchemaManager = ({
               + {t("addSchema")}
             </Button>
           </div>
-          <div className="seo-schema-card-list">
+          <div className="st-grid st-gap-base-45">
             {globalSchemas.length ? (
               cards(globalSchemas, "global")
             ) : (
-              <div className="seo-schema-empty">
+              <div className="st-rounded-md st-border st-border-dashed st-border-elevation-250 st-bg-elevation-50 st-p-base st-text-center">
                 <p>{t("noGlobalSchemas")}</p>
               </div>
             )}
@@ -405,10 +405,10 @@ export const SettingsSchemaManager = ({
         id="seo-schema-collection-panel"
         role="tabpanel"
       >
-        <div className="seo-schema-collections-layout">
+        <div className="st-grid st-grid-cols-[minmax(150px,220px)_minmax(0,1fr)] st-items-start st-gap-base max-[600px]:st-grid-cols-1">
           <nav
             aria-label={t("enabledCollection")}
-            className="seo-schema-collection-nav"
+            className="st-grid st-gap-1 st-rounded-md st-border st-border-solid st-border-elevation-150 st-bg-elevation-50 st-p-1.5 max-[600px]:st-flex max-[600px]:st-overflow-x-auto [&_button]:st-cursor-pointer [&_button]:st-overflow-hidden [&_button]:st-text-ellipsis [&_button]:st-whitespace-nowrap [&_button]:st-rounded-sm [&_button]:st-border-0 [&_button]:st-bg-transparent [&_button]:st-p-base-55 [&_button]:st-text-left [&_button]:st-font-[inherit] [&_button]:st-text-elevation-700 [&_button:hover]:st-bg-elevation-100 [&_button:hover]:st-text-foreground max-[600px]:[&_button]:st-flex-none"
           >
             {collections.map((collection) => (
               <button
@@ -416,7 +416,7 @@ export const SettingsSchemaManager = ({
                   selectedCollection === collection ? "page" : undefined
                 }
                 className={
-                  selectedCollection === collection ? "is-active" : undefined
+                  selectedCollection === collection ? "!st-bg-elevation-800 !st-text-elevation-0" : undefined
                 }
                 key={collection}
                 onClick={() => setSelectedCollection(collection)}
@@ -426,8 +426,8 @@ export const SettingsSchemaManager = ({
               </button>
             ))}
           </nav>
-          <div className="seo-schema-collection-content">
-            <div className="seo-schema-manager__toolbar">
+          <div className="st-grid st-min-w-0 st-gap-base-70">
+            <div className="st-flex st-items-center st-justify-between st-gap-base max-[600px]:st-flex-col max-[600px]:st-items-stretch">
               <div></div>
               <Button
                 buttonStyle="primary"
@@ -441,11 +441,11 @@ export const SettingsSchemaManager = ({
                 + {t("addSchema")}
               </Button>
             </div>
-            <div className="seo-schema-card-list">
+            <div className="st-grid st-gap-base-45">
               {templates.length ? (
                 cards(templates, "collection")
               ) : (
-                <div className="seo-schema-empty">
+                <div className="st-rounded-md st-border st-border-dashed st-border-elevation-250 st-bg-elevation-50 st-p-base st-text-center">
                   <p>{t("noCollectionSchemas")}</p>
                 </div>
               )}
