@@ -137,13 +137,8 @@ export default buildConfig({
       siteUrl,
       collections: {
         pages: {
-          schemaType: 'WebPage',
           fields: {
             title: 'title',
-          },
-          schema: {
-            name: 'title',
-            about: 'excerpt',
           },
           sitemap: {
             fields: ['slug'],

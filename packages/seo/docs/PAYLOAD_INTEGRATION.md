@@ -1,203 +1,40 @@
 # Payload integration
 
-## Install
+The plugin adds an SEO tab to enabled collections, an access-controlled SEO
+Settings Global, and the redirects collection. Existing fields, hooks, access,
+and endpoints are preserved.
 
-Install the package in a Payload CMS v3 application with React 19:
+## Settings data
 
-```bash
-pnpm add @sittari/payload-seo
-```
+- `globalSchemas` is an ordered list of live templates emitted for every
+  enabled document.
+- `collectionSchemas` groups ordered templates by collection.
+- Each template has a stable `templateId`, name, shared root-object `schema`,
+  localized scalar `valueOverrides`, and `isDefault` flag.
+- Any number of templates can be default. All current defaults are referenced
+  when a document is created unless `schemaInstances` is explicitly supplied.
+  An explicit empty array means the editor chose no schemas; later default
+  changes do not rewrite documents.
+- Template IDs are unique across global and collection templates.
+- Deleting a collection template cascades through enabled documents and removes
+  every matching schema instance. Deleting a global schema similarly removes
+  its document overrides. The cleanup and Settings update share the Payload
+  transaction.
 
-The configured plugin collections and media collection must already be present
-in `buildConfig`. The plugin validates this at startup and fails early for a
-missing collection, invalid option, or generated-name collision.
+## Document data
 
-## Configure the plugin
+- `seo.schemaInstances` stores ordered stable template references. Repeating a
+  template is valid. Each row carries localized, replace-only scalar JSON Patch
+  overrides.
+- `seo.globalSchemaOverrides` stores localized patches keyed by global schema
+  ID. Global references are implicit and cannot be removed from a document.
+- Template choice and JSON shape are shared across locales. A patch must target
+  an existing scalar and preserve its JSON type; only replacement values are
+  localized.
 
-Add `seoPlugin()` to `plugins` in `payload.config.ts`. This example enables SEO
-for `pages` and `posts`, uses a Payload `media` upload collection, and supports
-localized URLs.
-
-```ts
-import { buildConfig } from 'payload'
-import { seoPlugin } from '@sittari/payload-seo'
-
-import { Media } from './collections/Media'
-import { Pages } from './collections/Pages'
-import { Posts } from './collections/Posts'
-
-const siteUrl = process.env.SITE_URL
-if (!siteUrl) throw new Error('SITE_URL is required')
-
-export default buildConfig({
-  collections: [Pages, Posts, Media],
-  plugins: [
-    seoPlugin({
-      siteUrl,
-      collections: {
-        pages: {
-          schemaType: 'WebPage',
-          fields: {
-            title: 'title',
-            description: 'excerpt',
-          },
-          schema: {
-            headline: 'title',
-            description: 'excerpt',
-          },
-          sitemap: {
-            fields: ['slug'],
-          },
-        },
-        posts: {
-          schemaType: 'Article',
-          fields: {
-            title: 'title',
-            description: 'excerpt',
-          },
-          schema: {
-            headline: 'title',
-            datePublished: 'publishedAt',
-          },
-          sitemap: {
-            fields: ['slug', 'publishedAt'],
-          },
-          lastModified: ({ document }) =>
-            typeof document.updatedAt === 'string' ? document.updatedAt : null,
-        },
-      },
-      media: {
-        collection: 'media',
-        resolveMediaUrl: ({ media }) =>
-          typeof media.url === 'string' ? media.url : null,
-      },
-      resolveUrl: ({ collection, document, locale }) => {
-        const slug = typeof document.slug === 'string' ? document.slug : null
-        if (!slug) return null
-
-        const prefix = locale === 'en' ? '' : `/${locale}`
-        return collection === 'posts'
-          ? `${prefix}/blog/${slug}`
-          : `${prefix}/${slug}`
-      },
-      resolveChunkUrl: ({ collection, locale, page }) =>
-        `https://www.example.com/sitemaps/${collection}/${locale || 'default'}/${page}`,
-      robots: {
-        resolveSitemapUrls: ({ locale }) => [
-          `https://www.example.com/sitemap-index/${locale || 'default'}`,
-        ],
-      },
-      access: {
-        settings: {
-          read: ({ req }) => Boolean(req.user),
-          update: ({ req }) => Boolean(req.user),
-        },
-        redirects: {
-          admin: ({ req }) => Boolean(req.user),
-          create: ({ req }) => Boolean(req.user),
-          read: ({ req }) => Boolean(req.user),
-          update: ({ req }) => Boolean(req.user),
-          delete: ({ req }) => Boolean(req.user),
-        },
-      },
-    }),
-  ],
-})
-```
-
-Replace the simple authenticated-user access functions with your own role-aware
-Payload access policies before production.
-
-## Required resolver behavior
-
-`resolveUrl` returns a path for one document in one locale. Return `null` when
-the document has no public URL **or when that translation is unavailable or
-incomplete**. This is the hreflang eligibility contract: the plugin will not
-emit a language alternate for `null`. A valid path starts with one slash, does not
-start with `//`, and contains no query string or fragment. The plugin combines
-it with the `siteUrl` supplied to `seoPlugin`. Set it from a host environment
-variable such as `SITE_URL`; it must be an origin (for example
-`https://example.com`), so base-path deployments are intentionally not supported
-in this release.
-
-`resolveMediaUrl` receives a populated upload document and must return an
-absolute public HTTP(S) URL or `null`. When passing a document directly to a
-metadata helper, make sure its SEO image relationships are populated; an ID by
-itself cannot be converted into a public URL.
-
-`resolveChunkUrl` returns the absolute URL for a generated sitemap chunk. When
-Payload localization is disabled, the sitemap index calls it with `locale: ''`.
-Choose a stable URL for that case, as in the example above.
-
-If a collection defines `sitemap.fields`, list every document path used by
-`resolveUrl` and `lastModified`. Sitemap reads are projected to those paths and
-`updatedAt`, which avoids loading whole documents for large sites.
-
-## What the plugin adds
-
-For each enabled collection, the plugin adds a localized **SEO** tab containing
-fields for title, description, canonical URL, robots directives, Open Graph,
-X/Twitter, JSON-LD schema, and editor previews.
-
-Robots use one explicit `mode` field. New pages start at `inherit`, which means
-the Settings Global `defaultRobots` value wins. Configure a page mode only when
-it should differ. Canonicals use `auto`, `manual`, or `none`; externally
-canonicalized and no-canonical pages are kept out of the sitemap. Sitemaps also
-exclude drafts, deleted documents, `noindex` pages, missing URLs, and documents
-rejected by `sitemap.exclude`.
-
-The production resolver is the source of truth for metadata, sitemaps, schema,
-robots, and previews. `resolveSeoPreview({ payload, collection, id, locale })`
-is server-backed and returns the same title, description, canonical, social
-image, and robots decisions as production metadata. The plugin also registers
-an authenticated `POST /api/<collection>/seo-preview` endpoint; its Admin card
-debounces unsaved form state to that endpoint, so editor previews use the same
-resolution as production. Hosts can use `resolveSeoPreview` for other live
-preview surfaces.
-
-If the collection already has a top-level Payload `tabs` field, **SEO** is
-appended to that tab set. Otherwise, the plugin creates top-level **Content**
-and **SEO** tabs, placing the collection's current fields in **Content**. The
-generated field marker makes repeated plugin application idempotent.
-
-It also creates these Payload entities:
-
-| Entity | Default slug | Notes |
-| --- | --- | --- |
-| SEO Settings Global | `seo-settings` | Metadata defaults, organization schema, and robots settings. |
-| Redirects collection | `seo-redirects` | Enabled exact-path 301/302 redirects, with loop validation. |
-
-Set a valid absolute HTTP(S) `siteUrl` in the plugin configuration before
-expecting canonical URLs or sitemap entries. It is immutable at runtime; most
-editor defaults and document SEO fields are localized when Payload localization
-is enabled.
-
-The Settings Global and redirects collection are closed by default. The SEO
-group on each enabled document inherits normal field access unless you set the
-collection's additive `access.read` or `access.update` option.
-
-## Custom names and disabled mode
-
-Use `names` only when the defaults collide with existing content:
-
-```ts
-seoPlugin({
-  // ...required options
-  names: {
-    seoField: 'searchEngine',
-    settingsGlobal: 'search-settings',
-    redirectsCollection: 'search-redirects',
-  },
-})
-```
-
-Names become stored field and collection identifiers. Changing them later does
-not migrate existing data.
-
-Use `seoPlugin({ enabled: false })` to leave a shared Payload configuration
-unchanged in an environment where SEO is intentionally disabled.
-
-## After changing configuration
-
-Start Payload or run its build so it can regenerate the import map and Payload
-types. Do not hand-edit generated `payload-types.ts` files.
+Payload Admin renders the hidden storage arrays through `SettingsSchemaManager`
+and `DocumentSchemaManager`. Both use the shared full-height drawer, recursive
+object/array/scalar editor, isolated raw JSON apply flow, and field-variable
+suggestions. Generated SEO fields, UI fields, blocks and block descendants,
+plus configured prefixes are excluded from suggestions. Starter choice is an
+editor action and is never persisted.

@@ -71,7 +71,7 @@ const ensureSamplePage = async (payload: Payload): Promise<void> => {
           description: 'Sample SEO description for the local dev app.',
           canonical: { mode: 'auto' },
           robots: { mode: 'index-follow' },
-          schema: { type: 'WebPage' },
+          schemaInstances: [{ templateId: 'web-page' }],
         },
       },
     })
@@ -80,15 +80,16 @@ const ensureSamplePage = async (payload: Payload): Promise<void> => {
 
   await payload.create({
     collection: 'pages',
+    draft: false,
     data: {
       title: 'Home',
       slug: 'home',
+      pageType: 'standardContent',
       seo: {
         title: 'Home SEO title',
         description: 'Sample SEO description for the local dev app.',
         canonical: { mode: 'auto' },
         robots: { mode: 'index-follow' },
-        schema: { type: 'WebPage' },
       },
     },
   })
@@ -110,6 +111,11 @@ const ensureSeoSettings = async (payload: Payload): Promise<void> => {
       titleTemplate: '%s | Krameri development',
       defaultDescription: 'Development content for the Payload SEO plugin.',
       defaultRobots: { mode: 'index-follow' },
+      collectionSchemas: [{
+        collection: 'pages',
+        templates: [{ templateId: 'web-page', name: 'WebPage', schema: { '@type': 'WebPage', name: '$title', description: '$excerpt' }, isDefault: true }],
+      }],
+      globalSchemas: [{ templateId: 'website', name: 'WebSite', schema: { '@type': 'WebSite', name: 'Krameri development' } }],
       robots: {
         mode: 'generated',
         groups: [{ userAgent: '*', disallow: [{ path: '/admin' }] }],

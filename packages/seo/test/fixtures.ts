@@ -13,11 +13,7 @@ export const releaseSettings: SeoDocument = {
   defaultTwitterCard: 'summary_large_image',
   defaultTwitterSite: '@example',
   defaultTwitterCreator: '@example-author',
-  organizationSchema: {
-    name: 'Example Organization',
-    logo: { url: 'https://example.com/media/logo.jpg' },
-    sameAs: ['https://social.example/example'],
-  },
+  globalSchemas: [{ templateId: 'organization', name: 'Organization', schema: { '@type': 'Organization', name: 'Example Organization' } }],
 }
 
 export const releasePages = {
@@ -46,7 +42,7 @@ export const releasePages = {
 } satisfies Record<string, SeoDocument>
 
 export const releaseConfig = (): SeoEnabledPluginConfig => ({
-  collections: { pages: { schemaType: 'WebPage', fields: { title: 'title', description: 'description', image: 'image' } } },
+  collections: { pages: { fields: { title: 'title', description: 'description', image: 'image' } } },
   siteUrl: 'https://example.com',
   media: { collection: 'media', resolveMediaUrl: ({ media }) => media.url as string | null },
   resolveChunkUrl: ({ locale, page }) => `https://example.com/sitemaps/${locale}/${page}.xml`,

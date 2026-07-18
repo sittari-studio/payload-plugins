@@ -1,5 +1,6 @@
 import type { ResolvedSeoMetadata, SeoDocument, SeoEnabledPluginConfig, SeoPluginConfig } from '../types.js'
 import { resolveEffectiveSeo } from './effective.js'
+import { composeSchemaGraph } from '../schema/resolve.js'
 
 type ResolverOptions = {
   collection: string
@@ -20,10 +21,6 @@ export const resolveSeoMetadataCore = async (input: ResolverOptions): Promise<Re
   result.robots = { index: effective.robots.index, follow: effective.robots.follow, ...(effective.robots.custom?.length ? { custom: effective.robots.custom } : {}) }
   if (Object.keys(effective.social.openGraph).length) result.openGraph = effective.social.openGraph
   if (Object.keys(effective.social.twitter).length) result.twitter = effective.social.twitter
-  if (effective.schema || effective.siteSchemas.length || effective.breadcrumbs.length) {
-    result.schema = effective.siteSchemas.length || effective.breadcrumbs.length
-      ? { '@context': 'https://schema.org', '@graph': [...(effective.schema ? [effective.schema] : []), ...effective.breadcrumbs, ...effective.siteSchemas] }
-      : effective.schema
-  }
+  if (effective.schemas.length) result.schema = composeSchemaGraph(effective.schemas)
   return result
 }

@@ -20,7 +20,7 @@ export default buildConfig({
   plugins: [seoPlugin({
     siteUrl: 'https://example.com',
     collections: {
-      pages: { schemaType: 'WebPage', sitemap: { fields: ['slug'] } },
+      pages: { sitemap: { fields: ['slug'] } },
     },
     media: {
       collection: 'media',
@@ -33,6 +33,13 @@ export default buildConfig({
   collections: [Pages, Media],
 })
 ```
+
+Schema JSON is editor-managed in the generated SEO Settings Global. Editors can
+create ordered global schemas and collection templates, start from a blank
+object or one of the six exported `SEO_SCHEMA_STARTERS`, and mark any number of
+collection templates as defaults. Documents store stable template references
+and localized JSON Patch overrides; templates remain live after documents are
+created.
 
 See the full [configuration and helper API](https://github.com/roxxel/krameri-payload-plugins/blob/main/packages/seo/docs/PUBLIC_API.md) and [integration requirements](https://github.com/roxxel/krameri-payload-plugins/blob/main/packages/seo/docs/PAYLOAD_INTEGRATION.md).
 See [Admin translation requirements](https://github.com/roxxel/krameri-payload-plugins/blob/main/packages/seo/docs/ADMIN_TRANSLATIONS.md) for the supported interface languages and fallback behavior.

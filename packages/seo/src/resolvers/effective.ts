@@ -10,10 +10,12 @@ import type {
   SeoRobotsDirectives,
 } from '../types.js'
 import { getByPath, getSeoGroup } from './document.js'
-import { buildGeneratedSchema } from '../utils/generated-schema.js'
-import { combineSiteUrl, isSameSiteUrl, nonEmptyString, normalizeCanonicalUrl, normalizeSiteUrl } from '../utils/urls.js'
-import { isAbsoluteHttpUrl, isPlainJsonObject } from '../utils/validation.js'
+import { combineSiteUrl, isSameSiteUrl, nonEmptyString, normalizeCanonicalUrl } from '../utils/urls.js'
+import { isAbsoluteHttpUrl } from '../utils/validation.js'
 import { normalizeRobotsDirectives } from '../utils/robots.js'
+import { composeSchemaGraph, resolveSchemaList } from '../schema/resolve.js'
+import { isJsonObject } from '../schema/json.js'
+import type { JsonObject, SeoCollectionSchemaTemplates, SeoGlobalSchemaOverride, SeoSchemaInstance, SeoSchemaTemplate } from '../schema/types.js'
 
 type Input = {
   collection: string
@@ -104,67 +106,39 @@ export const resolveCanonical = async (input: Input, seo: SeoDocument): Promise<
   }
 }
 
-const resolvePageSchema = async (input: Input, seo: SeoDocument, canonicalUrl?: string): Promise<Record<string, unknown> | undefined> => {
-  const collection = input.config.collections[input.collection]
-  if (!collection) return undefined
-  const schema = object(seo.schema)
-  const raw = nonEmptyString(schema.rawJson)
-  if (raw) {
-    try {
-      const parsed: unknown = JSON.parse(raw)
-      if (isPlainJsonObject(parsed)) return parsed
-      diagnostic(input, 'schema', 'Raw schema must be a JSON object.')
-    } catch {
-      diagnostic(input, 'schema', 'Raw schema JSON could not be parsed.')
-    }
-    return undefined
-  }
-  const generated = buildGeneratedSchema({ canonicalUrl, collectionSchema: collection.schema, defaultType: collection.schemaType, document: input.document, schema })
-  const image = generated.image
-  if (image !== undefined) {
-    if (isAbsoluteHttpUrl(image)) generated.image = image.trim()
-    else {
-      const resolved = await resolveImage(image, input)
-      if (resolved) generated.image = resolved
-      else delete generated.image
-    }
-  }
-  return generated
+const schemaObject = (value: unknown): JsonObject | undefined => {
+  if (isJsonObject(value)) return value
+  if (typeof value === 'string') try { const parsed: unknown = JSON.parse(value); return isJsonObject(parsed) ? parsed : undefined } catch { return undefined }
+  return undefined
 }
 
-const resolveBreadcrumbs = async (input: Input, canonicalUrl?: string): Promise<Record<string, unknown>[]> => {
-  const resolver = input.config.collections[input.collection]?.breadcrumbs
-  if (!resolver) return []
-  try {
-    const items = await resolver({ collection: input.collection, document: input.document, locale: input.locale, canonicalUrl })
-    const policy = input.config.url?.trailingSlash ?? 'never'
-    const itemListElement = items.flatMap((item, position) => {
-      const name = nonEmptyString(item?.name)
-      const url = isAbsoluteHttpUrl(item?.url)
-        ? normalizeCanonicalUrl(item.url, policy)
-        : combineSiteUrl(input.config.siteUrl, item?.url, policy)
-      return name && url ? [{ '@type': 'ListItem', position: position + 1, name, item: url }] : []
-    })
-    return itemListElement.length ? [{ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement }] : []
-  } catch {
-    diagnostic(input, 'schema', 'Breadcrumb resolver failed.')
+const template = (value: unknown): SeoSchemaTemplate | undefined => {
+  if (!isJsonObject(value)) return undefined
+  const id = value.templateId ?? value.id
+  const schema = schemaObject(value.schema)
+  return typeof id === 'string' && typeof value.name === 'string' && schema
+    ? { id, name: value.name, schema, ...(Array.isArray(value.valueOverrides) ? { valueOverrides: value.valueOverrides as SeoSchemaTemplate['valueOverrides'] } : {}), ...(value.isDefault === true ? { isDefault: true } : {}) }
+    : undefined
+}
+
+export const resolveStructuredData = async (input: Input, seo: SeoDocument, canonicalUrl?: string): Promise<{ schemas: JsonObject[] }> => {
+  const parseTemplates = (items: unknown, scope: 'Collection' | 'Global'): SeoSchemaTemplate[] => Array.isArray(items) ? items.flatMap((item) => {
+    const parsed = template(item)
+    if (parsed) return [parsed]
+    const id = isJsonObject(item) && typeof (item.templateId ?? item.id) === 'string' ? String(item.templateId ?? item.id) : 'unknown'
+    diagnostic(input, 'schema', `${scope} schema "${id}" is invalid and was omitted.`)
     return []
-  }
-}
-
-export const resolveStructuredData = async (input: Input, seo: SeoDocument, canonicalUrl?: string): Promise<{ schema?: Record<string, unknown>; siteSchemas: Record<string, unknown>[]; breadcrumbs: Record<string, unknown>[] }> => {
-  const schema = await resolvePageSchema(input, seo, canonicalUrl)
-  const organization = object(input.settings.organizationSchema)
-  const siteUrl = normalizeSiteUrl(input.config.siteUrl)
-  const name = nonEmptyString(organization.name) ?? nonEmptyString(input.settings.siteName)
-  const logo = await resolveImage(organization.logo, input)
-  const sameAs = Array.isArray(organization.sameAs)
-    ? organization.sameAs.map((value) => nonEmptyString(object(value).url) ?? nonEmptyString(value)).filter(isAbsoluteHttpUrl).map((value) => value.trim())
-    : []
-  const siteSchemas: Record<string, unknown>[] = []
-  if (name || logo || sameAs.length) siteSchemas.push({ '@context': 'https://schema.org', '@type': 'Organization', ...(name ? { name } : {}), ...(siteUrl ? { url: normalizeCanonicalUrl(organization.url, input.config.url?.trailingSlash ?? 'never') ?? siteUrl } : {}), ...(logo ? { logo } : {}), ...(sameAs.length ? { sameAs } : {}) })
-  if (siteUrl && nonEmptyString(input.settings.siteName)) siteSchemas.push({ '@context': 'https://schema.org', '@type': 'WebSite', url: siteUrl, name: nonEmptyString(input.settings.siteName)! })
-  return { schema, siteSchemas, breadcrumbs: await resolveBreadcrumbs(input, canonicalUrl) }
+  }) : []
+  const globalSchemas = parseTemplates(input.settings.globalSchemas, 'Global')
+  const groups = Array.isArray(input.settings.collectionSchemas) ? input.settings.collectionSchemas as SeoCollectionSchemaTemplates[] : []
+  const group = groups.find((item) => item && item.collection === input.collection)
+  const templates = parseTemplates(group?.templates, 'Collection')
+  const instances = Array.isArray(seo.schemaInstances) ? seo.schemaInstances as SeoSchemaInstance[] : []
+  const globalOverrides = Array.isArray(seo.globalSchemaOverrides) ? seo.globalSchemaOverrides as SeoGlobalSchemaOverride[] : []
+  return { schemas: resolveSchemaList({
+    globalSchemas, globalOverrides, templates, instances, document: input.document, canonicalUrl,
+    onError: ({ id, reason, scope }) => diagnostic(input, 'schema', `${scope === 'global' ? 'Global' : 'Collection'} schema "${id}" is ${reason === 'missing' ? 'missing' : 'invalid'} and was omitted.`),
+  }) }
 }
 
 export const resolveSocialMetadata = async (input: Input, seo: SeoDocument, title?: string, description?: string, canonicalUrl?: string): Promise<ResolvedEffectiveSeo['social']> => {
@@ -198,7 +172,7 @@ export const resolveSocialMetadata = async (input: Input, seo: SeoDocument, titl
 /** The one resolver every SEO output consumes. It performs no Payload reads. */
 export const resolveEffectiveSeo = async (input: Input): Promise<ResolvedEffectiveSeo> => {
   const collection = input.config.collections[input.collection]
-  if (!collection) return { canonical: { mode: 'auto', external: false }, robots: { mode: 'inherit', index: 'index', follow: 'follow' }, social: { openGraph: {}, twitter: {} }, siteSchemas: [], breadcrumbs: [] }
+  if (!collection) return { canonical: { mode: 'auto', external: false }, robots: { mode: 'inherit', index: 'index', follow: 'follow' }, social: { openGraph: {}, twitter: {} }, schemas: [] }
   const seo = getSeoGroup(input.document, input.names?.seoField ?? 'seo')
   const sourceTitle = nonEmptyString(seo.title) ?? nonEmptyString(getByPath(input.document, collection.fields?.title))
   const title = sourceTitle && titleTemplate(input.settings.titleTemplate) ? titleTemplate(input.settings.titleTemplate)!.replace('%s', sourceTitle) : sourceTitle
@@ -236,10 +210,6 @@ export const projectSeoPreview = (effective: ResolvedEffectiveSeo): SeoPreview =
   ...(effective.social.openGraph.image ?? effective.social.twitter.image ? { image: effective.social.openGraph.image ?? effective.social.twitter.image } : {}),
   ...(Object.keys(effective.social.openGraph).length ? { openGraph: effective.social.openGraph } : {}),
   robots: { index: effective.robots.index, follow: effective.robots.follow },
-  ...(effective.schema || effective.siteSchemas.length || effective.breadcrumbs.length ? {
-    schema: effective.siteSchemas.length || effective.breadcrumbs.length
-      ? { '@context': 'https://schema.org', '@graph': [...(effective.schema ? [effective.schema] : []), ...effective.breadcrumbs, ...effective.siteSchemas] }
-      : effective.schema,
-  } : {}),
+  ...(effective.schemas.length ? { schema: composeSchemaGraph(effective.schemas) } : {}),
   ...(Object.keys(effective.social.twitter).length ? { twitter: effective.social.twitter } : {}),
 })

@@ -1,4 +1,4 @@
-import type { Config, Endpoint, Field, Plugin, TabsField } from 'payload'
+import type { CollectionBeforeOperationHook, CollectionBeforeValidateHook, Config, Endpoint, Field, Plugin, TabsField } from 'payload'
 
 import {
   DEFAULT_SEO_NAMES,
@@ -9,11 +9,15 @@ import {
 } from './types.js'
 import { createRedirectsCollection } from './collections/redirects.js'
 import { createSeoPreviewEndpoint } from './endpoints/preview.js'
-import { createSeoField, isSupportedVisualField } from './fields/seo.js'
+import { createSchemaTemplatesEndpoint } from './endpoints/schema-templates.js'
+import { createSeoField } from './fields/seo.js'
 import { createSeoSettingsGlobal } from './globals/seo-settings.js'
 import { SEO_RUNTIME_CONFIG_KEY } from './helpers/config.js'
 import { adminTabLabel } from './admin/translations.js'
 import { normalizeSiteUrl } from './utils/urls.js'
+import { discoverSchemaVariables, groupSchemaVariables } from './schema/variables.js'
+import { applyJsonPatch, isJsonObject, validateJsonPatch } from './schema/json.js'
+import type { JsonObject } from './schema/types.js'
 
 type CollectionConfig = NonNullable<Config['collections']>[number]
 type GlobalConfig = NonNullable<Config['globals']>[number]
@@ -36,10 +40,14 @@ const hasGeneratedTabs = (field: Field): boolean => field.type === 'tabs' && has
 const hasGeneratedPreviewEndpoint = (endpoint: { custom?: unknown }): boolean =>
   isRecord(endpoint.custom) && (endpoint.custom as SeoAdminCustom).seo?.marker === SEO_PLUGIN_MARKER
 
-const withPreviewEndpoint = (collection: CollectionConfig): Omit<Endpoint, 'root'>[] | false => {
+const withSeoEndpoints = (collection: CollectionConfig, settingsGlobal: string, seoField: string): Omit<Endpoint, 'root'>[] | false => {
   if (collection.endpoints === false) return false
-  if (collection.endpoints?.some(hasGeneratedPreviewEndpoint)) return collection.endpoints
-  return [...(collection.endpoints ?? []), createSeoPreviewEndpoint(collection.slug)]
+  const endpoints = collection.endpoints ?? []
+  return [
+    ...endpoints,
+    ...(endpoints.some((endpoint) => endpoint.path === '/seo-preview' && hasGeneratedPreviewEndpoint(endpoint)) ? [] : [createSeoPreviewEndpoint(collection.slug)]),
+    ...(endpoints.some((endpoint) => endpoint.path === '/seo-schema-templates' && hasGeneratedPreviewEndpoint(endpoint)) ? [] : [createSchemaTemplatesEndpoint({ collection: collection.slug, settingsGlobal, seoField })]),
+  ]
 }
 
 const findNamedField = (fields: Field[], name: string): Field | undefined => {
@@ -114,7 +122,10 @@ const validateSitemapFields = (value: unknown, label: string): void => {
   }
 }
 
-const validSchemaTypes = new Set(['Article', 'FAQPage', 'LocalBusiness', 'Organization', 'Product', 'WebPage'])
+const validateExclusions = (value: unknown, label: string): void => {
+  if (value === undefined) return
+  if (!Array.isArray(value) || value.some((path) => typeof path !== 'string' || !path.trim())) throw new Error(`@sittari/payload-seo: ${label} must be an array of non-empty dot-path prefixes.`)
+}
 
 export const resolveSeoNames = (names?: SeoPluginConfig['names']) => ({
   ...DEFAULT_SEO_NAMES,
@@ -140,11 +151,8 @@ export const validateSeoPluginConfig = (config: SeoEnabledPluginConfig): void =>
     if (!isRecord(collection)) {
       throw new Error(`@sittari/payload-seo: collections.${slug} must be an object.`)
     }
-    requireNonEmptyString(collection.schemaType, `collections.${slug}.schemaType`)
-    if (!validSchemaTypes.has(collection.schemaType)) throw new Error(`@sittari/payload-seo: collections.${slug}.schemaType is not supported.`)
     validateMappings(collection.fields, `collections.${slug}.fields`)
-    validateMappings(collection.schema, `collections.${slug}.schema`)
-    if (collection.breadcrumbs !== undefined) requireFunction(collection.breadcrumbs, `collections.${slug}.breadcrumbs`)
+    validateExclusions(collection.schemaVariableExclusions, `collections.${slug}.schemaVariableExclusions`)
     if (collection.lastModified !== undefined) {
       requireFunction(collection.lastModified, `collections.${slug}.lastModified`)
     }
@@ -160,9 +168,6 @@ export const validateSeoPluginConfig = (config: SeoEnabledPluginConfig): void =>
       }
       validateSitemapFields(collection.sitemap.fields, `collections.${slug}.sitemap.fields`)
       if (collection.sitemap.exclude !== undefined) requireFunction(collection.sitemap.exclude, `collections.${slug}.sitemap.exclude`)
-    }
-    if (collection.visualFields?.some((field) => !isSupportedVisualField(field))) {
-      throw new Error(`@sittari/payload-seo: collections.${slug}.visualFields may only contain named text, textarea, number, checkbox, select, date, or upload fields.`)
     }
   }
 
@@ -181,6 +186,7 @@ export const validateSeoPluginConfig = (config: SeoEnabledPluginConfig): void =>
   }
   if (config.hreflang?.xDefaultLocale !== undefined) requireNonEmptyString(config.hreflang.xDefaultLocale, 'hreflang.xDefaultLocale')
   if (config.diagnostics !== undefined) requireFunction(config.diagnostics, 'diagnostics')
+  validateExclusions(config.schemaVariableExclusions, 'schemaVariableExclusions')
 
   const names = resolveSeoNames(config.names)
   requireNonEmptyString(names.seoField, 'names.seoField')
@@ -216,6 +222,9 @@ const assertNoGeneratedNameCollisions = (incomingConfig: Config, config: SeoEnab
     if (collection.endpoints?.some((endpoint) => endpoint.path === '/seo-preview' && !hasGeneratedPreviewEndpoint(endpoint))) {
       throw new Error(`@sittari/payload-seo: collection "${slug}" already has an endpoint at "/seo-preview".`)
     }
+    if (collection.endpoints?.some((endpoint) => endpoint.path === '/seo-schema-templates' && !hasGeneratedPreviewEndpoint(endpoint))) {
+      throw new Error(`@sittari/payload-seo: collection "${slug}" already has an endpoint at "/seo-schema-templates".`)
+    }
   }
 
   const settings = (incomingConfig.globals ?? []).find((global) => global.slug === names.settingsGlobal)
@@ -235,6 +244,81 @@ const assertMediaCollectionsExist = (incomingConfig: Config, config: SeoEnabledP
   for (const slug of required) if (!slugs.has(slug)) throw new Error(`@sittari/payload-seo: media collection "${slug}" does not exist in Payload config.`)
 }
 
+const defaultsForCollection = (settings: Record<string, unknown>, collection: string): Array<{ templateId: string }> => {
+  if (!Array.isArray(settings.collectionSchemas)) return []
+  const group = settings.collectionSchemas.find((item) => isRecord(item) && item.collection === collection)
+  if (!isRecord(group) || !Array.isArray(group.templates)) return []
+  return group.templates.flatMap((item) => isRecord(item) && item.isDefault === true && typeof (item.templateId ?? item.id) === 'string'
+    ? [{ templateId: String(item.templateId ?? item.id) }]
+    : [])
+}
+
+const configuredDefaultLocale = (config: Config): string | undefined => {
+  const localization = config.localization
+  if (!localization) return undefined
+  return localization.defaultLocale
+}
+
+const schemaInstancesPresenceKey = (collection: string, seoField: string): string =>
+  `${SEO_PLUGIN_MARKER}:schema-instances-present:${collection}:${seoField}`
+
+const rememberSchemaInstancesPresence = ({ collection, seoField }: { collection: string; seoField: string }): CollectionBeforeOperationHook =>
+  ({ args, operation }) => {
+    if (operation !== 'create') return args
+    const seo = isRecord(args.data?.[seoField]) ? args.data[seoField] : undefined
+    args.req.context[schemaInstancesPresenceKey(collection, seoField)] = Boolean(seo && Object.hasOwn(seo, 'schemaInstances'))
+    return args
+  }
+
+const seedDefaultSchemas = ({ collection, seoField, settingsGlobal }: { collection: string; seoField: string; settingsGlobal: string }): CollectionBeforeValidateHook =>
+  async ({ data, operation, req }) => {
+    if (operation !== 'create' || !data) return data
+    const seo = isRecord(data[seoField]) ? data[seoField] : {}
+    const presenceKey = schemaInstancesPresenceKey(collection, seoField)
+    const explicitlyProvided = req.context[presenceKey] === true
+    delete req.context[presenceKey]
+    if (explicitlyProvided) return data
+    const settings = await req.payload.findGlobal({ slug: settingsGlobal, locale: req.locale, fallbackLocale: false, depth: 0, req })
+    const defaults = defaultsForCollection(settings as Record<string, unknown>, collection)
+    if (defaults.length) data[seoField] = { ...seo, schemaInstances: defaults }
+    return data
+  }
+
+const validateDocumentSchemaOverrides = ({ collection, seoField, settingsGlobal }: { collection: string; seoField: string; settingsGlobal: string }): CollectionBeforeValidateHook =>
+  async ({ data, req }) => {
+    if (!data || !isRecord(data[seoField])) return data
+    const seo = data[seoField]
+    const instances = Array.isArray(seo.schemaInstances) ? seo.schemaInstances : []
+    const globalOverrides = Array.isArray(seo.globalSchemaOverrides) ? seo.globalSchemaOverrides : []
+    if (!instances.some((item) => isRecord(item) && item.overrides !== undefined) && !globalOverrides.some((item) => isRecord(item) && item.overrides !== undefined)) return data
+
+    const settings = await req.payload.findGlobal({ slug: settingsGlobal, locale: req.locale, fallbackLocale: false, depth: 0, req }) as Record<string, unknown>
+    const globalTemplates = Array.isArray(settings.globalSchemas) ? settings.globalSchemas : []
+    const groups = Array.isArray(settings.collectionSchemas) ? settings.collectionSchemas : []
+    const group = groups.find((item) => isRecord(item) && item.collection === collection)
+    const collectionTemplates = isRecord(group) && Array.isArray(group.templates) ? group.templates : []
+
+    const sources = (items: unknown[]): Map<string, JsonObject> => new Map(items.flatMap((item) => {
+      if (!isRecord(item) || typeof (item.templateId ?? item.id) !== 'string' || !isJsonObject(item.schema)) return []
+      try {
+        const source = applyJsonPatch(item.schema, Array.isArray(item.valueOverrides) ? item.valueOverrides as never : undefined)
+        return [[String(item.templateId ?? item.id), source] as const]
+      } catch { return [] }
+    }))
+    const globalSources = sources(globalTemplates)
+    const collectionSources = sources(collectionTemplates)
+    const validate = (items: unknown[], idKey: 'schemaId' | 'templateId', sourceMap: Map<string, JsonObject>): void => {
+      for (const item of items) if (isRecord(item) && item.overrides !== undefined && typeof item[idKey] === 'string') {
+        const source = sourceMap.get(item[idKey])
+        const result = validateJsonPatch(item.overrides, { scalarValuesOnly: true, source })
+        if (!source || result !== true) throw new Error(`Invalid scalar schema overrides for template "${item[idKey]}".`)
+      }
+    }
+    validate(instances, 'templateId', collectionSources)
+    validate(globalOverrides, 'schemaId', globalSources)
+    return data
+  }
+
 export const seoPlugin =
   (pluginConfig: SeoPluginConfig = {} as SeoPluginConfig): Plugin =>
   (incomingConfig: Config): Config => {
@@ -252,6 +336,13 @@ export const seoPlugin =
     assertMediaCollectionsExist(incomingConfig, enabledConfig)
 
     const names = resolveSeoNames(enabledConfig.names)
+    const collectionVariables = Object.fromEntries(Object.keys(enabledConfig.collections).map((slug) => {
+      const collection = getSelectedCollection(incomingConfig.collections ?? [], slug)
+      return [slug, discoverSchemaVariables({ collection: slug, fields: collection.fields, generatedSeoField: names.seoField, exclusions: [...(enabledConfig.schemaVariableExclusions ?? []), ...(enabledConfig.collections[slug].schemaVariableExclusions ?? [])] })]
+    }))
+    const labeledCollections = Object.keys(enabledConfig.collections).filter((slug) =>
+      getSelectedCollection(incomingConfig.collections ?? [], slug).labels?.plural !== undefined)
+    const globalVariables = groupSchemaVariables(collectionVariables)
     return {
       ...incomingConfig,
       custom: { ...incomingConfig.custom, [SEO_RUNTIME_CONFIG_KEY]: enabledConfig },
@@ -265,10 +356,15 @@ export const seoPlugin =
         // The generated field marker makes this branch safe to run repeatedly.
         if (topLevelTabs) {
           if (existingSeoField && hasGeneratedMarker(existingSeoField)) return collection
-          const seoField = createSeoField({ collection: seoConfig, mediaCollection: enabledConfig.media.collection, name: names.seoField, trailingSlashPolicy: enabledConfig.url?.trailingSlash })
+          const seoField = createSeoField({ collection: seoConfig, collectionSlug: collection.slug, mediaCollection: enabledConfig.media.collection, name: names.seoField, trailingSlashPolicy: enabledConfig.url?.trailingSlash, schemaVariables: collectionVariables[collection.slug] })
           return {
             ...collection,
-            endpoints: withPreviewEndpoint(collection),
+            endpoints: withSeoEndpoints(collection, names.settingsGlobal, names.seoField),
+            hooks: {
+              ...collection.hooks,
+              beforeOperation: [...(collection.hooks?.beforeOperation ?? []), rememberSchemaInstancesPresence({ collection: collection.slug, seoField: names.seoField })],
+              beforeValidate: [...(collection.hooks?.beforeValidate ?? []), seedDefaultSchemas({ collection: collection.slug, seoField: names.seoField, settingsGlobal: names.settingsGlobal }), validateDocumentSchemaOverrides({ collection: collection.slug, seoField: names.seoField, settingsGlobal: names.settingsGlobal })],
+            },
             fields: collection.fields.map((field) => field === topLevelTabs ? appendSeoTab(field, seoField) : field),
           }
         }
@@ -278,14 +374,19 @@ export const seoPlugin =
           : collection.fields
         return {
           ...collection,
-          endpoints: withPreviewEndpoint(collection),
+          endpoints: withSeoEndpoints(collection, names.settingsGlobal, names.seoField),
+          hooks: {
+            ...collection.hooks,
+            beforeOperation: [...(collection.hooks?.beforeOperation ?? []), rememberSchemaInstancesPresence({ collection: collection.slug, seoField: names.seoField })],
+            beforeValidate: [...(collection.hooks?.beforeValidate ?? []), seedDefaultSchemas({ collection: collection.slug, seoField: names.seoField, settingsGlobal: names.settingsGlobal }), validateDocumentSchemaOverrides({ collection: collection.slug, seoField: names.seoField, settingsGlobal: names.settingsGlobal })],
+          },
           fields: [createSeoTabs(
             contentFields,
-            createSeoField({ collection: seoConfig, mediaCollection: enabledConfig.media.collection, name: names.seoField, trailingSlashPolicy: enabledConfig.url?.trailingSlash }),
+            createSeoField({ collection: seoConfig, collectionSlug: collection.slug, mediaCollection: enabledConfig.media.collection, name: names.seoField, trailingSlashPolicy: enabledConfig.url?.trailingSlash, schemaVariables: collectionVariables[collection.slug] }),
           )],
         }
       }).concat((incomingConfig.collections ?? []).some((collection) => collection.slug === names.redirectsCollection) ? [] : [createRedirectsCollection({ access: enabledConfig.access?.redirects, slug: names.redirectsCollection })]),
-      globals: [...(incomingConfig.globals ?? []), ...((incomingConfig.globals ?? []).some((global) => global.slug === names.settingsGlobal) ? [] : [createSeoSettingsGlobal({ access: enabledConfig.access?.settings, slug: names.settingsGlobal, mediaCollection: enabledConfig.media.collection })])],
+      globals: [...(incomingConfig.globals ?? []), ...((incomingConfig.globals ?? []).some((global) => global.slug === names.settingsGlobal) ? [] : [createSeoSettingsGlobal({ access: enabledConfig.access?.settings, slug: names.settingsGlobal, mediaCollection: enabledConfig.media.collection, collectionVariables, defaultLocale: configuredDefaultLocale(incomingConfig), globalVariables, labeledCollections, seoField: names.seoField })])],
     }
   }
 

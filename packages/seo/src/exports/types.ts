@@ -14,7 +14,6 @@ export type {
   SeoGeneratedNames,
   SeoPluginAccess,
   SeoPluginConfig,
-  SeoSchemaType,
   SeoSitemapConfig,
   SeoPayload,
   SeoRobotsDirectives,
@@ -26,4 +25,5 @@ export type {
   SeoPreview,
   ResolvedSeoMetadata,
 } from '../types.js'
+export type { JsonObject, JsonValue, SeoCollectionSchemaTemplates, SeoGlobalSchemaOverride, SeoJsonPatchOperation, SeoSchemaInstance, SeoSchemaTemplate, SeoSchemaVariable } from '../schema/types.js'
 export type { SeoRedirect } from '../helpers/redirects.js'

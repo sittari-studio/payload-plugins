@@ -86,7 +86,8 @@ import { seoPlugin } from '@sittari/payload-seo'
 export default buildConfig({
   plugins: [
     seoPlugin({
-      collections: { pages: { schemaType: 'WebPage' } },
+      siteUrl: 'https://example.com',
+      collections: { pages: {} },
       media: { collection: 'media', resolveMediaUrl: () => null },
       resolveUrl: () => null,
       resolveChunkUrl: () => 'https://example.com/sitemap.xml',

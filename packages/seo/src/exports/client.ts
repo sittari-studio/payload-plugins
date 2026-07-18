@@ -1,5 +1,5 @@
 'use client'
 
-export { ResetRawJson } from '../admin/ResetRawJson.js'
-export { SchemaValueOverrides } from '../admin/SchemaValueOverrides.js'
+export { DocumentSchemaManager } from '../admin/schema/DocumentSchemaManager.js'
+export { SettingsSchemaManager } from '../admin/schema/SettingsSchemaManager.js'
 export { SeoPreviews } from '../admin/SeoPreviews.js'

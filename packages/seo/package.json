@@ -23,15 +23,20 @@
     "./client": {
       "types": "./dist/exports/client.d.ts",
       "import": "./dist/exports/client.js"
-    }
+    },
+    "./admin.css": "./dist/admin.css"
   },
   "files": [
     "dist",
     "README.md"
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "*.css",
+    "**/*.css"
+  ],
   "scripts": {
-    "build": "pnpm run clean && pnpm run build:types && pnpm run build:js",
+    "build": "pnpm run clean && pnpm run build:types && pnpm run build:js && pnpm run build:css",
+    "build:css": "cp src/admin.css dist/admin.css",
     "build:js": "tsc -p tsconfig.build.json --declaration false --declarationMap false",
     "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
     "typecheck": "tsc --noEmit",

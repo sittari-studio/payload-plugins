@@ -63,7 +63,7 @@ beforeAll(async () => {
     ],
     plugins: [seoPlugin({
       siteUrl: 'https://example.com',
-      collections: { pages: { schemaType: 'WebPage', fields: { title: 'title', description: 'description', image: 'image' } } },
+      collections: { pages: { fields: { title: 'title', description: 'description', image: 'image' } } },
       media: { collection: 'media', resolveMediaUrl: ({ media }) => typeof media.url === 'string' ? media.url : null },
       resolveUrl: ({ document }) => typeof document.slug === 'string' ? `/${document.slug}` : null,
       resolveChunkUrl: ({ locale, page }) => `https://example.com/sitemaps/${locale}/${page}.xml`,
@@ -78,6 +78,40 @@ afterAll(async () => {
 })
 
 describe('real Payload SEO persistence', () => {
+  it('seeds every current default, keeps repeated references, and cascades template deletion', async () => {
+    await payload.updateGlobal({ slug: 'seo-settings', locale: 'en', data: {
+      collectionSchemas: [{ collection: 'pages', templates: [
+        { templateId: 'page', name: 'Page', schema: { '@type': 'WebPage', name: '$title' }, isDefault: true },
+        { templateId: 'thing', name: 'Thing', schema: { '@type': 'Thing', name: '$title' }, isDefault: true },
+      ] }],
+    } })
+    const seeded = await payload.create({ collection: 'pages', locale: 'en', data: { title: 'Seeded', slug: 'seeded' } })
+    expect(seeded.seo?.schemaInstances?.map((item: { templateId: string }) => item.templateId)).toEqual(['page', 'thing'])
+
+    const repeated = await payload.create({ collection: 'pages', locale: 'en', data: {
+      title: 'Repeated', slug: 'repeated', seo: { schemaInstances: [{ templateId: 'page' }, { templateId: 'page' }] },
+    } })
+    expect(repeated.seo?.schemaInstances).toHaveLength(2)
+
+    const explicitlyEmpty = await payload.create({ collection: 'pages', locale: 'en', data: {
+      title: 'No schemas', slug: 'no-schemas', seo: { schemaInstances: [] },
+    } })
+    expect(explicitlyEmpty.seo?.schemaInstances).toEqual([])
+
+    const metadata = await resolveSeoMetadata({ payload: seoPayload(), collection: 'pages', id: seeded.id, locale: 'en' })
+    expect(metadata.schema?.['@graph']).toEqual(expect.arrayContaining([
+      expect.objectContaining({ '@type': 'WebPage', name: 'Seeded' }),
+      expect.objectContaining({ '@type': 'Thing', name: 'Seeded' }),
+    ]))
+
+    await payload.updateGlobal({ slug: 'seo-settings', locale: 'en', data: { collectionSchemas: [] } })
+    const cascadedSeeded = await payload.findByID({ collection: 'pages', id: seeded.id, locale: 'en', fallbackLocale: false, draft: true })
+    const cascadedRepeated = await payload.findByID({ collection: 'pages', id: repeated.id, locale: 'en', fallbackLocale: false, draft: true })
+    expect(cascadedSeeded.seo?.schemaInstances).toEqual([])
+    expect(cascadedRepeated.seo?.schemaInstances).toEqual([])
+    expect((await resolveSeoMetadata({ payload: seoPayload(), collection: 'pages', id: seeded.id, locale: 'en' })).schema).toBeUndefined()
+  })
+
   it('persists inherit-by-default robots and applies a saved global noindex default after reload', async () => {
     const page = await payload.create({ collection: 'pages', locale: 'en', data: { title: 'Inherited', slug: 'inherited' } })
     const saved = await payload.findByID({ collection: 'pages', id: page.id, locale: 'en', fallbackLocale: false, draft: false })
@@ -125,22 +159,31 @@ describe('real Payload SEO persistence', () => {
     expect(sitemap).not.toContain('<loc>https://example.com/draft</loc>')
   })
 
-  it('passes persisted Media relationships through the production resolver for metadata and organization schema', async () => {
+  it('passes persisted Media relationships through the production resolver for metadata and global schemas', async () => {
     const image = await payload.create({ collection: 'media', data: { url: 'https://cdn.example/persisted.jpg' } })
     await payload.updateGlobal({ slug: 'seo-settings', locale: 'en', data: {
-      defaultRobots: { mode: 'index-follow' }, organizationSchema: { name: 'Persisted Organization', logo: image.id },
+      defaultRobots: { mode: 'index-follow' }, globalSchemas: [{ templateId: 'org', name: 'Organization', schema: { '@type': 'Organization', name: 'Persisted Organization' } }],
     } })
     const page = await payload.create({ collection: 'pages', locale: 'en', data: { title: 'Image', slug: 'image', image: image.id } })
     const metadata = await resolveSeoMetadata({ payload: seoPayload(), collection: 'pages', id: page.id, locale: 'en' })
     expect(metadata.openGraph?.image).toBe('https://cdn.example/persisted.jpg')
-    expect(metadata.schema?.['@graph']).toEqual(expect.arrayContaining([
-      expect.objectContaining({ '@type': 'Organization', logo: 'https://cdn.example/persisted.jpg' }),
-    ]))
+    expect(metadata.schema).toMatchObject({ '@context': 'https://schema.org', '@type': 'Organization', name: 'Persisted Organization' })
+
+    await payload.update({ collection: 'pages', id: page.id, locale: 'en', data: { seo: {
+      globalSchemaOverrides: [{ schemaId: 'org', overrides: [{ op: 'replace', path: '/name', value: 'Page Organization' }] }],
+    } } })
+    await payload.updateGlobal({ slug: 'seo-settings', locale: 'en', data: { globalSchemas: [] } })
+    const cascaded = await payload.findByID({ collection: 'pages', id: page.id, locale: 'en', fallbackLocale: false, draft: true })
+    expect(cascaded.seo?.globalSchemaOverrides).toEqual([])
   })
 
   it('rejects invalid persisted schema, robots, and canonical values through generated Payload fields', async () => {
     const data = { title: 'Invalid', slug: 'invalid' }
-    await expect(payload.create({ collection: 'pages', locale: 'en', data: { ...data, seo: { schema: { rawJson: '[]' } } } })).rejects.toThrow()
+    await expect(payload.updateGlobal({ slug: 'seo-settings', locale: 'en', data: { globalSchemas: [{ templateId: 'bad', name: 'Bad', schema: [] as never }] } })).rejects.toThrow()
+    await expect(payload.updateGlobal({ slug: 'seo-settings', locale: 'en', data: { globalSchemas: [
+      { templateId: 'duplicate', name: 'First', schema: { '@type': 'Thing' } },
+      { templateId: 'duplicate', name: 'Second', schema: { '@type': 'Thing' } },
+    ] } })).rejects.toThrow('must be unique')
     await expect(payload.create({ collection: 'pages', locale: 'en', data: { ...data, slug: 'invalid-canonical', seo: { canonical: { mode: 'manual', url: 'javascript:alert(1)' } } } })).rejects.toThrow()
     await expect(payload.updateGlobal({ slug: 'seo-settings', locale: 'en', data: { robots: { mode: 'generated', groups: [{ userAgent: 'bad\nagent' }] } } })).rejects.toThrow()
   })

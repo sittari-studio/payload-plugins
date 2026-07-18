@@ -29,7 +29,7 @@ import { releasePages, releasePayload, releaseSettings } from './fixtures.js'
 
 const validConfig = (): SeoEnabledPluginConfig => ({
   collections: {
-    pages: { schemaType: 'WebPage' },
+    pages: {},
   },
   siteUrl: 'https://example.com',
   media: {
@@ -78,24 +78,34 @@ describe('seoPlugin', () => {
     expect(seoField).toMatchObject({ type: 'group' })
     const seoTabs = seoField.fields.find((field: any) => field.type === 'tabs')
     expect(seoTabs.tabs.map((tab: any) => labelText(tab.label))).toEqual(['General', 'Canonical', 'Robots', 'Open Graph', 'X / Twitter', 'Schema', 'Previews'])
-    const schema = seoTabs.tabs.find((tab: any) => labelText(tab.label) === 'Schema').fields[0]
-    expect(schema.fields.find((field: any) => field.name === 'rawJson')).toMatchObject({
-      admin: {
-        components: { Field: '@sittari/payload-seo/client#ResetRawJson' },
-        custom: { seo: { collectionSchema: {}, defaultType: 'WebPage' } },
-      },
-    })
-    expect(schema.fields.find((field: any) => field.name === 'values')).toMatchObject({
-      admin: {
-        components: { Field: '@sittari/payload-seo/client#SchemaValueOverrides' },
-        custom: { seo: { schemaMappings: {} } },
-      },
-    })
-    expect(schema.fields.find((field: any) => field.name === 'values').fields.map((field: any) => field.name)).toContain('headline')
+    const schemaFields = seoTabs.tabs.find((tab: any) => labelText(tab.label) === 'Schema').fields
+    expect(schemaFields.map((field: any) => field.name)).toEqual(['schemaInstances', 'globalSchemaOverrides', 'schemaManager'])
+    expect(schemaFields.slice(0, 2).every((field: any) => field.admin.hidden)).toBe(true)
+    expect(schemaFields[0].fields.find((field: any) => field.name === 'templateId').admin.hidden).toBe(true)
+    expect(schemaFields[2]).toMatchObject({ admin: { components: { Field: '@sittari/payload-seo/client#DocumentSchemaManager' } } })
     const settings = outputConfig.globals?.find((global) => global.slug === 'seo-settings') as any
-    expect(settings.fields[0].tabs.map((tab: any) => labelText(tab.label))).toEqual(['Site defaults', 'Social defaults', 'Default robots', 'Organization schema', 'robots.txt'])
+    expect(settings.fields[0].tabs.map((tab: any) => labelText(tab.label))).toEqual(['Site defaults', 'Social defaults', 'Default robots', 'Schema', 'robots.txt'])
+    const settingsSchemaFields = settings.fields[0].tabs.find((tab: any) => labelText(tab.label) === 'Schema').fields
+    expect(settingsSchemaFields.map((field: any) => field.name)).toEqual(['globalSchemas', 'collectionSchemas', 'schemaManager'])
+    expect(settingsSchemaFields.slice(0, 2).every((field: any) => field.admin.hidden)).toBe(true)
+    expect(settingsSchemaFields[0].fields.some((field: any) => field.name === 'starter')).toBe(false)
+    expect(settingsSchemaFields[2]).toMatchObject({ admin: { components: { Field: '@sittari/payload-seo/client#SettingsSchemaManager' } } })
+    expect(settingsSchemaFields[2].admin.custom.seo.labeledCollections).toEqual([])
+    expect(settingsSchemaFields[2].admin.custom.seo.defaultLocale).toBeUndefined()
     expect(outputConfig.collections?.[2]).toMatchObject({ slug: 'seo-redirects', timestamps: true })
     expect(outputConfig.collections?.[0]?.endpoints).toContainEqual(expect.objectContaining({ method: 'post', path: '/seo-preview' }))
+    expect(outputConfig.collections?.[0]?.endpoints).toContainEqual(expect.objectContaining({ method: 'get', path: '/seo-schema-templates' }))
+  })
+
+  it('only enables localized schema locking when Payload localization is configured', async () => {
+    const inputConfig = payloadConfig()
+    inputConfig.localization = { defaultLocale: 'uk', locales: ['en', 'uk'] }
+
+    const outputConfig = await seoPlugin(validConfig())(inputConfig)
+    const settings = outputConfig.globals?.find((global) => global.slug === 'seo-settings') as any
+    const schemaFields = settings.fields[0].tabs.find((tab: any) => labelText(tab.label) === 'Schema').fields
+
+    expect(schemaFields.find((field: any) => field.name === 'schemaManager').admin.custom.seo.defaultLocale).toBe('uk')
   })
 
   it('appends the SEO tab to an existing top-level tabs field without nesting it', async () => {
@@ -141,7 +151,7 @@ describe('seoPlugin', () => {
 
   it('rejects a configured collection that is absent from Payload config', () => {
     const config = validConfig()
-    config.collections.posts = { schemaType: 'Article' }
+    config.collections.posts = {}
 
     expect(() => seoPlugin(config)(payloadConfig())).toThrow('configured collection "posts" does not exist')
   })
@@ -232,6 +242,17 @@ describe('Admin translations', () => {
     expect(labelText(adminLabel('clearRawJson'), 'ru')).toBe('Очистить переопределение Raw JSON')
   })
 
+  it('marks collections with configured plural labels for the settings schema manager', async () => {
+    const input = payloadConfig()
+    input.collections![0]!.labels = { plural: { en: 'Pages', uk: 'Сторінки' }, singular: 'Page' }
+
+    const output = await seoPlugin(validConfig())(input)
+    const settings = output.globals?.find((global) => global.slug === 'seo-settings') as any
+    const schemaFields = settings.fields[0].tabs.find((tab: any) => labelText(tab.label) === 'Schema').fields
+
+    expect(schemaFields.find((field: any) => field.name === 'schemaManager').admin.custom.seo.labeledCollections).toEqual(['pages'])
+  })
+
   it('localizes plugin-owned validation messages from the active Admin language', () => {
     const ukRequest = { req: { i18n: { language: 'uk-UA' } } }
     const ruRequest = { req: { i18n: { language: 'ru-RU' } } }
@@ -274,7 +295,7 @@ describe('locale-safe resolver core', () => {
       openGraph: { title: 'Página | Example', description: 'Default description' },
       twitter: { title: 'Página | Example', description: 'Default description' },
     })
-    expect(result.schema).toMatchObject({ '@type': 'WebPage', url: 'https://example.com/page' })
+    expect(result.schema).toBeUndefined()
   })
 
   it('omits invalid values, honors manual/none canonical modes, and applies social chains', async () => {
@@ -300,13 +321,13 @@ describe('locale-safe resolver core', () => {
     expect(none.robots).toEqual({ index: 'index', follow: 'follow' })
   })
 
-  it('uses a valid raw schema as a full replacement and omits malformed legacy JSON', async () => {
+  it('does not read removed legacy raw schema fields', async () => {
     const config = validConfig()
     const raw = await resolveSeoMetadataCore({
       collection: 'pages', config, locale: 'en', settings: {},
       document: { title: 'Ignored', seo: { schema: { rawJson: '{"@type":"Thing","name":"Raw"}' } } },
     })
-    expect(raw.schema).toEqual({ '@type': 'Thing', name: 'Raw' })
+    expect(raw.schema).toBeUndefined()
 
     const malformed = await resolveSeoMetadataCore({
       collection: 'pages', config, locale: 'en', settings: {}, document: { seo: { schema: { rawJson: '{bad' } } },
@@ -384,27 +405,11 @@ describe('effective SEO resolution regression coverage', () => {
     expect((await resolveSeoMetadataCore(value)).robots).toEqual({ index: 'noindex', follow: 'follow', custom: ['noindex', 'noarchive', 'max-snippet:120'] })
   })
 
-  it('allows controlled name/image mappings and adds optional breadcrumbs', async () => {
-    const value = input({ title: 'Story', hero: { url: 'https://cdn.example/hero.jpg' }, seo: { schema: { values: { name: 'Override', author: 'Ada' } } } })
-    value.config.collections.pages = {
-      schemaType: 'Article', schema: { name: 'title', image: 'hero' },
-      breadcrumbs: () => [{ name: 'Home', url: '/' }, { name: 'Story', url: '/page' }],
-    }
-    value.config.media.resolveMediaUrl = ({ media }) => media.url as string
+  it('resolves live settings templates and safely serializes JSON-LD', async () => {
+    const value = input({ title: 'Story', seo: { schemaInstances: [{ templateId: 'article' }] } })
+    value.settings = { ...value.settings, collectionSchemas: [{ collection: 'pages', templates: [{ templateId: 'article', name: 'Article', schema: { '@type': 'Article', headline: '$title', url: '$canonicalUrl' } }] }] }
     const effective = await resolveEffectiveSeo(value)
-    expect(effective.schema).toMatchObject({ '@type': 'Article', name: 'Override', image: 'https://cdn.example/hero.jpg', headline: 'Override', author: { '@type': 'Person', name: 'Ada' } })
-    expect(effective.breadcrumbs).toHaveLength(1)
-  })
-
-  it('emits organization and WebSite schemas, protects generated reserved keys, and safely serializes JSON-LD', async () => {
-    const value = input({ seo: { schema: { values: { name: 'Cannot replace', url: 'https://bad.example', headline: 'Safe' } } } })
-    value.settings = { ...value.settings, organizationSchema: { name: 'Example Inc', logo: { url: 'https://cdn.example/logo.png' }, sameAs: [{ url: 'https://social.example/example' }] } }
-    value.config.media.resolveMediaUrl = ({ media }) => media.url as string
-    const effective = await resolveEffectiveSeo(value)
-    expect(effective.schema).toMatchObject({ '@type': 'WebPage', url: 'https://example.com/page', headline: 'Safe' })
-    expect(effective.schema?.name).toBe('Cannot replace')
-    expect(effective.siteSchemas.some((schema) => schema['@type'] === 'Organization' && schema.logo === 'https://cdn.example/logo.png' && schema.url === 'https://example.com')).toBe(true)
-    expect(effective.siteSchemas.some((schema) => schema['@type'] === 'WebSite' && schema.url === 'https://example.com')).toBe(true)
+    expect(effective.schemas).toEqual([{ '@type': 'Article', headline: 'Story', url: 'https://example.com/page' }])
     expect(serializeJsonLd({ name: '</script><script>' })).not.toContain('</script>')
   })
 
@@ -440,7 +445,7 @@ describe('frontend helpers', () => {
     const payload = runtimePayload()
     const result = await resolveSeoMetadata({ payload, collection: 'pages', id: 'page-1', locale: 'en' })
     expect(result).toMatchObject({ title: 'Page', alternates: { en: 'https://example.com/page', es: 'https://example.com/page' } })
-    expect(await renderSchemaJsonLd({ payload, collection: 'pages', id: 'page-1', locale: 'en' })).toMatchObject({ '@type': 'WebPage' })
+    expect(await renderSchemaJsonLd({ payload, collection: 'pages', id: 'page-1', locale: 'en' })).toBeNull()
     expect(await resolveSeoPreview({ payload, collection: 'pages', id: 'page-1', locale: 'en' })).toMatchObject({ title: result.title, canonicalUrl: result.canonicalUrl, robots: result.robots })
     expect(await resolveNextMetadata({ payload, collection: 'pages', id: 'page-1', locale: 'en' })).toMatchObject({ alternates: { languages: { en: 'https://example.com/page' } } })
   })
@@ -654,17 +659,16 @@ describe('release readiness fixture scenarios', () => {
     expect(metadata.openGraph?.image).toBe(preview.image)
   })
 
-  it('uses global social and organization media fallbacks through the configured media resolver', async () => {
+  it('uses global social media fallbacks through the configured media resolver', async () => {
     const payload = releasePayload()
     const config = payload.config!.custom![SEO_RUNTIME_CONFIG_KEY] as SeoEnabledPluginConfig
     config.media.resolveMediaUrl = ({ media }) => `https://cdn.example/${media.id}.jpg`
-    const settings = { ...releaseSettings, organizationSchema: { name: 'Example Organization', logo: { id: 'organization-logo' } } }
+    const settings = { ...releaseSettings }
     const effective = await resolveEffectiveSeo({
       collection: 'pages', config, locale: 'en', settings,
       document: { ...releasePages.defaults, image: { id: 'mapped-image' } },
     })
     expect(effective.social.openGraph.image).toBe('https://cdn.example/mapped-image.jpg')
-    expect(effective.siteSchemas).toContainEqual(expect.objectContaining({ '@type': 'Organization', logo: 'https://cdn.example/organization-logo.jpg' }))
   })
 
   it('projects the default fixture into final metadata with schema and social defaults', async () => {
@@ -676,10 +680,8 @@ describe('release readiness fixture scenarios', () => {
       openGraph: { title: 'Page With Defaults | Example Site', image: 'https://example.com/media/default-og.jpg', url: 'https://example.com/page-with-defaults' },
       twitter: { card: 'summary_large_image', image: 'https://example.com/media/default-og.jpg' },
     })
-    expect(defaults.schema?.['@graph']).toEqual(expect.arrayContaining([
-      expect.objectContaining({ '@type': 'Organization', url: 'https://example.com', logo: 'https://example.com/media/logo.jpg' }),
-      expect.objectContaining({ '@type': 'WebSite', url: 'https://example.com' }),
-    ]))
+    expect(defaults.schema).toMatchObject({ '@context': 'https://schema.org', '@type': 'Organization', name: 'Example Organization' })
+    expect(defaults.schema).not.toHaveProperty('url')
   })
 
   it('uses canonical validation and robots inheritance contracts without interpreting malformed values as explicit directives', async () => {
