@@ -91,22 +91,24 @@ const ContainerEditor = ({ baseValue, breadcrumb, locked, onChange, readOnly, va
       {entries.map(([key, child], index) => {
         const childType = schemaValueType(child)
         const nested = childType === 'object' || childType === 'array'
-        return <article className="st-h-14 st-max-h-14 st-min-h-14 st-overflow-visible st-box-border st-rounded-md st-border st-border-solid st-border-elevation-150 st-bg-elevation-0 st-p-1" key={`${String(key)}:${index}`}>
-          <div className="st-grid st-h-full st-min-h-0 st-min-w-0 st-grid-cols-[minmax(0,.35fr)_minmax(0,.2fr)_minmax(0,1fr)_auto] st-items-stretch st-gap-2 [&>*]:st-min-h-0 [&>*]:st-min-w-0">
-            {Array.isArray(value) ? <Pill className="st-font-mono" pillStyle="light-gray">{index + 1}</Pill> : <PropertyNameInput disabled={locked || readOnly} name={String(key)} onCommit={(name) => onChange(renameSchemaProperty(value, String(key), name))} path={`seo-schema-property-${breadcrumb.join('-')}-${String(key)}`} />}
-            <SelectInput className="seo-schema-select st-h-full st-min-h-0 st-min-w-0" isClearable={false} name={`schema-type-${breadcrumb.join('-')}-${String(key)}`} onChange={(option) => { if (!Array.isArray(option) && typeof option?.value === 'string') replaceChild(key, createSchemaValue(option.value as SchemaValueType)) }} options={TYPES.map((type) => ({ label: t(type), value: type }))} path={`schema-type-${breadcrumb.join('-')}-${String(key)}`} readOnly={locked || readOnly} value={childType} />
-            {nested ? <span className="st-py-2 st-text-elevation-600">{Array.isArray(child) ? t('itemsCount', { count: String(child.length) }) : t('propertiesCount', { count: String(Object.keys(child as JsonObject).length) })}</span> : <ScalarEditor baseValue={childAt(baseValue, key)} locked={locked} onChange={(next) => replaceChild(key, next)} path={`seo-schema-value-${breadcrumb.join('-')}-${String(key)}`} readOnly={readOnly} value={child} variables={variables} />}
-            <div className="st-flex st-h-full st-min-h-0 st-flex-nowrap st-items-center st-gap-1 st-whitespace-nowrap">
-              <Button aria-label={t('moveUp')} buttonStyle="transparent" disabled={locked || readOnly || index === 0} margin={false} onClick={() => onChange(reorderSchemaEntry(value, index, index - 1))} size="xsmall" tooltip={t('moveUp')} type="button">↑</Button>
-              <Button aria-label={t('moveDown')} buttonStyle="transparent" disabled={locked || readOnly || index === entries.length - 1} margin={false} onClick={() => onChange(reorderSchemaEntry(value, index, index + 1))} size="xsmall" tooltip={t('moveDown')} type="button">↓</Button>
-              <Button aria-label={t('duplicate')} buttonStyle="transparent" disabled={locked || readOnly} margin={false} onClick={() => onChange(duplicateSchemaEntry(value, index))} size="xsmall" tooltip={t('duplicate')} type="button">⧉</Button>
-              <Button aria-label={t('delete')} buttonStyle="transparent" className="!st-text-error-500 hover:!st-bg-error-100 hover:!st-text-error-700" disabled={locked || readOnly} margin={false} onClick={() => { if (globalThis.confirm(t('confirmDeleteProperty'))) onChange(removeSchemaEntry(value, index)) }} size="xsmall" tooltip={t('delete')} type="button">×</Button>
+        return <div className="st-grid st-gap-base-25" key={`${String(key)}:${index}`}>
+          <article className="st-box-border st-h-14 st-max-h-14 st-min-h-14 st-rounded-md st-border st-border-solid st-border-elevation-150 st-bg-elevation-0 st-p-1">
+            <div className="st-grid st-h-full st-min-h-0 st-min-w-0 st-grid-cols-[minmax(0,.35fr)_minmax(0,.2fr)_minmax(0,1fr)_auto] st-items-stretch st-gap-2 [&>*]:st-min-h-0 [&>*]:st-min-w-0">
+              {Array.isArray(value) ? <Pill className="st-font-mono" pillStyle="light-gray">{index + 1}</Pill> : <PropertyNameInput disabled={locked || readOnly} name={String(key)} onCommit={(name) => onChange(renameSchemaProperty(value, String(key), name))} path={`seo-schema-property-${breadcrumb.join('-')}-${String(key)}`} />}
+              <SelectInput className="seo-schema-select st-h-full st-min-h-0 st-min-w-0" isClearable={false} name={`schema-type-${breadcrumb.join('-')}-${String(key)}`} onChange={(option) => { if (!Array.isArray(option) && typeof option?.value === 'string') replaceChild(key, createSchemaValue(option.value as SchemaValueType)) }} options={TYPES.map((type) => ({ label: t(type), value: type }))} path={`schema-type-${breadcrumb.join('-')}-${String(key)}`} readOnly={locked || readOnly} value={childType} />
+              {nested ? <span className="st-py-2 st-text-elevation-600">{Array.isArray(child) ? t('itemsCount', { count: String(child.length) }) : t('propertiesCount', { count: String(Object.keys(child as JsonObject).length) })}</span> : <ScalarEditor baseValue={childAt(baseValue, key)} locked={locked} onChange={(next) => replaceChild(key, next)} path={`seo-schema-value-${breadcrumb.join('-')}-${String(key)}`} readOnly={readOnly} value={child} variables={variables} />}
+              <div className="st-flex st-h-full st-min-h-0 st-flex-nowrap st-items-center st-gap-1 st-whitespace-nowrap">
+                <Button aria-label={t('moveUp')} buttonStyle="transparent" disabled={locked || readOnly || index === 0} margin={false} onClick={() => onChange(reorderSchemaEntry(value, index, index - 1))} size="xsmall" tooltip={t('moveUp')} type="button">↑</Button>
+                <Button aria-label={t('moveDown')} buttonStyle="transparent" disabled={locked || readOnly || index === entries.length - 1} margin={false} onClick={() => onChange(reorderSchemaEntry(value, index, index + 1))} size="xsmall" tooltip={t('moveDown')} type="button">↓</Button>
+                <Button aria-label={t('duplicate')} buttonStyle="transparent" disabled={locked || readOnly} margin={false} onClick={() => onChange(duplicateSchemaEntry(value, index))} size="xsmall" tooltip={t('duplicate')} type="button">⧉</Button>
+                <Button aria-label={t('delete')} buttonStyle="transparent" className="!st-text-error-500 hover:!st-bg-error-100 hover:!st-text-error-700" disabled={locked || readOnly} margin={false} onClick={() => { if (globalThis.confirm(t('confirmDeleteProperty'))) onChange(removeSchemaEntry(value, index)) }} size="xsmall" tooltip={t('delete')} type="button">×</Button>
+              </div>
             </div>
-          </div>
+          </article>
           {nested ? <Collapsible className="st-ml-[25px]" header={t(childType === 'array' ? 'array' : 'object')} initCollapsed={false}>
             <ContainerEditor baseValue={childAt(baseValue, key)} breadcrumb={[...breadcrumb, String(key)]} locked={locked} onChange={(next) => replaceChild(key, next)} readOnly={readOnly} value={child as JsonObject | JsonValue[]} variables={variables} />
           </Collapsible> : null}
-        </article>
+        </div>
       })}
     </div>
     {!locked && !readOnly ? <Popup button={`+ ${Array.isArray(value) ? t('addItem') : t('addProperty')}`} buttonClassName="btn btn--style-dashed btn--size-small btn--no-margin" buttonType="default" caret={false} render={({ close }) => <TypeMenu close={close} onChoose={add} />} size="fit-content" /> : locked ? <Banner>{t('structureInherited')}</Banner> : null}
