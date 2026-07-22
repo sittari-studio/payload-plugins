@@ -72,6 +72,7 @@ export interface Config {
     'link-field-test': LinkFieldTest;
     pages: Page;
     'seo-redirects': SeoRedirect;
+    templates: Template;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
@@ -85,6 +86,7 @@ export interface Config {
     'link-field-test': LinkFieldTestSelect<false> | LinkFieldTestSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
     'seo-redirects': SeoRedirectsSelect<false> | SeoRedirectsSelect<true>;
+    templates: TemplatesSelect<false> | TemplatesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -337,6 +339,21 @@ export interface SeoRedirect {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "templates".
+ */
+export interface Template {
+  id: number;
+  title: string;
+  templateType: string;
+  data_404?: {
+    heading: string;
+    message?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -470,6 +487,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'seo-redirects';
         value: number | SeoRedirect;
+      } | null)
+    | ({
+        relationTo: 'templates';
+        value: number | Template;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -665,6 +686,22 @@ export interface SeoRedirectsSelect<T extends boolean = true> {
   statusCode?: T;
   enabled?: T;
   notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "templates_select".
+ */
+export interface TemplatesSelect<T extends boolean = true> {
+  title?: T;
+  templateType?: T;
+  data_404?:
+    | T
+    | {
+        heading?: T;
+        message?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

@@ -10,3 +10,4 @@ A monorepo of [Payload CMS](https://payloadcms.com) plugins and fields.
 | [`pages`](./packages/pages)           | A versioned pages collection with configurable page types, localized fields, drafts, and autosave.      |
 | [`seo`](./packages/seo)               | Locale-safe SEO fields and helpers for metadata, schema, previews, robots.txt, redirects, and sitemaps. |
 | [`slug-field`](./packages/slug-field) | A configurable, localized slug field factory with automatic generation and admin controls.              |
+| [`templates`](./packages/templates)   | Managed developer-defined template documents with protected identity and lifecycle reconciliation.      |

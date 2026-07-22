@@ -9,6 +9,7 @@ import sharp from 'sharp'
 import { linkFieldPlugin, linkField } from '@sittari/payload-link-field'
 import { pagesPlugin } from '@sittari/payload-pages'
 import { seoPlugin } from '@sittari/payload-seo'
+import { templatesPlugin } from '@sittari/payload-templates'
 
 import { uk } from '@payloadcms/translations/languages/uk'
 import {
@@ -182,6 +183,28 @@ export default buildConfig({
       resolveDocumentUrl: async ({ collectionSlug, document, payload }) => {
         return `/${collectionSlug}/${document?.slug}`
       }
+    }),
+    templatesPlugin({
+      templates: [
+        {
+          name: '404',
+          label: 'Page 404',
+          fields: [
+            {
+              name: 'heading',
+              type: 'text',
+              required: true,
+            },
+            {
+              name: 'message',
+              type: 'textarea',
+            },
+          ],
+          initialData: {
+            heading: 'Page not found',
+          },
+        },
+      ],
     })
   ],
 
