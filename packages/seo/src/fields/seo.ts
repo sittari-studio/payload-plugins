@@ -35,7 +35,8 @@ export const createSeoField = ({ collection, collectionSlug, mediaCollection, na
         { label: adminTabLabel('general'), fields: [
           { name: 'title', type: 'text', label: adminLabel('title'), localized },
           { name: 'description', type: 'textarea', label: adminLabel('description'), localized },
-          { name: 'focusKeyword', type: 'text', label: adminLabel('focusKeyword'), localized },
+          { name: 'focusKeyword', type: 'text', label: adminLabel('focusKeyword'), localized, admin: { description: adminTabLabel('keywordsDescription') } },
+          { name: 'overrideKeywords', type: 'checkbox', label: adminLabel('override'), localized, defaultValue: false },
         ] },
         { label: adminTabLabel('canonical'), fields: [{ name: 'canonical', type: 'group', label: adminLabel('canonical'), fields: [
           { name: 'mode', type: 'select', label: adminLabel('canonicalMode'), localized, defaultValue: 'auto', required: true, options: [{ label: adminLabel('auto'), value: 'auto' }, { label: adminLabel('manual'), value: 'manual' }, { label: adminLabel('none'), value: 'none' }] },

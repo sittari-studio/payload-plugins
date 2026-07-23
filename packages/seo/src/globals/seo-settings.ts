@@ -128,6 +128,7 @@ export const createSeoSettingsGlobal = ({ access, slug, mediaCollection, collect
   fields: [{ type: 'tabs', tabs: [
     { label: adminTabLabel('siteDefaults'), fields: [
       { name: 'siteName', type: 'text', label: adminLabel('siteName'), localized: true }, { name: 'titleTemplate', type: 'text', label: adminLabel('titleTemplate'), localized: true }, { name: 'defaultDescription', type: 'textarea', label: adminLabel('defaultDescription'), localized: true },
+      { name: 'defaultKeywords', type: 'text', label: adminLabel('defaultKeywords'), localized: true, admin: { description: adminTabLabel('keywordsDescription') } },
     ] },
     { label: adminTabLabel('socialDefaults'), fields: [
       { name: 'defaultOpenGraphImage', type: 'upload', label: adminLabel('defaultOpenGraphImage'), relationTo: mediaCollection, localized: true }, { name: 'defaultTwitterCard', type: 'select', label: adminLabel('defaultTwitterCard'), localized: true, options: [{ label: adminLabel('summary'), value: 'summary' }, { label: adminLabel('summaryLargeImage'), value: 'summary_large_image' }] },

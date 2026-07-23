@@ -134,6 +134,43 @@ describe('real Payload SEO persistence', () => {
     expect(reloaded.seo?.robots?.mode).toBe('inherit')
   })
 
+  it('persists localized keywords and switches between appending and overriding defaults', async () => {
+    await payload.updateGlobal({
+      slug: 'seo-settings',
+      locale: 'en',
+      data: { defaultKeywords: ' payload, cms ' },
+    })
+    const page = await payload.create({
+      collection: 'pages',
+      locale: 'en',
+      data: {
+        title: 'Keywords',
+        slug: 'keywords',
+        seo: { focusKeyword: ' plugin, next.js ', overrideKeywords: false },
+      },
+    })
+
+    expect((await resolveSeoMetadata({
+      payload: seoPayload(),
+      collection: 'pages',
+      id: page.id,
+      locale: 'en',
+    })).keywords).toBe('payload,cms,plugin,next.js')
+
+    await payload.update({
+      collection: 'pages',
+      id: page.id,
+      locale: 'en',
+      data: { seo: { focusKeyword: ' custom, only ', overrideKeywords: true } },
+    })
+    expect((await resolveSeoMetadata({
+      payload: seoPayload(),
+      collection: 'pages',
+      id: page.id,
+      locale: 'en',
+    })).keywords).toBe('custom,only')
+  })
+
   it('persists explicit robots and all canonical modes', async () => {
     const page = await payload.create({
       collection: 'pages', locale: 'en', data: {

@@ -240,7 +240,11 @@ export interface Page {
   seo: {
     title?: string | null;
     description?: string | null;
+    /**
+     * Separate keywords with ",".
+     */
     focusKeyword?: string | null;
+    overrideKeywords?: boolean | null;
     canonical: {
       mode: 'auto' | 'manual' | 'none';
       url?: string | null;
@@ -618,6 +622,7 @@ export interface PagesSelect<T extends boolean = true> {
         title?: T;
         description?: T;
         focusKeyword?: T;
+        overrideKeywords?: T;
         canonical?:
           | T
           | {
@@ -796,6 +801,10 @@ export interface SeoSetting {
   siteName?: string | null;
   titleTemplate?: string | null;
   defaultDescription?: string | null;
+  /**
+   * Separate keywords with ",".
+   */
+  defaultKeywords?: string | null;
   defaultOpenGraphImage?: (number | null) | Media;
   defaultTwitterCard?: ('summary' | 'summary_large_image') | null;
   defaultOpenGraphType?: string | null;
@@ -907,6 +916,7 @@ export interface SeoSettingsSelect<T extends boolean = true> {
   siteName?: T;
   titleTemplate?: T;
   defaultDescription?: T;
+  defaultKeywords?: T;
   defaultOpenGraphImage?: T;
   defaultTwitterCard?: T;
   defaultOpenGraphType?: T;

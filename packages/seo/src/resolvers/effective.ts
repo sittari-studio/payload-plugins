@@ -54,6 +54,14 @@ const titleTemplate = (value: unknown): string | undefined => {
   return template && (template.match(/%s/g)?.length === 1) ? template : undefined
 }
 
+const resolveKeywords = (seo: SeoDocument, settings: SeoDocument): string | undefined => {
+  const sources = seo.overrideKeywords === true
+    ? [nonEmptyString(seo.focusKeyword)]
+    : [nonEmptyString(settings.defaultKeywords), nonEmptyString(seo.focusKeyword)]
+  const joined = sources.filter((value): value is string => Boolean(value)).join(',')
+  return joined ? joined.split(',').map((value) => value.trim()).join(',') : undefined
+}
+
 const resolveImage = async (value: unknown, input: Input): Promise<string | undefined> => {
   const media = object(value)
   if (!Object.keys(media).length) return undefined
@@ -178,11 +186,12 @@ export const resolveEffectiveSeo = async (input: Input): Promise<ResolvedEffecti
   const sourceTitle = nonEmptyString(seo.title) ?? nonEmptyString(getByPath(input.document, collection.fields?.title))
   const title = sourceTitle && titleTemplate(input.settings.titleTemplate) ? titleTemplate(input.settings.titleTemplate)!.replace('%s', sourceTitle) : sourceTitle
   const description = nonEmptyString(seo.description) ?? nonEmptyString(getByPath(input.document, collection.fields?.description)) ?? nonEmptyString(input.settings.defaultDescription)
+  const keywords = resolveKeywords(seo, input.settings)
   const canonical = await resolveCanonical(input, seo)
   const robots = resolveEffectiveRobots(seo, input.settings)
   const social = await resolveSocialMetadata(input, seo, title, description, canonical.url)
   const structured = await resolveStructuredData(input, seo, canonical.url)
-  return { ...(title ? { title } : {}), ...(description ? { description } : {}), canonical, robots, social, ...structured }
+  return { ...(title ? { title } : {}), ...(description ? { description } : {}), ...(keywords ? { keywords } : {}), canonical, robots, social, ...structured }
 }
 
 /** Lightweight shared decision for sitemap and hreflang eligibility. */

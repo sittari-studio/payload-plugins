@@ -17,6 +17,7 @@ export const resolveSeoMetadataCore = async (input: ResolverOptions): Promise<Re
   const result: ResolvedSeoMetadata = {}
   if (effective.title) result.title = effective.title
   if (effective.description) result.description = effective.description
+  if (effective.keywords) result.keywords = effective.keywords
   if (effective.canonical.url) result.canonicalUrl = effective.canonical.url
   result.robots = { index: effective.robots.index, follow: effective.robots.follow, ...(effective.robots.custom?.length ? { custom: effective.robots.custom } : {}) }
   if (Object.keys(effective.social.openGraph).length) result.openGraph = effective.social.openGraph

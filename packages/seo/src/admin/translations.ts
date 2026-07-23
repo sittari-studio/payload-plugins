@@ -2,7 +2,7 @@ import type { LabelFunction } from 'payload'
 
 const en = {
   contentTab: 'Content', seoTab: 'SEO', seo: 'SEO', general: 'General', canonical: 'Canonical', robots: 'Robots', openGraph: 'Open Graph', twitter: 'X / Twitter', schema: 'Schema', previews: 'Previews',
-  title: 'Title', description: 'Description', focusKeyword: 'Focus keyword', image: 'Image', card: 'Card',
+  title: 'Title', description: 'Description', focusKeyword: 'Keywords', defaultKeywords: 'Default keywords', keywordsDescription: 'Separate keywords with ",".', image: 'Image', card: 'Card',
   canonicalMode: 'Canonical mode', canonicalUrl: 'Canonical URL', auto: 'Auto', manual: 'Manual', none: 'None',
   robotsIndex: 'Index directive', robotsFollow: 'Follow directive', index: 'Index', noindex: 'No index', follow: 'Follow', nofollow: 'No follow',
   summary: 'Summary', summaryLargeImage: 'Summary large image',
@@ -28,7 +28,7 @@ type AdminText = { [Key in keyof typeof en]: string }
 
 const ru: AdminText = {
   contentTab: 'Содержимое', seoTab: 'SEO', seo: 'SEO', general: 'Основное', canonical: 'Канонический URL', robots: 'Robots', openGraph: 'Open Graph', twitter: 'X / Twitter', schema: 'Schema', previews: 'Предпросмотр',
-  title: 'Заголовок', description: 'Описание', focusKeyword: 'Ключевое слово', image: 'Изображение', card: 'Карточка',
+  title: 'Заголовок', description: 'Описание', focusKeyword: 'Ключевые слова', defaultKeywords: 'Ключевые слова по умолчанию', keywordsDescription: 'Разделяйте ключевые слова символом ",".', image: 'Изображение', card: 'Карточка',
   canonicalMode: 'Режим канонического URL', canonicalUrl: 'Канонический URL', auto: 'Автоматически', manual: 'Вручную', none: 'Нет',
   robotsIndex: 'Директива индексации', robotsFollow: 'Директива ссылок', index: 'Индексировать', noindex: 'Не индексировать', follow: 'Переходить по ссылкам', nofollow: 'Не переходить по ссылкам',
   summary: 'Краткая', summaryLargeImage: 'Краткая с большим изображением',
@@ -52,7 +52,7 @@ const ru: AdminText = {
 
 const uk: AdminText = {
   contentTab: 'Вміст', seoTab: 'SEO', seo: 'SEO', general: 'Загальне', canonical: 'Канонічний URL', robots: 'Robots', openGraph: 'Open Graph', twitter: 'X / Twitter', schema: 'Schema', previews: 'Попередній перегляд',
-  title: 'Заголовок', description: 'Опис', focusKeyword: 'Ключове слово', image: 'Зображення', card: 'Картка',
+  title: 'Заголовок', description: 'Опис', focusKeyword: 'Ключові слова', defaultKeywords: 'Ключові слова за замовчуванням', keywordsDescription: 'Розділяйте ключові слова символом ",".', image: 'Зображення', card: 'Картка',
   canonicalMode: 'Режим канонічного URL', canonicalUrl: 'Канонічний URL', auto: 'Автоматично', manual: 'Вручну', none: 'Немає',
   robotsIndex: 'Директива індексації', robotsFollow: 'Директива посилань', index: 'Індексувати', noindex: 'Не індексувати', follow: 'Переходити за посиланнями', nofollow: 'Не переходити за посиланнями',
   summary: 'Коротка', summaryLargeImage: 'Коротка з великим зображенням',

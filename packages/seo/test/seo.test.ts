@@ -78,6 +78,14 @@ describe('seoPlugin', () => {
     expect(seoField).toMatchObject({ type: 'group' })
     const seoTabs = seoField.fields.find((field: any) => field.type === 'tabs')
     expect(seoTabs.tabs.map((tab: any) => labelText(tab.label))).toEqual(['General', 'Canonical', 'Robots', 'Open Graph', 'X / Twitter', 'Schema', 'Previews'])
+    const generalFields = seoTabs.tabs.find((tab: any) => labelText(tab.label) === 'General').fields
+    const keywordsField = generalFields.find((field: any) => field.name === 'focusKeyword')
+    const overrideKeywordsField = generalFields.find((field: any) => field.name === 'overrideKeywords')
+    expect(keywordsField).toMatchObject({ localized: true })
+    expect(labelText(keywordsField.label)).toBe('Keywords')
+    expect(labelText(keywordsField.admin.description, 'uk')).toBe('Розділяйте ключові слова символом ",".')
+    expect(overrideKeywordsField).toMatchObject({ type: 'checkbox', localized: true, defaultValue: false })
+    expect(labelText(overrideKeywordsField.label, 'ru')).toBe('Переопределение')
     const schemaFields = seoTabs.tabs.find((tab: any) => labelText(tab.label) === 'Schema').fields
     expect(schemaFields.map((field: any) => field.name)).toEqual(['documentSchemas', 'schemaInstances', 'globalSchemaOverrides', 'schemaManager'])
     expect(schemaFields.slice(0, 3).every((field: any) => field.admin.hidden)).toBe(true)
@@ -86,6 +94,10 @@ describe('seoPlugin', () => {
     expect(schemaFields[3]).toMatchObject({ admin: { components: { Field: '@sittari/payload-seo/client#DocumentSchemaManager' } } })
     const settings = outputConfig.globals?.find((global) => global.slug === 'seo-settings') as any
     expect(settings.fields[0].tabs.map((tab: any) => labelText(tab.label))).toEqual(['Site defaults', 'Social defaults', 'Default robots', 'Schema', 'robots.txt'])
+    const siteDefaults = settings.fields[0].tabs.find((tab: any) => labelText(tab.label) === 'Site defaults').fields
+    const defaultKeywordsField = siteDefaults.find((field: any) => field.name === 'defaultKeywords')
+    expect(defaultKeywordsField).toMatchObject({ type: 'text', localized: true })
+    expect(labelText(defaultKeywordsField.label, 'uk')).toBe('Ключові слова за замовчуванням')
     const settingsSchemaFields = settings.fields[0].tabs.find((tab: any) => labelText(tab.label) === 'Schema').fields
     expect(settingsSchemaFields.map((field: any) => field.name)).toEqual(['globalSchemas', 'collectionSchemas', 'schemaManager'])
     expect(settingsSchemaFields.slice(0, 2).every((field: any) => field.admin.hidden)).toBe(true)
@@ -299,6 +311,23 @@ describe('locale-safe resolver core', () => {
     expect(result.schema).toBeUndefined()
   })
 
+  it('appends or overrides localized default keywords and normalizes comma spacing', async () => {
+    const config = validConfig()
+    const appended = await resolveSeoMetadataCore({
+      collection: 'pages', config, locale: 'en',
+      settings: { defaultKeywords: ' payload, cms ' },
+      document: { seo: { focusKeyword: ' plugin, next.js ', overrideKeywords: false } },
+    })
+    expect(appended.keywords).toBe('payload,cms,plugin,next.js')
+
+    const overridden = await resolveSeoMetadataCore({
+      collection: 'pages', config, locale: 'en',
+      settings: { defaultKeywords: 'payload, cms' },
+      document: { seo: { focusKeyword: ' custom, only ', overrideKeywords: true } },
+    })
+    expect(overridden.keywords).toBe('custom,only')
+  })
+
   it('omits invalid values, honors manual/none canonical modes, and applies social chains', async () => {
     const config = validConfig()
     config.media.resolveMediaUrl = vi.fn(({ media }) => media.url as string | null)
@@ -473,6 +502,22 @@ describe('frontend helpers', () => {
     }))
     expect((await resolveNextMetadata({ payload, collection: 'pages', id: 'page-1', locale: 'en' })).robots)
       .toBe('index, follow, noarchive, max-image-preview:large')
+  })
+
+  it('projects normalized keywords through the Next.js helper', async () => {
+    const payload = runtimePayload()
+    payload.findByID = vi.fn(async () => ({
+      id: 'page-1',
+      title: 'Page',
+      seo: { focusKeyword: ' plugin, next.js ', overrideKeywords: false },
+    }))
+    payload.findGlobal = vi.fn(async () => ({
+      defaultKeywords: ' payload, cms ',
+      robots: { mode: 'generated', groups: [] },
+    }))
+
+    expect((await resolveNextMetadata({ payload, collection: 'pages', id: 'page-1', locale: 'en' })).keywords)
+      .toBe('payload,cms,plugin,next.js')
   })
 
   it('renders redirects, robots, and escaped sitemap XML from plugin configuration', async () => {

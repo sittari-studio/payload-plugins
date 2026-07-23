@@ -18,6 +18,7 @@ export const resolveNextMetadata = async (input: {
   const result: Record<string, unknown> = {}
   if (metadata.title) result.title = metadata.title
   if (metadata.description) result.description = metadata.description
+  if (metadata.keywords) result.keywords = metadata.keywords
   if (metadata.canonicalUrl || metadata.alternates) result.alternates = { ...(metadata.canonicalUrl ? { canonical: metadata.canonicalUrl } : {}), ...(metadata.alternates ? { languages: metadata.alternates } : {}) }
   if (metadata.robots) {
     result.robots = metadata.robots.custom?.length

@@ -197,6 +197,7 @@ export type SeoSocialMetadata = {
 export type ResolvedEffectiveSeo = {
   title?: string
   description?: string
+  keywords?: string
   canonical: { mode: CanonicalMode; url?: string; external: boolean }
   robots: { index: 'index' | 'noindex'; follow: 'follow' | 'nofollow'; mode: RobotsMode; custom?: string[] }
   social: {
@@ -226,6 +227,7 @@ export type ResolvedSeoMetadata = {
   alternates?: Record<string, string>
   canonicalUrl?: string
   description?: string
+  keywords?: string
   openGraph?: SeoSocialMetadata & { url?: string; type?: string; siteName?: string; locale?: string }
   robots?: SeoRobotsDirectives
   schema?: Record<string, unknown>
