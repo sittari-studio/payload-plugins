@@ -1,5 +1,11 @@
 # @sittari/payload-seo
 
+## 0.2.2
+
+### Patch Changes
+
+- 26b0736: Made keywords actually work
+
 ## 0.2.1
 
 ### Patch Changes
