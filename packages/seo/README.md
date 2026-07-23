@@ -45,5 +45,5 @@ collection templates as defaults. Documents store stable template references
 and localized JSON Patch overrides; templates remain live after documents are
 created.
 
-See the full [configuration and helper API](https://github.com/roxxel/Sittari-payload-plugins/blob/main/packages/seo/docs/PUBLIC_API.md) and [integration requirements](https://github.com/roxxel/Sittari-payload-plugins/blob/main/packages/seo/docs/PAYLOAD_INTEGRATION.md).
-See [Admin translation requirements](https://github.com/roxxel/Sittari-payload-plugins/blob/main/packages/seo/docs/ADMIN_TRANSLATIONS.md) for the supported interface languages and fallback behavior.
+See the full [configuration and helper API](https://github.com/sittari-studio/payload-plugins/blob/main/packages/seo/docs/PUBLIC_API.md) and [integration requirements](https://github.com/sittari-studio/payload-plugins/blob/main/packages/seo/docs/PAYLOAD_INTEGRATION.md).
+See [Admin translation requirements](https://github.com/sittari-studio/payload-plugins/blob/main/packages/seo/docs/ADMIN_TRANSLATIONS.md) for the supported interface languages and fallback behavior.
