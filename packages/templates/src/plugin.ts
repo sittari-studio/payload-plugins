@@ -9,6 +9,7 @@ import type {
 import { getTemplateFieldName } from './templateField.js'
 import { makeFieldsOptional } from './templateFieldFields.js'
 import { createTemplateFallbackHook } from './templateFieldHook.js'
+import { localizedText } from './translations/index.js'
 import { fieldsContain, transformBlock, transformFields } from './traverseFields.js'
 import type { TemplateConfig, TemplatesPluginConfig } from './types.js'
 
@@ -178,8 +179,8 @@ const createTemplatesCollection = (templates: TemplateConfig[]): CollectionConfi
     useAsTitle: 'title',
   },
   labels: {
-    singular: 'Template',
-    plural: 'Templates',
+    singular: localizedText('template'),
+    plural: localizedText('templates'),
   },
   fields: createTemplateFields(templates),
 })

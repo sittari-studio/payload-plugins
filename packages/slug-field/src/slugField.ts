@@ -2,6 +2,7 @@ import type { RowField, TextField, UIField } from 'payload'
 import { slugField } from 'payload'
 import slugify from 'slugify'
 
+import { localizedText } from './translations/index.js'
 import type { CreateSlugFieldOptions } from './types.js'
 
 const SLUG_INSTRUCTION_COMPONENT = '@sittari/payload-slug-field/client#SlugInstruction'
@@ -27,7 +28,7 @@ export const createSlugField = ({
       const fields = [...field.fields]
       fields[slugIndex] = {
         ...slug,
-        label: { en: 'Slug', ru: 'Слаг', uk: 'Слаг' },
+        label: localizedText('slug'),
       }
 
       if (instruction && Object.keys(instruction).length > 0) {

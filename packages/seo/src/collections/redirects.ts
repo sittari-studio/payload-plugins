@@ -1,7 +1,7 @@
 import type { CollectionConfig, TextField } from 'payload'
 
 import { SEO_PLUGIN_MARKER, type SeoPluginAccess } from '../types.js'
-import { adminLabel, adminText } from '../admin/translations.js'
+import { adminLabel, adminTabLabel, adminText } from '../admin/translations.js'
 import { isAbsoluteHttpUrl, normalizeRedirectPath } from '../utils/validation.js'
 
 type RedirectData = { destination?: unknown; destinationType?: unknown; enabled?: unknown; source?: unknown }
@@ -55,7 +55,7 @@ export const createRedirectsCollection = ({ access, slug }: { access?: SeoPlugin
   labels: { singular: adminLabel('seoRedirect'), plural: adminLabel('seoRedirects') },
   timestamps: true,
   access: { admin: access?.admin ?? deny, create: access?.create ?? deny, read: access?.read ?? deny, update: access?.update ?? deny, delete: access?.delete ?? deny },
-  admin: { useAsTitle: 'source', group: "SEO", defaultColumns: ['source', 'destination', 'statusCode', 'enabled', 'updatedAt'], custom: { seo: { marker: SEO_PLUGIN_MARKER } } },
+  admin: { useAsTitle: 'source', group: adminTabLabel('seo'), defaultColumns: ['source', 'destination', 'statusCode', 'enabled', 'updatedAt'], custom: { seo: { marker: SEO_PLUGIN_MARKER } } },
   hooks: { beforeValidate: [normalizeRedirectFields, (args) => validateRedirectGraph({ ...args, slug })] },
   fields: [
     { name: 'source', type: 'text', label: adminLabel('source'), required: true, unique: true, index: true, validate: validatePath },

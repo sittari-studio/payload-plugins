@@ -1,0 +1,25 @@
+import type { LinkFieldTranslation } from './en.js'
+
+export const ru = {
+  addLink: 'Добавить ссылку',
+  clear: 'Очистить',
+  customLink: 'Пользовательская ссылка',
+  customUrl: 'Пользовательский URL',
+  document: 'Документ',
+  documentReference: 'Ссылка на документ',
+  documentReferenceRequired: 'Необходимо выбрать документ.',
+  done: 'Готово',
+  edit: 'Редактировать',
+  enterValidUrl: 'Введите корректный URL.',
+  label: 'Текст ссылки',
+  link: 'Ссылка',
+  noDocumentSelected: 'Документ не выбран',
+  noUrlSet: 'URL не задан',
+  onlyHttpUrls: 'Разрешены только URL с протоколом http или https.',
+  openInNewTab: 'Открывать в новой вкладке',
+  protocolRelativeUrl: 'URL без явного протокола не разрешены.',
+  selectedDocument: 'Выбранный документ',
+  selfReference: 'Ссылка не может вести на текущий документ.',
+  url: 'URL',
+  urlRequired: 'Необходимо указать URL.',
+} satisfies LinkFieldTranslation

@@ -1,0 +1,25 @@
+import type { LinkFieldTranslation } from './en.js'
+
+export const uk = {
+  addLink: 'Додати посилання',
+  clear: 'Очистити',
+  customLink: 'Власне посилання',
+  customUrl: 'Власний URL',
+  document: 'Документ',
+  documentReference: 'Посилання на документ',
+  documentReferenceRequired: 'Потрібно вибрати документ.',
+  done: 'Готово',
+  edit: 'Редагувати',
+  enterValidUrl: 'Введіть коректний URL.',
+  label: 'Текст посилання',
+  link: 'Посилання',
+  noDocumentSelected: 'Документ не вибрано',
+  noUrlSet: 'URL не задано',
+  onlyHttpUrls: 'Дозволено лише URL із протоколом http або https.',
+  openInNewTab: 'Відкривати в новій вкладці',
+  protocolRelativeUrl: 'URL без явно вказаного протоколу не дозволені.',
+  selectedDocument: 'Вибраний документ',
+  selfReference: 'Посилання не може вести на поточний документ.',
+  url: 'URL',
+  urlRequired: 'Потрібно вказати URL.',
+} satisfies LinkFieldTranslation

@@ -6,9 +6,8 @@ import {
   type LinkFieldConfig,
   type LinkFieldType,
 } from './types.js'
+import { localizedText, translate } from './translations/index.js'
 import { validateUrl } from './utils/validateUrl.js'
-
-const SELF_REFERENCE_ERROR = 'A link cannot reference the current document.'
 
 const getRelationTo = (
   relationTo: CollectionSlug | CollectionSlug[] | undefined,
@@ -96,16 +95,16 @@ export const linkField = ({
     admin: {
       condition: isActiveType('custom'),
     },
-    label: 'URL',
+    label: localizedText('url'),
     required,
-    validate: (value, { siblingData } = {} as any) => {
+    validate: (value, { req, siblingData } = {} as any) => {
       const linkSiblingData = siblingData as { type?: string } | undefined
 
       if (linkSiblingData?.type === 'custom' && required && !value) {
-        return 'URL is required.'
+        return translate('urlRequired', req?.i18n?.language)
       }
 
-      return validateUrl(value)
+      return validateUrl(value, req?.i18n?.language)
     },
   }
 
@@ -115,14 +114,14 @@ export const linkField = ({
     admin: {
       condition: isActiveType('reference'),
     },
-    label: 'Document',
+    label: localizedText('document'),
     relationTo: normalizedRelationTo as RelationshipField['relationTo'],
     required,
-    validate: (value, { collectionSlug, id, siblingData } = {} as any) => {
+    validate: (value, { collectionSlug, id, req, siblingData } = {} as any) => {
       const linkSiblingData = siblingData as { type?: string } | undefined
 
       if (linkSiblingData?.type === 'reference' && required && !value) {
-        return 'Document reference is required.'
+        return translate('documentReferenceRequired', req?.i18n?.language)
       }
 
       if (
@@ -134,7 +133,7 @@ export const linkField = ({
           relationTo: normalizedRelationTo,
         })
       ) {
-        return SELF_REFERENCE_ERROR
+        return translate('selfReference', req?.i18n?.language)
       }
 
       return true
@@ -167,11 +166,11 @@ export const linkField = ({
         defaultValue: defaultType,
         options: [
           {
-            label: 'Custom URL',
+            label: localizedText('customUrl'),
             value: 'custom',
           },
           {
-            label: 'Document reference',
+            label: localizedText('documentReference'),
             value: 'reference',
           },
         ],
@@ -182,7 +181,7 @@ export const linkField = ({
           {
             name: 'label',
             type: 'text',
-            label: 'Label',
+            label: localizedText('label'),
           } satisfies TextField,
         ]
         : []),
@@ -193,7 +192,7 @@ export const linkField = ({
           {
             name: 'newTab',
             type: 'checkbox',
-            label: 'Open in new tab',
+            label: localizedText('openInNewTab'),
           } as const,
         ]
         : []),

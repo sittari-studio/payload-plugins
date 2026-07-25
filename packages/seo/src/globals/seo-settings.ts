@@ -124,7 +124,7 @@ export const createSeoSettingsGlobal = ({ access, slug, mediaCollection, collect
   label: adminLabel('seoSettings'),
   access: { read: access?.read ?? (() => false), update: access?.update ?? (() => false) },
   hooks: { beforeChange: [enforceUniqueTemplateIds, cascadeDeletedTemplates(seoField, Object.keys(collectionVariables))] },
-  admin: { custom: { seo: { marker: SEO_PLUGIN_MARKER } }, group: 'SEO' },
+  admin: { custom: { seo: { marker: SEO_PLUGIN_MARKER } }, group: adminTabLabel('seo') },
   fields: [{ type: 'tabs', tabs: [
     { label: adminTabLabel('siteDefaults'), fields: [
       { name: 'siteName', type: 'text', label: adminLabel('siteName'), localized: true }, { name: 'titleTemplate', type: 'text', label: adminLabel('titleTemplate'), localized: true }, { name: 'defaultDescription', type: 'textarea', label: adminLabel('defaultDescription'), localized: true },
@@ -132,10 +132,10 @@ export const createSeoSettingsGlobal = ({ access, slug, mediaCollection, collect
     ] },
     { label: adminTabLabel('socialDefaults'), fields: [
       { name: 'defaultOpenGraphImage', type: 'upload', label: adminLabel('defaultOpenGraphImage'), relationTo: mediaCollection, localized: true }, { name: 'defaultTwitterCard', type: 'select', label: adminLabel('defaultTwitterCard'), localized: true, options: [{ label: adminLabel('summary'), value: 'summary' }, { label: adminLabel('summaryLargeImage'), value: 'summary_large_image' }] },
-      { name: 'defaultOpenGraphType', type: 'text', localized: true }, { name: 'defaultTwitterSite', type: 'text', localized: true }, { name: 'defaultTwitterCreator', type: 'text', localized: true }, { name: 'defaultLocale', type: 'text', localized: true },
+      { name: 'defaultOpenGraphType', type: 'text', label: adminLabel('defaultOpenGraphType'), localized: true }, { name: 'defaultTwitterSite', type: 'text', label: adminLabel('defaultTwitterSite'), localized: true }, { name: 'defaultTwitterCreator', type: 'text', label: adminLabel('defaultTwitterCreator'), localized: true }, { name: 'defaultLocale', type: 'text', label: adminLabel('defaultLocale'), localized: true },
     ] },
-    { label: adminTabLabel('defaultRobots'), fields: [{ name: 'defaultRobots', type: 'group', localized: true, fields: [
-      { name: 'mode', type: 'select', required: true, defaultValue: 'index-follow', options: ['index-follow', 'noindex-follow', 'index-nofollow', 'noindex-nofollow', 'custom'] }, { name: 'directives', type: 'text', admin: { condition: (_, siblingData) => siblingData?.mode === 'custom' } },
+    { label: adminTabLabel('defaultRobots'), fields: [{ name: 'defaultRobots', type: 'group', label: adminLabel('defaultRobots'), localized: true, fields: [
+      { name: 'mode', type: 'select', label: adminLabel('robotsMode'), required: true, defaultValue: 'index-follow', options: [{ label: adminLabel('indexFollow'), value: 'index-follow' }, { label: adminLabel('noindexFollow'), value: 'noindex-follow' }, { label: adminLabel('indexNofollow'), value: 'index-nofollow' }, { label: adminLabel('noindexNofollow'), value: 'noindex-nofollow' }, { label: adminLabel('customDirectives'), value: 'custom' }] }, { name: 'directives', type: 'text', label: adminLabel('directives'), admin: { condition: (_, siblingData) => siblingData?.mode === 'custom' } },
     ] }] },
     { label: adminTabLabel('schema'), fields: [
       { name: 'globalSchemas', type: 'array', admin: { hidden: true }, fields: schemaTemplateFields('global') },
@@ -145,10 +145,10 @@ export const createSeoSettingsGlobal = ({ access, slug, mediaCollection, collect
       ], admin: { hidden: true } },
       { name: 'schemaManager', type: 'ui', admin: { components: { Field: SEO_SETTINGS_SCHEMA_MANAGER_ADMIN_COMPONENT }, custom: { seo: { mode: 'settings', collections: Object.keys(collectionVariables), collectionVariables, defaultLocale, globalVariables, labeledCollections } } } },
     ] },
-    { label: adminTabLabel('robotsTxt'), fields: [{ name: 'robots', type: 'group', localized: true, fields: [
-      { name: 'mode', type: 'select', required: true, defaultValue: 'generated', options: ['generated', 'override'] },
-      { name: 'groups', type: 'array', fields: [{ name: 'userAgent', type: 'text', required: true, validate: validateRobotsToken }, { name: 'allow', type: 'array', fields: [{ name: 'path', type: 'text', validate: validateRobotsToken }] }, { name: 'disallow', type: 'array', fields: [{ name: 'path', type: 'text', validate: validateRobotsToken }] }] },
-      { name: 'overrideText', type: 'textarea', admin: { condition: (_, siblingData) => siblingData?.mode === 'override' } },
+    { label: adminTabLabel('robotsTxt'), fields: [{ name: 'robots', type: 'group', label: adminLabel('robotsTxt'), localized: true, fields: [
+      { name: 'mode', type: 'select', label: adminLabel('robotsMode'), required: true, defaultValue: 'generated', options: [{ label: adminLabel('generated'), value: 'generated' }, { label: adminLabel('override'), value: 'override' }] },
+      { name: 'groups', type: 'array', label: adminLabel('groups'), fields: [{ name: 'userAgent', type: 'text', label: adminLabel('userAgent'), required: true, validate: validateRobotsToken }, { name: 'allow', type: 'array', label: adminLabel('allow'), fields: [{ name: 'path', type: 'text', label: adminLabel('path'), validate: validateRobotsToken }] }, { name: 'disallow', type: 'array', label: adminLabel('disallow'), fields: [{ name: 'path', type: 'text', label: adminLabel('path'), validate: validateRobotsToken }] }] },
+      { name: 'overrideText', type: 'textarea', label: adminLabel('overrideText'), admin: { condition: (_, siblingData) => siblingData?.mode === 'override' } },
     ] }] },
   ] }],
 })

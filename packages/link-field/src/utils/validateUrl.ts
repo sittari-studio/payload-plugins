@@ -1,6 +1,11 @@
+import { translate } from '../translations/index.js'
+
 const UNSAFE_SCHEME_PATTERN = /^[a-z][a-z0-9+.-]*:/i
 
-export const validateUrl = (value: null | string | undefined): true | string => {
+export const validateUrl = (
+  value: null | string | undefined,
+  language?: string,
+): true | string => {
   if (!value) {
     return true
   }
@@ -12,7 +17,7 @@ export const validateUrl = (value: null | string | undefined): true | string => 
   }
 
   if (trimmed.startsWith('//')) {
-    return 'Protocol-relative URLs are not allowed.'
+    return translate('protocolRelativeUrl', language)
   }
 
   if (trimmed.startsWith('#')) {
@@ -33,9 +38,9 @@ export const validateUrl = (value: null | string | undefined): true | string => 
 
       return url.protocol === 'http:' || url.protocol === 'https:'
         ? true
-        : 'Only http and https URLs are allowed.'
+        : translate('onlyHttpUrls', language)
     } catch {
-      return 'Enter a valid URL.'
+      return translate('enterValidUrl', language)
     }
   }
 

@@ -16,12 +16,14 @@ import {
   useForm,
   useFormFields,
   useModal,
+  useTranslation,
 } from "@payloadcms/ui";
 import { useDrawerDepth } from "@payloadcms/ui/elements/Drawer";
 
 import type { LinkFieldAdminCustom, LinkFieldValue } from "../types.js";
 import { getReferenceIdentity } from "../utils/getReferenceIdentity.js";
 import { getReferenceSummary } from "../utils/getReferenceSummary.js";
+import { translate } from "../translations/index.js";
 import { EditIcon, XIcon } from "@payloadcms/ui";
 
 const getFieldPath = (parentPath: string, name: string): string =>
@@ -231,6 +233,11 @@ export const LinkField = (props: GroupFieldClientProps) => {
   const { initialData } = useDocumentInfo();
   const { dispatchFields, setModified } = useForm();
   const { closeModal, openModal } = useModal();
+  const { i18n } = useTranslation();
+  const t = useCallback(
+    (key: Parameters<typeof translate>[0]) => translate(key, i18n.language),
+    [i18n.language],
+  );
   const [wasCleared, setWasCleared] = useState(false);
   const custom = field.admin?.custom as LinkFieldAdminCustom | undefined;
   const linkFieldCustom = custom?.linkField;
@@ -300,6 +307,7 @@ export const LinkField = (props: GroupFieldClientProps) => {
     reference: linkValue.reference,
     relationTo: referenceRelationTo,
     resolvedDocument: resolvedReferenceDocument,
+    language: i18n.language,
   });
   const hasValue = hasLinkValue(linkValue);
 
@@ -333,7 +341,7 @@ export const LinkField = (props: GroupFieldClientProps) => {
   const primaryText =
     showLabel && linkValue.label
       ? linkValue.label
-      : (referenceSummary ?? "Custom link");
+      : (referenceSummary ?? t("customLink"));
 
   const secondaryText = referenceSummary ? referenceSummary : null;
 
@@ -375,7 +383,7 @@ export const LinkField = (props: GroupFieldClientProps) => {
             icon={<PlusIcon />}
             type="button"
           >
-            Add a link
+            {t("addLink")}
           </Button>
         </div>
       ) : (
@@ -387,7 +395,7 @@ export const LinkField = (props: GroupFieldClientProps) => {
                 <>
                   {" ⋅ "}
                   <span className="link-field__summary-secondary">
-                    {linkValue.url || "No URL set"}
+                    {linkValue.url || t("noUrlSet")}
                   </span>
                 </>
               )}
@@ -402,6 +410,7 @@ export const LinkField = (props: GroupFieldClientProps) => {
               onClick={handleOpenDrawer}
               type="button"
               icon={<EditIcon />}
+              aria-label={t("edit")}
             ></Button>
             {hasValue ? (
               <Button
@@ -411,6 +420,7 @@ export const LinkField = (props: GroupFieldClientProps) => {
                 onClick={handleClear}
                 type="button"
                 icon={<XIcon />}
+                aria-label={t("clear")}
               ></Button>
             ) : null}
           </div>
@@ -418,7 +428,7 @@ export const LinkField = (props: GroupFieldClientProps) => {
       )}
       <Drawer
         slug={drawerSlug}
-        title={typeof field.label === "string" ? field.label : "Link"}
+        title={typeof field.label === "string" ? field.label : t("link")}
       >
         <DrawerContentContainer>
           <NestedFields
@@ -429,7 +439,7 @@ export const LinkField = (props: GroupFieldClientProps) => {
             schemaPath={schemaPath ?? ""}
           />
           <Button buttonStyle="primary" onClick={() => closeModal(drawerSlug)}>
-            Done
+            {t("done")}
           </Button>
         </DrawerContentContainer>
       </Drawer>

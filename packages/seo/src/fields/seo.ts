@@ -46,8 +46,8 @@ export const createSeoField = ({ collection, collectionSlug, mediaCollection, na
         ] }] },
         { label: adminTabLabel('robots'), fields: [{ name: 'robots', type: 'group', label: adminLabel('robots'), fields: [
           { name: 'mode', type: 'select', label: adminLabel('robotsMode'), localized, defaultValue: 'inherit', required: true, options: [
-            { label: 'Inherit', value: 'inherit' }, { label: 'Index, follow', value: 'index-follow' }, { label: 'No index, follow', value: 'noindex-follow' },
-            { label: 'Index, nofollow', value: 'index-nofollow' }, { label: 'No index, nofollow', value: 'noindex-nofollow' }, { label: 'Custom directives', value: 'custom' },
+            { label: adminLabel('inherit'), value: 'inherit' }, { label: adminLabel('indexFollow'), value: 'index-follow' }, { label: adminLabel('noindexFollow'), value: 'noindex-follow' },
+            { label: adminLabel('indexNofollow'), value: 'index-nofollow' }, { label: adminLabel('noindexNofollow'), value: 'noindex-nofollow' }, { label: adminLabel('customDirectives'), value: 'custom' },
           ] },
           { name: 'directives', type: 'text', label: adminLabel('robots'), localized, admin: { condition: (_, siblingData) => siblingData?.mode === 'custom' } },
         ] }] },

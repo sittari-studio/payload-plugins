@@ -1,54 +1,31 @@
 import type { CollectionConfig, Config, Field } from 'payload'
 import { createSlugField } from '@sittari/payload-slug-field'
 
+import { localizedText } from './translations/index.js'
 import type { PagesPluginConfig, PageTypes } from './types.js'
 
 const createDefaultPageTypes = (blockSlugs: string[]): PageTypes => ({
   standardContent: {
-    label: {
-      en: 'Standard Content',
-      ru: 'Стандартный контент',
-      uk: 'Стандартний контент'
-    },
+    label: localizedText('standardContent'),
     fields: [
       {
         name: 'content',
-        label: {
-          "en": 'Content',
-          "ru": 'Контент',
-          "uk": 'Контент'
-        },
+        label: localizedText('content'),
         type: 'richText',
         localized: true,
       },
     ],
   },
   flexible: {
-    label: {
-      en: 'Flexible',
-      ru: 'Конструктор',
-      uk: 'Конструктор'
-    },
+    label: localizedText('flexible'),
     fields: [
       {
         name: 'blocks',
         type: 'blocks',
-        label: {
-          "en": 'Blocks',
-          "ru": 'Блоки',
-          "uk": 'Блоки'
-        },
+        label: localizedText('blocks'),
         labels: {
-          singular: {
-            "en": 'Block',
-            "ru": 'Блок',
-            "uk": 'Блок'
-          },
-          plural: {
-            "en": 'Blocks',
-            "ru": 'Блоки',
-            "uk": 'Блоки'
-          }
+          singular: localizedText('block'),
+          plural: localizedText('blocks'),
         },
         blockReferences: blockSlugs,
         blocks: [],
@@ -58,11 +35,7 @@ const createDefaultPageTypes = (blockSlugs: string[]): PageTypes => ({
 })
 
 const createDefaultSlugField = () => createSlugField({
-  instruction: {
-    en: 'For the home page, set the slug to "home".',
-    ru: 'Для главной страницы установите слаг "home".',
-    uk: 'Для головної сторінки встановіть слаг "home".',
-  },
+  instruction: localizedText('homeSlugInstruction'),
 })
 
 const createPageTypeFields = (pageTypes: PageTypes): Field[] =>
@@ -89,11 +62,7 @@ const createPagesCollection = (pluginConfig: PagesPluginConfig): CollectionConfi
     {
       name: 'title',
       type: 'text',
-      label: {
-        en: 'Title',
-        ru: 'Заголовок',
-        uk: 'Заголовок'
-      },
+      label: localizedText('title'),
       required: true,
       localized: pluginConfig?.localizeTitle ?? true,
     },
@@ -101,11 +70,7 @@ const createPagesCollection = (pluginConfig: PagesPluginConfig): CollectionConfi
     {
       name: 'pageType',
       type: 'select',
-      label: {
-        en: 'Page Type',
-        ru: 'Тип страницы',
-        uk: 'Тип сторінки'
-      },
+      label: localizedText('pageType'),
       required: true,
       defaultValue: Object.keys(pageTypes)[0],
       options: Object.entries(pageTypes).map(([value, pageType]) => ({
@@ -122,16 +87,8 @@ const createPagesCollection = (pluginConfig: PagesPluginConfig): CollectionConfi
       useAsTitle: 'title',
     },
     labels: {
-      singular: {
-        en: 'Page',
-        ru: 'Страница',
-        uk: 'Сторінка'
-      },
-      plural: {
-        en: 'Pages',
-        ru: 'Страницы',
-        uk: 'Сторінки'
-      }
+      singular: localizedText('page'),
+      plural: localizedText('pages'),
     },
     versions: {
       drafts: {

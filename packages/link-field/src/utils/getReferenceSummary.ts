@@ -1,6 +1,7 @@
 import type { CollectionSlug, DefaultDocumentIDType } from 'payload'
 
 import { getReferenceIdentity } from './getReferenceIdentity.js'
+import { translate } from '../translations/index.js'
 
 export type ReferenceCollectionSummary = {
   label: string
@@ -96,14 +97,16 @@ export const getReferenceSummary = ({
   reference,
   relationTo,
   resolvedDocument,
+  language,
 }: {
   collections?: ReferenceSummaryCollections
+  language?: string
   reference: unknown
   relationTo?: string | string[]
   resolvedDocument?: null | Record<string, unknown>
 }): string => {
   if (!reference) {
-    return 'No document selected'
+    return translate('noDocumentSelected', language)
   }
 
   const identity = getReferenceIdentity({
@@ -143,10 +146,10 @@ export const getReferenceSummary = ({
       return (
         getDocumentTitle({
           document: value,
-        }) ?? 'Selected document'
+        }) ?? translate('selectedDocument', language)
       )
     }
   }
 
-  return 'Selected document'
+  return translate('selectedDocument', language)
 }
