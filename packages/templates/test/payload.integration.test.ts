@@ -6,7 +6,11 @@ import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { buildConfig, getPayload, type Payload } from 'payload'
 
-import { createTemplateGetter, templatesPlugin } from '../src/index.js'
+import {
+  createTemplateGetter,
+  templateField,
+  templatesPlugin,
+} from '../src/index.js'
 
 const databaseFile = join(tmpdir(), `payload-templates-${randomUUID()}.sqlite`)
 let payload: Payload
@@ -20,11 +24,19 @@ beforeAll(async () => {
       push: true,
       transactionOptions: {},
     }),
+    localization: {
+      defaultLocale: 'en',
+      locales: ['en', 'uk'],
+    },
     collections: [
       {
         slug: 'users',
         auth: true,
         fields: [],
+      },
+      {
+        slug: 'pages',
+        fields: [templateField({ name: 'content', template: '404' })],
       },
     ],
     plugins: [
@@ -33,8 +45,41 @@ beforeAll(async () => {
           {
             name: '404',
             label: 'Page 404',
-            fields: [{ name: 'heading', type: 'text', required: true }],
-            initialData: { heading: 'Page not found' },
+            fields: [
+              { name: 'heading', type: 'text', required: true },
+              {
+                name: 'localizedHeading',
+                type: 'text',
+                localized: true,
+                required: true,
+              },
+              { name: 'enabled', type: 'checkbox', required: true },
+              { name: 'count', type: 'number', required: true },
+              {
+                name: 'nested',
+                type: 'group',
+                fields: [
+                  { name: 'title', type: 'text', required: true },
+                  { name: 'description', type: 'textarea' },
+                ],
+              },
+              {
+                name: 'items',
+                type: 'array',
+                fields: [{ name: 'label', type: 'text', required: true }],
+              },
+            ],
+            initialData: {
+              count: 7,
+              enabled: true,
+              heading: 'Page not found',
+              localizedHeading: 'Localized page not found',
+              items: [{ label: 'Default item' }],
+              nested: {
+                description: 'Default description',
+                title: 'Default title',
+              },
+            },
           },
         ],
       }),
@@ -135,6 +180,118 @@ describe('real Payload template persistence', () => {
       } as never,
       overrideAccess: true,
     })).rejects.toThrow()
+  })
+
+  it('inherits template values without persisting them into local overrides', async () => {
+    const { docs } = await payload.find({
+      collection: 'templates' as never,
+      depth: 0,
+      limit: 1,
+    })
+    const templateDocument = docs[0] as { id: number | string }
+
+    await payload.update({
+      collection: 'templates' as never,
+      id: templateDocument.id,
+      data: {
+        data_404: {
+          count: 7,
+          enabled: true,
+          heading: 'Default heading',
+          localizedHeading: 'Localized default heading',
+          items: [{ label: 'Default item' }],
+          nested: {
+            description: 'Default description',
+            title: 'Default title',
+          },
+        },
+      } as never,
+      overrideAccess: true,
+    })
+
+    const created = await payload.create({
+      collection: 'pages' as never,
+      data: {
+        content: {
+          count: 0,
+          enabled: false,
+          heading: '',
+          localizedHeading: '',
+          items: [],
+          nested: {
+            description: 'Local description',
+            title: null,
+          },
+        },
+      } as never,
+    }) as unknown as {
+      content: Record<string, unknown>
+      id: number | string
+    }
+
+    expect(created.content).toMatchObject({
+      count: 0,
+      enabled: false,
+      heading: 'Default heading',
+      localizedHeading: 'Localized default heading',
+      items: [{ label: 'Default item' }],
+      nested: {
+        description: 'Local description',
+        title: 'Default title',
+      },
+    })
+
+    await payload.update({
+      collection: 'templates' as never,
+      id: templateDocument.id,
+      data: {
+        data_404: {
+          count: 9,
+          enabled: true,
+          heading: 'Changed default',
+          localizedHeading: 'Changed localized default',
+          items: [{ label: 'Changed default item' }],
+          nested: {
+            description: 'Changed default description',
+            title: 'Changed default title',
+          },
+        },
+      } as never,
+      overrideAccess: true,
+    })
+
+    const inherited = await payload.findByID({
+      collection: 'pages' as never,
+      id: created.id,
+    }) as unknown as { content: Record<string, unknown> }
+
+    expect(inherited.content).toMatchObject({
+      count: 0,
+      enabled: false,
+      heading: 'Changed default',
+      localizedHeading: 'Changed localized default',
+      items: [{ label: 'Changed default item' }],
+      nested: {
+        description: 'Local description',
+        title: 'Changed default title',
+      },
+    })
+
+    const overridden = await payload.update({
+      collection: 'pages' as never,
+      id: created.id,
+      data: {
+        content: {
+          heading: 'Local heading',
+          items: [{ label: '' }],
+        },
+      } as never,
+    }) as unknown as { content: Record<string, unknown> }
+
+    expect(overridden.content).toMatchObject({
+      heading: 'Local heading',
+      items: [{ label: '' }],
+    })
   })
 
   it('fetches only the requested typed template group', async () => {

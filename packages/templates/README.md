@@ -11,11 +11,21 @@ pnpm add @sittari/payload-templates
 ## Usage
 
 ```ts
-import { templatesPlugin } from '@sittari/payload-templates'
+import { templateField, templatesPlugin } from '@sittari/payload-templates'
 import { buildConfig } from 'payload'
 
 export default buildConfig({
-  collections: [],
+  collections: [
+    {
+      slug: 'pages',
+      fields: [
+        templateField({
+          name: 'notFoundContent',
+          template: '404',
+        }),
+      ],
+    },
+  ],
   plugins: [
     templatesPlugin({
       templates: [
@@ -38,6 +48,46 @@ export default buildConfig({
 
 The generated document stores editable fields under `data_<name>`—for example, `data_404.heading`. The `title` and `templateType` fields are managed by the plugin and hidden from the admin form.
 
+## Template-backed fields
+
+`templateField({ name, template })` inserts a registered template's fields as a
+group anywhere Payload fields are accepted, including collections, globals,
+tabs, arrays, and blocks. The plugin throws during configuration when the
+referenced template is not registered.
+
+Fields copied into the consuming group are optional, even when the managed
+template requires them. On read, empty local values inherit from the managed
+template:
+
+- `undefined`, `null`, `''`, empty arrays, and empty plain objects inherit.
+- `false`, `0`, and whitespace-only strings remain explicit local values.
+- Nested groups and tabs inherit field by field.
+- Arrays and blocks inherit as a whole only when empty. A non-empty local list
+  is treated as the complete override.
+
+Inheritance is read-time only. Fallback values are not written into the
+consuming document, so later edits to the managed template are reflected on the
+next API read. Admin edit forms receive the raw stored overrides, so an empty
+field remains empty instead of looking like a persisted template value. The
+Admin API inspector still displays resolved values.
+
+You can explicitly control resolution for Local API operations through Payload
+request context:
+
+```ts
+await payload.findByID({
+  collection: 'pages',
+  id,
+  context: {
+    templateFields: 'raw', // or 'resolved'
+  },
+})
+```
+
+An explicit context mode takes precedence over automatic Admin request
+detection. Template-backed fields cannot be nested inside a template
+definition.
+
 ## Configuration
 
 | Option | Type | Default | Description |
@@ -58,7 +108,9 @@ On Payload initialization, the plugin creates missing documents, updates labels,
 
 Collection access prevents normal admin, REST, GraphQL, and access-controlled Local API users from creating or deleting template documents. The identity fields also deny user changes. As with every Payload collection, trusted Local API calls using the default `overrideAccess: true` bypass access control.
 
-The package exports `TemplateConfig` and `TemplatesPluginConfig` from both the package root and `@sittari/payload-templates/types`.
+The package exports `TemplateConfig`, `TemplateFieldConfig`, and
+`TemplatesPluginConfig` from both the package root and
+`@sittari/payload-templates/types`.
 
 ## Fetching a typed template
 

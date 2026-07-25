@@ -1,5 +1,15 @@
-import type { CollectionConfig, Config, Field, Plugin } from 'payload'
+import type {
+  CollectionConfig,
+  Config,
+  Field,
+  NamedGroupField,
+  Plugin,
+} from 'payload'
 
+import { getTemplateFieldName } from './templateField.js'
+import { makeFieldsOptional } from './templateFieldFields.js'
+import { createTemplateFallbackHook } from './templateFieldHook.js'
+import { fieldsContain, transformBlock, transformFields } from './traverseFields.js'
 import type { TemplateConfig, TemplatesPluginConfig } from './types.js'
 
 const COLLECTION_SLUG = 'templates'
@@ -26,7 +36,10 @@ const extendOnInit = (
     await onInit(payload)
   }
 
-const validateTemplates = (templates: TemplateConfig[]) => {
+const validateTemplates = (
+  templates: TemplateConfig[],
+  reusableBlocks: NonNullable<Config['blocks']>,
+) => {
   const names = new Set<string>()
   const generatedFieldNames = new Set(['title', 'templateType'])
 
@@ -50,6 +63,64 @@ const validateTemplates = (templates: TemplateConfig[]) => {
 
     names.add(template.name)
     generatedFieldNames.add(fieldName)
+
+    const fieldsWithReusableBlocks = makeFieldsOptional(template.fields, reusableBlocks)
+    if (
+      fieldsContain(
+        fieldsWithReusableBlocks,
+        (field) => getTemplateFieldName(field) !== undefined,
+      )
+    ) {
+      throw new Error(
+        `[templatesPlugin] templateField cannot be used inside template "${template.name}" definitions.`,
+      )
+    }
+  }
+}
+
+const createTemplateFieldTransformer = (
+  templates: TemplateConfig[],
+  reusableBlocks: NonNullable<Config['blocks']>,
+): ((field: Field) => Field) => {
+  const templatesByName = new Map(templates.map((template) => [template.name, template]))
+
+  return (field) => {
+    const templateName = getTemplateFieldName(field)
+    if (templateName === undefined) {
+      return field
+    }
+
+    const template = templatesByName.get(templateName)
+    if (!template) {
+      const fieldName = 'name' in field ? field.name : '(unnamed)'
+      throw new Error(
+        `[templatesPlugin] Unknown template "${templateName}" referenced by field "${fieldName}".`,
+      )
+    }
+
+    const groupField = field as NamedGroupField
+    const fields = makeFieldsOptional(template.fields, reusableBlocks)
+    const localized = fieldsContain(
+      fields,
+      (templateField) =>
+        'localized' in templateField && templateField.localized === true,
+    )
+
+    return {
+      ...groupField,
+      fields,
+      hooks: {
+        ...groupField.hooks,
+        afterRead: [
+          ...(groupField.hooks?.afterRead ?? []),
+          createTemplateFallbackHook({
+            fields,
+            localized,
+            template: templateName,
+          }),
+        ],
+      },
+    }
   }
 }
 
@@ -178,18 +249,35 @@ export const templatesPlugin =
       return incomingConfig
     }
 
-    validateTemplates(pluginConfig.templates)
+    validateTemplates(pluginConfig.templates, incomingConfig.blocks ?? [])
 
     if (incomingConfig.collections?.some(({ slug }) => slug === COLLECTION_SLUG)) {
       throw new Error(`[templatesPlugin] A collection with slug "${COLLECTION_SLUG}" already exists.`)
     }
 
+    const transformTemplateField = createTemplateFieldTransformer(
+      pluginConfig.templates,
+      incomingConfig.blocks ?? [],
+    )
+    const collections = (incomingConfig.collections ?? []).map((collection) => {
+      const fields = transformFields(collection.fields, transformTemplateField)
+      return fields === collection.fields ? collection : { ...collection, fields }
+    })
+    const globals = incomingConfig.globals?.map((global) => {
+      const fields = transformFields(global.fields, transformTemplateField)
+      return fields === global.fields ? global : { ...global, fields }
+    })
+
     return {
       ...incomingConfig,
       collections: [
-        ...(incomingConfig.collections ?? []),
+        ...collections,
         createTemplatesCollection(pluginConfig.templates),
       ],
+      globals,
+      blocks: incomingConfig.blocks?.map((block) =>
+        transformBlock(block, transformTemplateField),
+      ),
       onInit: extendOnInit(incomingConfig, (payload) =>
         reconcileTemplates(payload, pluginConfig.templates),
       ),

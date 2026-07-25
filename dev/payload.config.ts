@@ -9,7 +9,7 @@ import sharp from 'sharp'
 import { linkFieldPlugin, linkField } from '@sittari/payload-link-field'
 import { pagesPlugin } from '@sittari/payload-pages'
 import { seoPlugin } from '@sittari/payload-seo'
-import { templatesPlugin } from '@sittari/payload-templates'
+import { templateField, templatesPlugin } from '@sittari/payload-templates'
 
 import { uk } from '@payloadcms/translations/languages/uk'
 import {
@@ -133,7 +133,24 @@ export default buildConfig({
     await seed(payload)
   },
   plugins: [
-    pagesPlugin(),
+    pagesPlugin({
+      pageTypes: ({ defaultPageTypes }) => ({
+        ...defaultPageTypes,
+        templates: {
+          label: 'Templates',
+          fields: [
+            templateField({
+              name: 'cta',
+              label: 'CTA',
+              template: '404',
+              admin: {
+                hideGutter: true,
+              }
+            })
+          ]
+        }
+      })
+    }),
     seoPlugin({
       siteUrl,
       collections: {

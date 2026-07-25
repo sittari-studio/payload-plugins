@@ -1,4 +1,11 @@
-import type { Field } from 'payload'
+import type { Field, GroupField, LabelFunction, StaticLabel } from 'payload'
+
+export type TemplateFieldConfig = {
+  /** Field name used in the consuming collection, global, or block. */
+  name: string
+  /** Name of a template registered with templatesPlugin. */
+  template: string
+} & Pick<GroupField, 'label' | 'admin'>
 
 export type TemplateConfig = {
   /** Fields editable on this template's managed document. */
