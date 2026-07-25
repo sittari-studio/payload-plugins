@@ -1,5 +1,11 @@
 # @sittari/payload-seo
 
+## 0.2.3
+
+### Patch Changes
+
+- d273373: add English, Ukrainian, and Russian translations
+
 ## 0.2.2
 
 ### Patch Changes

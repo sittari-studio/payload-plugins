@@ -1,6 +1,6 @@
 {
   "name": "@sittari/payload-slug-field",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Configurable slug field factory for Payload CMS.",
   "type": "module",
   "license": "MIT",

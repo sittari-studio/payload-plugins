@@ -1,5 +1,11 @@
 # @sittari/payload-slug-field
 
+## 0.2.1
+
+### Patch Changes
+
+- d273373: add English, Ukrainian, and Russian translations
+
 ## 0.2.0
 
 ### Minor Changes
