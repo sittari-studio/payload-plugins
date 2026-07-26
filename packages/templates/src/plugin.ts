@@ -1,8 +1,10 @@
 import type {
+  CollectionBeforeOperationHook,
   CollectionConfig,
   Config,
   Field,
   NamedGroupField,
+  Payload,
   Plugin,
 } from 'payload'
 
@@ -15,6 +17,7 @@ import type { TemplateConfig, TemplatesPluginConfig } from './types.js'
 
 const COLLECTION_SLUG = 'templates'
 const DATA_FIELD_PREFIX = 'data_'
+const RECONCILE_CONTEXT_KEY = 'sittariTemplatesReconcile'
 const VALID_TEMPLATE_NAME = /^[A-Za-z0-9_]+$/
 
 type TemplateDocument = {
@@ -167,7 +170,10 @@ const createTemplateFields = (templates: TemplateConfig[]): Field[] => [
   ),
 ]
 
-const createTemplatesCollection = (templates: TemplateConfig[]): CollectionConfig => ({
+const createTemplatesCollection = (
+  templates: TemplateConfig[],
+  beforeOperation: CollectionBeforeOperationHook,
+): CollectionConfig => ({
   slug: COLLECTION_SLUG,
   access: {
     create: () => false,
@@ -182,15 +188,22 @@ const createTemplatesCollection = (templates: TemplateConfig[]): CollectionConfi
     singular: localizedText('template'),
     plural: localizedText('templates'),
   },
+  hooks: {
+    beforeOperation: [beforeOperation],
+  },
   fields: createTemplateFields(templates),
 })
 
 const reconcileTemplates = async (
-  payload: Parameters<NonNullable<Config['onInit']>>[0],
+  payload: Payload,
   templates: TemplateConfig[],
 ) => {
+  const context = {
+    [RECONCILE_CONTEXT_KEY]: true,
+  }
   const result = await payload.find({
     collection: COLLECTION_SLUG as never,
+    context,
     depth: 0,
     limit: 0,
     overrideAccess: true,
@@ -212,6 +225,7 @@ const reconcileTemplates = async (
     if (!existing) {
       await payload.create({
         collection: COLLECTION_SLUG as never,
+        context,
         data: {
           [dataFieldName(template.name)]: template.initialData ?? {},
           templateType: template.name,
@@ -225,6 +239,7 @@ const reconcileTemplates = async (
     if (existing.title !== template.label) {
       await payload.update({
         collection: COLLECTION_SLUG as never,
+        context,
         id: existing.id,
         data: { title: template.label } as never,
         overrideAccess: true,
@@ -236,6 +251,7 @@ const reconcileTemplates = async (
     if (typeof document.templateType !== 'string' || !configuredNames.has(document.templateType)) {
       await payload.delete({
         collection: COLLECTION_SLUG as never,
+        context,
         id: document.id,
         overrideAccess: true,
       })
@@ -243,46 +259,76 @@ const reconcileTemplates = async (
   }
 }
 
+const createTemplateReconciler = (templates: TemplateConfig[]) => {
+  let reconciliation: Promise<void> | undefined
+
+  const reconcile = (payload: Payload): Promise<void> => {
+    if (!reconciliation) {
+      reconciliation = reconcileTemplates(payload, templates).catch((error: unknown) => {
+        reconciliation = undefined
+        throw error
+      })
+    }
+
+    return reconciliation
+  }
+
+  const beforeOperation: CollectionBeforeOperationHook = async ({ context, req }) => {
+    if (context[RECONCILE_CONTEXT_KEY] === true) {
+      return
+    }
+
+    await reconcile(req.payload)
+  }
+
+  return {
+    beforeOperation,
+    reconcile,
+  }
+}
+
 export const templatesPlugin =
   (pluginConfig: TemplatesPluginConfig): Plugin =>
-  (incomingConfig: Config): Config => {
-    if (pluginConfig.enabled === false) {
-      return incomingConfig
+    (incomingConfig: Config): Config => {
+      if (pluginConfig.enabled === false) {
+        return incomingConfig
+      }
+
+      validateTemplates(pluginConfig.templates, incomingConfig.blocks ?? [])
+
+      if (incomingConfig.collections?.some(({ slug }) => slug === COLLECTION_SLUG)) {
+        throw new Error(`[templatesPlugin] A collection with slug "${COLLECTION_SLUG}" already exists.`)
+      }
+
+      const transformTemplateField = createTemplateFieldTransformer(
+        pluginConfig.templates,
+        incomingConfig.blocks ?? [],
+      )
+      const templateReconciler = createTemplateReconciler(pluginConfig.templates)
+      const collections = (incomingConfig.collections ?? []).map((collection) => {
+        const fields = transformFields(collection.fields, transformTemplateField)
+        return fields === collection.fields ? collection : { ...collection, fields }
+      })
+      const globals = incomingConfig.globals?.map((global) => {
+        const fields = transformFields(global.fields, transformTemplateField)
+        return fields === global.fields ? global : { ...global, fields }
+      })
+
+      return {
+        ...incomingConfig,
+        collections: [
+          ...collections,
+          createTemplatesCollection(
+            pluginConfig.templates,
+            templateReconciler.beforeOperation,
+          ),
+        ],
+        globals,
+        blocks: incomingConfig.blocks?.map((block) =>
+          transformBlock(block, transformTemplateField),
+        ),
+        onInit: extendOnInit(incomingConfig, templateReconciler.reconcile),
+      }
     }
-
-    validateTemplates(pluginConfig.templates, incomingConfig.blocks ?? [])
-
-    if (incomingConfig.collections?.some(({ slug }) => slug === COLLECTION_SLUG)) {
-      throw new Error(`[templatesPlugin] A collection with slug "${COLLECTION_SLUG}" already exists.`)
-    }
-
-    const transformTemplateField = createTemplateFieldTransformer(
-      pluginConfig.templates,
-      incomingConfig.blocks ?? [],
-    )
-    const collections = (incomingConfig.collections ?? []).map((collection) => {
-      const fields = transformFields(collection.fields, transformTemplateField)
-      return fields === collection.fields ? collection : { ...collection, fields }
-    })
-    const globals = incomingConfig.globals?.map((global) => {
-      const fields = transformFields(global.fields, transformTemplateField)
-      return fields === global.fields ? global : { ...global, fields }
-    })
-
-    return {
-      ...incomingConfig,
-      collections: [
-        ...collections,
-        createTemplatesCollection(pluginConfig.templates),
-      ],
-      globals,
-      blocks: incomingConfig.blocks?.map((block) =>
-        transformBlock(block, transformTemplateField),
-      ),
-      onInit: extendOnInit(incomingConfig, (payload) =>
-        reconcileTemplates(payload, pluginConfig.templates),
-      ),
-    }
-  }
 
 export default templatesPlugin

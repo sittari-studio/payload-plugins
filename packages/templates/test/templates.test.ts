@@ -573,6 +573,67 @@ describe('templatesPlugin', () => {
     expect(remove).toHaveBeenCalledWith(expect.objectContaining({ id: 2 }))
     expect(remove).toHaveBeenCalledWith(expect.objectContaining({ id: 3 }))
   })
+
+  it('reconciles once on the first collection operation after config hot reload', async () => {
+    const create = vi.fn(async () => undefined)
+    const find = vi.fn(async (_options?: { context?: Record<string, unknown> }) => ({
+      docs: [],
+    }))
+    const payload = {
+      create,
+      delete: vi.fn(async () => undefined),
+      find,
+      update: vi.fn(async () => undefined),
+    } as unknown as Payload
+    const output = applyPlugin({ collections: [] } as unknown as Config)
+    const beforeOperation = getTemplatesCollection(output)?.hooks?.beforeOperation?.[0]
+
+    expect(beforeOperation).toBeDefined()
+
+    const runHook = () => beforeOperation?.({
+      context: {},
+      req: { payload },
+    } as never)
+
+    await Promise.all([runHook(), runHook()])
+    await runHook()
+
+    expect(find).toHaveBeenCalledOnce()
+    expect(create).toHaveBeenCalledTimes(definitions.length)
+  })
+
+  it('skips reconciliation hooks triggered by its own local API operations', async () => {
+    const create = vi.fn(async () => undefined)
+    const find = vi.fn(async (_options: { context?: Record<string, unknown> }) => ({
+      docs: [],
+    }))
+    const payload = {
+      create,
+      delete: vi.fn(async () => undefined),
+      find,
+      update: vi.fn(async () => undefined),
+    } as unknown as Payload
+    const output = applyPlugin({ collections: [] } as unknown as Config)
+    const beforeOperation = getTemplatesCollection(output)?.hooks?.beforeOperation?.[0]
+
+    await beforeOperation?.({
+      context: {},
+      req: { payload },
+    } as never)
+
+    const reconciliationContext = find.mock.calls[0]?.[0]?.context
+    if (!reconciliationContext) {
+      throw new Error('Expected reconciliation context')
+    }
+
+    await beforeOperation?.({
+      context: reconciliationContext,
+      req: { payload },
+    } as never)
+
+    expect(reconciliationContext).toEqual({ sittariTemplatesReconcile: true })
+    expect(find).toHaveBeenCalledOnce()
+  })
 })
 
 describe('createTemplateGetter', () => {
