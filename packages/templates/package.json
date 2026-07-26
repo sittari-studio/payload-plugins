@@ -1,6 +1,6 @@
 {
   "name": "@sittari/payload-templates",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Managed template documents for Payload CMS.",
   "type": "module",
   "license": "MIT",

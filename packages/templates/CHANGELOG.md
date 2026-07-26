@@ -1,5 +1,11 @@
 # @sittari/payload-templates
 
+## 0.3.2
+
+### Patch Changes
+
+- d73df8d: Fix hot-reload for templates
+
 ## 0.3.1
 
 ### Patch Changes
