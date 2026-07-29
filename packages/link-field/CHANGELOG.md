@@ -1,5 +1,11 @@
 # @sittari/payload-link-field
 
+## 0.1.3
+
+### Patch Changes
+
+- cd72599: improve reference summary labels and titles
+
 ## 0.1.2
 
 ### Patch Changes
