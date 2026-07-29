@@ -1,5 +1,11 @@
 # @sittari/payload-templates
 
+## 0.4.0
+
+### Minor Changes
+
+- ab6e3e6: Show localized links to managed template documents and use their active-locale values as placeholders in template-backed fields.
+
 ## 0.3.2
 
 ### Patch Changes
