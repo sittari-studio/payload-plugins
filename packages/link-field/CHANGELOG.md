@@ -1,5 +1,11 @@
 # @sittari/payload-link-field
 
+## 0.1.4
+
+### Patch Changes
+
+- cff05b0: fix(link-field): resolve reference titles in active locale
+
 ## 0.1.3
 
 ### Patch Changes
