@@ -15,12 +15,14 @@ import {
   useField,
   useForm,
   useFormFields,
+  useLocale,
   useModal,
   useTranslation,
 } from "@payloadcms/ui";
 import { useDrawerDepth } from "@payloadcms/ui/elements/Drawer";
 
 import type { LinkFieldAdminCustom, LinkFieldValue } from "../types.js";
+import { getReferenceDocumentUrl } from "../utils/getReferenceDocumentUrl.js";
 import { getReferenceIdentity } from "../utils/getReferenceIdentity.js";
 import {
   getReferenceSummary,
@@ -120,11 +122,13 @@ const getClearedLinkValue = (
 
 const useResolvedReferenceDocument = ({
   apiRoute,
+  locale,
   reference,
   relationTo,
   useAsTitle,
 }: {
   apiRoute: string;
+  locale?: string;
   reference: unknown;
   relationTo?: string | string[];
   useAsTitle?: string;
@@ -155,14 +159,14 @@ const useResolvedReferenceDocument = ({
     }
 
     const abortController = new AbortController();
-    const normalizedApiRoute = apiRoute.startsWith("/")
-      ? apiRoute
-      : `/${apiRoute}`;
-    const collectionSlug = encodeURIComponent(identity.collectionSlug);
-    const documentId = encodeURIComponent(String(identity.documentId));
 
     void fetch(
-      `${normalizedApiRoute}/${collectionSlug}/${documentId}?depth=0`,
+      getReferenceDocumentUrl({
+        apiRoute,
+        collectionSlug: identity.collectionSlug,
+        documentId: identity.documentId,
+        locale,
+      }),
       {
         credentials: "same-origin",
         signal: abortController.signal,
@@ -199,7 +203,7 @@ const useResolvedReferenceDocument = ({
     return () => {
       abortController.abort();
     };
-  }, [apiRoute, identity, needsResolvedDocument, referenceKey]);
+  }, [apiRoute, identity, locale, needsResolvedDocument, referenceKey]);
 
   if (identity?.document && !needsResolvedDocument) {
     return identity.document;
@@ -239,6 +243,7 @@ export const LinkField = (props: GroupFieldClientProps) => {
   const { setValue, value } = useField<LinkFieldValue>({ path });
   const { initialData } = useDocumentInfo();
   const { dispatchFields, setModified } = useForm();
+  const locale = useLocale();
   const { closeModal, openModal } = useModal();
   const { i18n } = useTranslation();
   const t = useCallback(
@@ -317,6 +322,7 @@ export const LinkField = (props: GroupFieldClientProps) => {
     : undefined;
   const resolvedReferenceDocument = useResolvedReferenceDocument({
     apiRoute,
+    locale: locale?.code,
     reference: linkValue.reference,
     relationTo: referenceRelationTo,
     useAsTitle: referenceUseAsTitle,

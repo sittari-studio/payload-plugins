@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createResolveUrlHook } from '../src/hooks/resolveUrl.js'
 import { linkField, linkFieldPlugin } from '../src/index.js'
 import { LINK_FIELD_MARKER } from '../src/types.js'
+import { getReferenceDocumentUrl } from '../src/utils/getReferenceDocumentUrl.js'
 import { getReferenceIdentity } from '../src/utils/getReferenceIdentity.js'
 import {
   getReferenceSummary,
@@ -629,6 +630,29 @@ describe('getReferenceSummary', () => {
     expect(hasReferenceTitle({ id: 18 }, 'title')).toBe(false)
     expect(hasReferenceTitle({ id: 18, title: 'About the clinic' }, 'title')).toBe(true)
     expect(hasReferenceTitle({ id: 18 }, undefined)).toBe(true)
+  })
+})
+
+describe('getReferenceDocumentUrl', () => {
+  it('requests the selected document in the active content locale', () => {
+    expect(
+      getReferenceDocumentUrl({
+        apiRoute: '/api',
+        collectionSlug: 'pages',
+        documentId: 18,
+        locale: 'uk',
+      }),
+    ).toBe('/api/pages/18?depth=0&locale=uk')
+  })
+
+  it('normalizes and encodes URL segments', () => {
+    expect(
+      getReferenceDocumentUrl({
+        apiRoute: 'payload-api',
+        collectionSlug: 'landing pages',
+        documentId: 'page/1',
+      }),
+    ).toBe('/payload-api/landing%20pages/page%2F1?depth=0')
   })
 })
 
