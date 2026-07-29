@@ -1,4 +1,12 @@
-import type { Config, Field, GroupField, Plugin, RelationshipField, TextField } from 'payload'
+import type {
+  Block,
+  Config,
+  Field,
+  GroupField,
+  Plugin,
+  RelationshipField,
+  TextField,
+} from 'payload'
 
 import { createResolveUrlHook } from './hooks/resolveUrl.js'
 import {
@@ -192,8 +200,14 @@ export const linkFieldPlugin =
           })
         }
 
+      const transformBlock = (block: Block): Block => ({
+        ...block,
+        fields: traverseFields(block.fields, createTransformField()) ?? [],
+      })
+
       const finalConfig: Config = {
         ...incomingConfig,
+        blocks: incomingConfig.blocks?.map(transformBlock),
         collections: incomingConfig.collections?.map((collection) => ({
           ...collection,
           fields: traverseFields(collection.fields, createTransformField(collection.slug)) ?? [],

@@ -202,7 +202,6 @@ export const linkField = ({
         admin: {
           hidden: true,
         },
-        hidden: true,
         virtual: true,
       },
     ],

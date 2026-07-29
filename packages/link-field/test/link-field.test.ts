@@ -49,10 +49,13 @@ describe('linkField', () => {
       type: 'checkbox',
     })
     expect(getChildField<TextField>(field, 'url')).toMatchObject({
-      hidden: true,
+      admin: {
+        hidden: true,
+      },
       type: 'text',
       virtual: true,
     })
+    expect(getChildField<TextField>(field, 'url').hidden).toBeUndefined()
   })
 
   it('honors explicit field options', () => {
@@ -353,6 +356,83 @@ describe('linkFieldPlugin', () => {
     expect(
       getChildField<TextField>(groupField.fields[0] as GroupField, 'url').hooks?.afterRead,
     ).toHaveLength(1)
+  })
+
+  it('transforms reusable top-level blocks once without assigning collection ownership', () => {
+    const reusableBlock = {
+      slug: 'reusableLink',
+      admin: {
+        group: 'Reusable',
+      },
+      custom: {
+        preserved: true,
+      },
+      fields: [linkField({ name: 'reusableLink' })],
+    } as const
+    const inlineBlock = {
+      slug: 'inlineLink',
+      fields: [linkField({ name: 'inlineLink' })],
+    } as const
+    const inputConfig = {
+      blocks: [reusableBlock],
+      collections: [
+        {
+          slug: 'pages',
+          fields: [
+            {
+              name: 'referencedLayout',
+              type: 'blocks',
+              blocks: [],
+              blockReferences: ['reusableLink'],
+            },
+            {
+              name: 'inlineLayout',
+              type: 'blocks',
+              blocks: [inlineBlock],
+            },
+          ],
+        },
+      ],
+    } as unknown as Config
+
+    const outputConfig = applyPlugin(inputConfig)
+    const outputReusableBlock = outputConfig.blocks?.[0]
+    const referencedLayout = outputConfig.collections?.[0]?.fields[0]
+    const inlineLayout = outputConfig.collections?.[0]?.fields[1]
+
+    if (
+      !outputReusableBlock ||
+      !referencedLayout ||
+      referencedLayout.type !== 'blocks' ||
+      !inlineLayout ||
+      inlineLayout.type !== 'blocks'
+    ) {
+      throw new Error('Expected reusable and inline blocks')
+    }
+
+    const reusableLink = outputReusableBlock.fields[0] as GroupField
+    const inlineLink = inlineLayout.blocks[0].fields[0] as GroupField
+    const reusableReference = getChildField<RelationshipField>(reusableLink, 'reference')
+
+    expect(outputReusableBlock).toMatchObject({
+      admin: {
+        group: 'Reusable',
+      },
+      custom: {
+        preserved: true,
+      },
+      slug: 'reusableLink',
+    })
+    expect(referencedLayout.blockReferences).toEqual(['reusableLink'])
+    expect(getChildField<TextField>(reusableLink, 'url').hooks?.afterRead).toHaveLength(1)
+    expect(getChildField<TextField>(inlineLink, 'url').hooks?.afterRead).toHaveLength(1)
+    expect(reusableReference.filterOptions).toBeUndefined()
+
+    expect(inputConfig.blocks?.[0]).toBe(reusableBlock)
+    expect(inputConfig.blocks?.[0]?.fields[0]).toBe(reusableBlock.fields[0])
+    expect(
+      getChildField<TextField>(reusableBlock.fields[0], 'url').hooks?.afterRead,
+    ).toBeUndefined()
   })
 })
 
