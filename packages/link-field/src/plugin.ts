@@ -5,6 +5,7 @@ import type {
   GroupField,
   Plugin,
   RelationshipField,
+  StaticLabel,
   TextField,
 } from 'payload'
 
@@ -42,8 +43,24 @@ const hasEmptyRelationTo = (field: RelationshipField): boolean =>
 const getStringValue = (value: unknown): string | undefined =>
   typeof value === 'string' && value ? value : undefined
 
-const getCollectionLabel = (collection: CollectionConfig): string =>
-  getStringValue((collection.labels as { singular?: unknown } | undefined)?.singular) ??
+const getStaticLabel = (value: unknown): StaticLabel | undefined => {
+  if (typeof value === 'string') {
+    return value
+  }
+
+  if (
+    value &&
+    typeof value === 'object' &&
+    Object.values(value).every((label) => typeof label === 'string')
+  ) {
+    return value as Record<string, string>
+  }
+
+  return undefined
+}
+
+const getCollectionLabel = (collection: CollectionConfig): StaticLabel =>
+  getStaticLabel((collection.labels as { singular?: unknown } | undefined)?.singular) ??
   collection.slug
 
 const getCollectionUseAsTitle = (collection: CollectionConfig): string | undefined => {

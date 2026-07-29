@@ -5,7 +5,10 @@ import { createResolveUrlHook } from '../src/hooks/resolveUrl.js'
 import { linkField, linkFieldPlugin } from '../src/index.js'
 import { LINK_FIELD_MARKER } from '../src/types.js'
 import { getReferenceIdentity } from '../src/utils/getReferenceIdentity.js'
-import { getReferenceSummary } from '../src/utils/getReferenceSummary.js'
+import {
+  getReferenceSummary,
+  hasReferenceTitle,
+} from '../src/utils/getReferenceSummary.js'
 import { validateUrl } from '../src/utils/validateUrl.js'
 
 const getChildField = <TField extends Field>(field: GroupField, name: string): TField => {
@@ -248,6 +251,43 @@ describe('linkFieldPlugin', () => {
         posts: {
           label: 'Post',
           useAsTitle: 'slug',
+        },
+      },
+    })
+  })
+
+  it('preserves localized singular labels for the reference summary', () => {
+    const outputConfig = applyPlugin({
+      collections: [
+        {
+          slug: 'pages',
+          admin: {
+            useAsTitle: 'title',
+          },
+          fields: [linkField({ name: 'link' })],
+          labels: {
+            plural: {
+              en: 'Pages',
+              uk: 'Сторінки',
+            },
+            singular: {
+              en: 'Page',
+              uk: 'Сторінка',
+            },
+          },
+        },
+      ],
+    } as unknown as Config)
+    const link = outputConfig.collections?.[0]?.fields[0] as GroupField
+
+    expect(link.admin?.custom?.linkField).toMatchObject({
+      collections: {
+        pages: {
+          label: {
+            en: 'Page',
+            uk: 'Сторінка',
+          },
+          useAsTitle: 'title',
         },
       },
     })
@@ -561,6 +601,34 @@ describe('getReferenceSummary', () => {
         },
       }),
     ).toBe('Post: hello-world')
+  })
+
+  it('localizes the singular collection label', () => {
+    expect(
+      getReferenceSummary({
+        collections: {
+          pages: {
+            label: {
+              en: 'Page',
+              uk: 'Сторінка',
+            },
+            useAsTitle: 'title',
+          },
+        },
+        language: 'uk',
+        reference: {
+          id: 18,
+          title: 'Детальніше про клініку',
+        },
+        relationTo: 'pages',
+      }),
+    ).toBe('Сторінка: Детальніше про клініку')
+  })
+
+  it('detects when an ID-only relationship needs its configured title loaded', () => {
+    expect(hasReferenceTitle({ id: 18 }, 'title')).toBe(false)
+    expect(hasReferenceTitle({ id: 18, title: 'About the clinic' }, 'title')).toBe(true)
+    expect(hasReferenceTitle({ id: 18 }, undefined)).toBe(true)
   })
 })
 

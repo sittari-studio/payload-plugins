@@ -1,10 +1,10 @@
-import type { CollectionSlug, DefaultDocumentIDType } from 'payload'
+import type { CollectionSlug, DefaultDocumentIDType, StaticLabel } from 'payload'
 
 import { getReferenceIdentity } from './getReferenceIdentity.js'
 import { translate } from '../translations/index.js'
 
 export type ReferenceCollectionSummary = {
-  label: string
+  label: StaticLabel
   useAsTitle?: string
 }
 
@@ -56,6 +56,12 @@ const getDisplayValue = (value: unknown): string | undefined => {
   return undefined
 }
 
+export const hasReferenceTitle = (
+  document: Record<string, unknown>,
+  useAsTitle: string | undefined,
+): boolean =>
+  !useAsTitle || Boolean(getDisplayValue(getValueByPath(document, useAsTitle)))
+
 const getDocumentTitle = ({
   document,
   useAsTitle,
@@ -92,6 +98,25 @@ const formatReferenceSummary = ({
   return collectionLabel ? `${collectionLabel}: ${documentTitle}` : documentTitle
 }
 
+const getCollectionLabel = (
+  label: StaticLabel | undefined,
+  language: string | undefined,
+): string | undefined => {
+  if (typeof label === 'string') {
+    return label
+  }
+
+  if (!label) {
+    return undefined
+  }
+
+  return (
+    (language ? label[language] : undefined) ??
+    label.en ??
+    Object.values(label).find((value) => Boolean(value))
+  )
+}
+
 export const getReferenceSummary = ({
   collections,
   reference,
@@ -125,7 +150,8 @@ export const getReferenceSummary = ({
       : undefined
 
     return formatReferenceSummary({
-      collectionLabel: collectionSummary?.label ?? identity.collectionSlug,
+      collectionLabel:
+        getCollectionLabel(collectionSummary?.label, language) ?? identity.collectionSlug,
       fallbackTitle: identity.documentId,
       title,
     })

@@ -22,7 +22,10 @@ import { useDrawerDepth } from "@payloadcms/ui/elements/Drawer";
 
 import type { LinkFieldAdminCustom, LinkFieldValue } from "../types.js";
 import { getReferenceIdentity } from "../utils/getReferenceIdentity.js";
-import { getReferenceSummary } from "../utils/getReferenceSummary.js";
+import {
+  getReferenceSummary,
+  hasReferenceTitle,
+} from "../utils/getReferenceSummary.js";
 import { translate } from "../translations/index.js";
 import { EditIcon, XIcon } from "@payloadcms/ui";
 
@@ -119,10 +122,12 @@ const useResolvedReferenceDocument = ({
   apiRoute,
   reference,
   relationTo,
+  useAsTitle,
 }: {
   apiRoute: string;
   reference: unknown;
   relationTo?: string | string[];
+  useAsTitle?: string;
 }): null | Record<string, unknown> => {
   const identity = useMemo(
     () =>
@@ -136,13 +141,15 @@ const useResolvedReferenceDocument = ({
     document: null | Record<string, unknown>;
     key: string;
   } | null>(null);
-  const referenceKey =
-    identity && !identity.document
-      ? `${identity.collectionSlug}:${identity.documentId}`
-      : null;
+  const needsResolvedDocument =
+    identity &&
+    (!identity.document || !hasReferenceTitle(identity.document, useAsTitle));
+  const referenceKey = needsResolvedDocument
+    ? `${identity.collectionSlug}:${identity.documentId}`
+    : null;
 
   useEffect(() => {
-    if (!identity || identity.document || !referenceKey) {
+    if (!identity || !needsResolvedDocument || !referenceKey) {
       setResolvedReference(null);
       return;
     }
@@ -192,9 +199,9 @@ const useResolvedReferenceDocument = ({
     return () => {
       abortController.abort();
     };
-  }, [apiRoute, identity, referenceKey]);
+  }, [apiRoute, identity, needsResolvedDocument, referenceKey]);
 
-  if (identity?.document) {
+  if (identity?.document && !needsResolvedDocument) {
     return identity.document;
   }
 
@@ -297,10 +304,22 @@ export const LinkField = (props: GroupFieldClientProps) => {
     () => getReferenceRelationTo(field.fields),
     [field.fields],
   );
+  const referenceIdentity = useMemo(
+    () =>
+      getReferenceIdentity({
+        reference: linkValue.reference,
+        relationTo: referenceRelationTo,
+      }),
+    [linkValue.reference, referenceRelationTo],
+  );
+  const referenceUseAsTitle = referenceIdentity
+    ? collections?.[referenceIdentity.collectionSlug]?.useAsTitle
+    : undefined;
   const resolvedReferenceDocument = useResolvedReferenceDocument({
     apiRoute,
     reference: linkValue.reference,
     relationTo: referenceRelationTo,
+    useAsTitle: referenceUseAsTitle,
   });
   const referenceSummary = getReferenceSummary({
     collections,
@@ -355,7 +374,7 @@ export const LinkField = (props: GroupFieldClientProps) => {
 
   if (appearance === "inline") {
     return (
-      <div className="link-field link-field--inline">
+      <div className="link-field field-type link-field--inline">
         <FieldLabel label={field.label} path={path} />
         <NestedFields
           fields={nestedFields}
@@ -369,7 +388,7 @@ export const LinkField = (props: GroupFieldClientProps) => {
   }
 
   return (
-    <div className="link-field link-field--drawer">
+    <div className="link-field field-type link-field--drawer">
       <FieldLabel label={field.label} path={path} />
       {!hasValue ? (
         <div className="">
