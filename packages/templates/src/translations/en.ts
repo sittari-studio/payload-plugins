@@ -1,4 +1,5 @@
 export const en = {
+  editTemplate: 'Edit template',
   template: 'Template',
   templates: 'Templates',
 } as const

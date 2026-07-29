@@ -24,6 +24,7 @@ import { StrikethroughFeatureClient as StrikethroughFeatureClient_e70f5e05f09f93
 import { UnderlineFeatureClient as UnderlineFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { BoldFeatureClient as BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
 import { ItalicFeatureClient as ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864 } from '@payloadcms/richtext-lexical/client'
+import { TemplateField as TemplateField_772b76a66386237306f412c7e05c4b51 } from '@sittari/payload-templates/client'
 import { DocumentSchemaManager as DocumentSchemaManager_355a706a94844bdfbe2a7dba5f916f46 } from '@sittari/payload-seo/client'
 import { SeoPreviews as SeoPreviews_355a706a94844bdfbe2a7dba5f916f46 } from '@sittari/payload-seo/client'
 import { SettingsSchemaManager as SettingsSchemaManager_355a706a94844bdfbe2a7dba5f916f46 } from '@sittari/payload-seo/client'
@@ -57,6 +58,7 @@ export const importMap = {
   "@payloadcms/richtext-lexical/client#UnderlineFeatureClient": UnderlineFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#BoldFeatureClient": BoldFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
   "@payloadcms/richtext-lexical/client#ItalicFeatureClient": ItalicFeatureClient_e70f5e05f09f93e00b997edb1ef0c864,
+  "@sittari/payload-templates/client#TemplateField": TemplateField_772b76a66386237306f412c7e05c4b51,
   "@sittari/payload-seo/client#DocumentSchemaManager": DocumentSchemaManager_355a706a94844bdfbe2a7dba5f916f46,
   "@sittari/payload-seo/client#SeoPreviews": SeoPreviews_355a706a94844bdfbe2a7dba5f916f46,
   "@sittari/payload-seo/client#SettingsSchemaManager": SettingsSchemaManager_355a706a94844bdfbe2a7dba5f916f46,

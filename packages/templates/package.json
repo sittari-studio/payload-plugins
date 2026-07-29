@@ -12,6 +12,10 @@
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
+    "./client": {
+      "types": "./dist/exports/client.d.ts",
+      "import": "./dist/exports/client.js"
+    },
     "./types": {
       "types": "./dist/exports/types.d.ts",
       "import": "./dist/exports/types.js"
@@ -33,12 +37,18 @@
     "clean": "rm -rf dist *.tsbuildinfo",
     "prepublishOnly": "pnpm run clean && pnpm run build"
   },
+  "dependencies": {
+    "@payloadcms/ui": "^3.0.0"
+  },
   "peerDependencies": {
-    "payload": "^3.0.0"
+    "payload": "^3.0.0",
+    "react": "^19.0.0"
   },
   "devDependencies": {
     "@payloadcms/db-sqlite": "3.85.2",
+    "@types/react": "^19.0.0",
     "payload": "^3.0.0",
+    "react": "^19.0.0",
     "typescript": "5.9.3",
     "vitest": "4.1.9"
   },

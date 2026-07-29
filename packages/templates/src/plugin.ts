@@ -18,6 +18,7 @@ import type { TemplateConfig, TemplatesPluginConfig } from './types.js'
 const COLLECTION_SLUG = 'templates'
 const DATA_FIELD_PREFIX = 'data_'
 const RECONCILE_CONTEXT_KEY = 'sittariTemplatesReconcile'
+const TEMPLATE_FIELD_ADMIN_COMPONENT = '@sittari/payload-templates/client#TemplateField'
 const VALID_TEMPLATE_NAME = /^[A-Za-z0-9_]+$/
 
 type TemplateDocument = {
@@ -112,6 +113,20 @@ const createTemplateFieldTransformer = (
 
     return {
       ...groupField,
+      admin: {
+        ...groupField.admin,
+        components: {
+          ...groupField.admin?.components,
+          Field: TEMPLATE_FIELD_ADMIN_COMPONENT,
+        },
+        custom: {
+          ...groupField.admin?.custom,
+          templateField: {
+            dataField: dataFieldName(templateName),
+            template: templateName,
+          },
+        },
+      },
       fields,
       hooks: {
         ...groupField.hooks,

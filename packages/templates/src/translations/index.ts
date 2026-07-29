@@ -12,3 +12,14 @@ export const localizedText = (key: TemplatesTranslationKey): Record<TemplatesLan
   ru: ru[key],
   uk: uk[key],
 })
+
+export const translate = (
+  key: TemplatesTranslationKey,
+  language?: string,
+): string => {
+  const normalized = language?.trim().toLowerCase().split(/[-_]/, 1)[0]
+  const resolvedLanguage: TemplatesLanguage =
+    normalized === 'ru' || normalized === 'uk' ? normalized : 'en'
+
+  return translations[resolvedLanguage][key]
+}

@@ -50,10 +50,66 @@ The generated document stores editable fields under `data_<name>`—for example,
 
 ## Template-backed fields
 
-`templateField({ name, template })` inserts a registered template's fields as a
-group anywhere Payload fields are accepted, including collections, globals,
-tabs, arrays, and blocks. The plugin throws during configuration when the
-referenced template is not registered.
+### `templateField()`
+
+```ts
+templateField(config: TemplateFieldConfig): GroupField
+```
+
+Creates a named Payload group whose fields and fallback values come from a
+template registered with `templatesPlugin()`. It can be used anywhere Payload
+accepts fields, including collections, globals, tabs, arrays, and blocks.
+
+```ts
+import { templateField } from '@sittari/payload-templates'
+import type { CollectionConfig } from 'payload'
+
+export const Pages: CollectionConfig = {
+  slug: 'pages',
+  fields: [
+    templateField({
+      name: 'hero',
+      template: 'defaultHero',
+      label: {
+        en: 'Hero overrides',
+        uk: 'Перевизначення Hero',
+      },
+      admin: {
+        hideGutter: true,
+      },
+    }),
+  ],
+}
+```
+
+| Option | Type | Required | Description |
+| --- | --- | --- | --- |
+| `name` | `string` | Yes | Field name used in the consuming document. Its stored overrides live at this property. |
+| `template` | `string` | Yes | `name` of a template registered with `templatesPlugin()`. Unknown names throw during configuration. |
+| `label` | `GroupField['label']` | No | Payload group label. Static strings, localized label maps, and label functions are supported. |
+| `admin` | `GroupField['admin']` | No | Payload Admin settings for the generated group. The plugin preserves these settings and installs its template field renderer. |
+
+The function initially returns a marked group definition. During plugin
+configuration, `templatesPlugin()` replaces its empty field list with an
+optionalized copy of the registered template fields and adds the fallback hook.
+Consequently, `templateField()` must be used in the same Payload config as an
+enabled `templatesPlugin()` call containing the referenced template.
+
+The consuming document stores only local overrides:
+
+```ts
+// Managed template: data_defaultHero
+{
+  heading: 'Build something useful',
+  summary: 'Default summary',
+}
+
+// Page document: hero
+{
+  heading: 'A page-specific heading',
+  // Empty summary inherits "Default summary".
+}
+```
 
 Fields copied into the consuming group are optional, even when the managed
 template requires them. On read, empty local values inherit from the managed
@@ -67,9 +123,10 @@ template:
 
 Inheritance is read-time only. Fallback values are not written into the
 consuming document, so later edits to the managed template are reflected on the
-next API read. Admin edit forms receive the raw stored overrides, so an empty
-field remains empty instead of looking like a persisted template value. The
-Admin API inspector still displays resolved values.
+next API read. Admin edit forms receive the raw stored overrides. Empty
+supported inputs display the active locale's managed template value as a
+placeholder, and each template-backed group includes a localized link to edit
+that template document. The Admin API inspector still displays resolved values.
 
 You can explicitly control resolution for Local API operations through Payload
 request context:

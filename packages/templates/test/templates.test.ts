@@ -6,6 +6,7 @@ import {
   templateField,
   templatesPlugin,
 } from '../src/index.js'
+import { applyTemplatePlaceholders } from '../src/admin/templatePlaceholders.js'
 
 const definitions = [
   {
@@ -237,6 +238,17 @@ describe('templatesPlugin', () => {
       }
       expect(getNamedField(referencedBlock.fields, 'body')).toMatchObject({ required: false })
       expect(content.hooks?.afterRead).toHaveLength(1)
+      expect(content.admin).toMatchObject({
+        components: {
+          Field: '@sittari/payload-templates/client#TemplateField',
+        },
+        custom: {
+          templateField: {
+            dataField: 'data_shared',
+            template: 'shared',
+          },
+        },
+      })
     }
 
     expect(requiredField.required).toBe(true)
@@ -247,6 +259,57 @@ describe('templatesPlugin', () => {
       throw new Error('Expected managed template data')
     }
     expect(getNamedField(managedData.fields, 'heading')).toBe(requiredField)
+  })
+
+  it('adds template values as placeholders without changing structural fields', () => {
+    const fields = applyTemplatePlaceholders([
+      { name: 'heading', type: 'text' },
+      { name: 'count', type: 'number' },
+      { name: 'enabled', type: 'checkbox' },
+      {
+        name: 'nested',
+        type: 'group',
+        fields: [{ name: 'description', type: 'textarea' }],
+      },
+      {
+        type: 'tabs',
+        tabs: [{
+          name: 'seo',
+          label: 'SEO',
+          fields: [{ name: 'title', type: 'text' }],
+        }],
+      },
+    ], {
+      count: 7,
+      enabled: true,
+      heading: 'Template heading',
+      nested: { description: 'Template description' },
+      seo: { title: 'Template SEO title' },
+    })
+
+    expect(getNamedField(fields as Field[], 'heading')).toMatchObject({
+      admin: { placeholder: 'Template heading' },
+    })
+    expect(getNamedField(fields as Field[], 'count')).toMatchObject({
+      admin: { placeholder: '7' },
+    })
+    expect(getNamedField(fields as Field[], 'enabled')?.admin).toBeUndefined()
+
+    const nested = getNamedField(fields as Field[], 'nested')
+    if (!nested || nested.type !== 'group') {
+      throw new Error('Expected nested group')
+    }
+    expect(getNamedField(nested.fields as Field[], 'description')).toMatchObject({
+      admin: { placeholder: 'Template description' },
+    })
+
+    const tabs = fields.find((field) => field.type === 'tabs')
+    if (!tabs || tabs.type !== 'tabs') {
+      throw new Error('Expected tabs field')
+    }
+    expect(getNamedField(tabs.tabs[0].fields as Field[], 'title')).toMatchObject({
+      admin: { placeholder: 'Template SEO title' },
+    })
   })
 
   it('fills empty values deeply, treats lists atomically, and caches lookups', async () => {

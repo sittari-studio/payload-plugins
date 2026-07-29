@@ -204,13 +204,23 @@ importers:
         version: 4.1.9(@types/node@26.1.0)(happy-dom@20.10.6)(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(jiti@1.21.7)(sass@1.77.4)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/templates:
+    dependencies:
+      '@payloadcms/ui':
+        specifier: ^3.0.0
+        version: 3.85.2(@types/react@19.2.17)(monaco-editor@0.55.1)(next@16.2.10(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(sass@1.77.4))(payload@3.85.2(graphql@16.14.2)(typescript@5.9.3))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(typescript@5.9.3)
     devDependencies:
       '@payloadcms/db-sqlite':
         specifier: 3.85.2
         version: 3.85.2(payload@3.85.2(graphql@16.14.2)(typescript@5.9.3))
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.17
       payload:
         specifier: ^3.0.0
         version: 3.85.2(graphql@16.14.2)(typescript@5.9.3)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.7
       typescript:
         specifier: 5.9.3
         version: 5.9.3
