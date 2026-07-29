@@ -1,5 +1,11 @@
 # @sittari/payload-link-field
 
+## 0.1.2
+
+### Patch Changes
+
+- f92b644: resolve links in reusable blocks
+
 ## 0.1.1
 
 ### Patch Changes
