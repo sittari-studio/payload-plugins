@@ -144,9 +144,9 @@ export const getReferenceSummary = ({
     const document = resolvedDocument ?? identity.document
     const title = document
       ? getDocumentTitle({
-          document,
-          useAsTitle: collectionSummary?.useAsTitle,
-        })
+        document,
+        useAsTitle: collectionSummary?.useAsTitle,
+      })
       : undefined
 
     return formatReferenceSummary({

@@ -70,6 +70,7 @@ export interface Config {
     users: User;
     media: Media;
     'link-field-test': LinkFieldTest;
+    categories: Category;
     pages: Page;
     'seo-redirects': SeoRedirect;
     templates: Template;
@@ -84,6 +85,7 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     'link-field-test': LinkFieldTestSelect<false> | LinkFieldTestSelect<true>;
+    categories: CategoriesSelect<false> | CategoriesSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
     'seo-redirects': SeoRedirectsSelect<false> | SeoRedirectsSelect<true>;
     templates: TemplatesSelect<false> | TemplatesSelect<true>;
@@ -243,6 +245,7 @@ export interface Page {
       message?: string | null;
     };
   };
+  path?: string | null;
   seo: {
     title?: string | null;
     description?: string | null;
@@ -331,6 +334,31 @@ export interface Page {
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories".
+ */
+export interface Category {
+  id: number;
+  title: string;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
+  parent?: (number | null) | Category;
+  breadcrumbs?:
+    | {
+        doc?: (number | null) | Category;
+        url?: string | null;
+        label?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  path?: string | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -491,6 +519,10 @@ export interface PayloadLockedDocument {
         value: number | LinkFieldTest;
       } | null)
     | ({
+        relationTo: 'categories';
+        value: number | Category;
+      } | null)
+    | ({
         relationTo: 'pages';
         value: number | Page;
       } | null)
@@ -605,6 +637,27 @@ export interface LinkFieldTestSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories_select".
+ */
+export interface CategoriesSelect<T extends boolean = true> {
+  title?: T;
+  generateSlug?: T;
+  slug?: T;
+  parent?: T;
+  breadcrumbs?:
+    | T
+    | {
+        doc?: T;
+        url?: T;
+        label?: T;
+        id?: T;
+      };
+  path?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "pages_select".
  */
 export interface PagesSelect<T extends boolean = true> {
@@ -632,6 +685,7 @@ export interface PagesSelect<T extends boolean = true> {
               message?: T;
             };
       };
+  path?: T;
   seo?:
     | T
     | {

@@ -1,0 +1,60 @@
+{
+  "name": "@sittari/payload-path-field",
+  "version": "0.1.0",
+  "description": "Localized canonical path fields and routing helpers for Payload CMS.",
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/exports/types.d.ts",
+      "import": "./dist/exports/types.js"
+    },
+    "./client": {
+      "types": "./dist/exports/client.d.ts",
+      "import": "./dist/exports/client.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "pnpm run clean && pnpm run build:types && pnpm run build:js",
+    "build:js": "tsc -p tsconfig.build.json --declaration false --declarationMap false",
+    "build:types": "tsc -p tsconfig.build.json --emitDeclarationOnly",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm run test:int",
+    "test:int": "vitest run",
+    "dev": "node ../../scripts/dev-package.mjs",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "prepublishOnly": "pnpm run clean && pnpm run build"
+  },
+  "peerDependencies": {
+    "payload": "^3.0.0"
+  },
+  "devDependencies": {
+    "@payloadcms/db-sqlite": "^3.0.0",
+    "@payloadcms/plugin-nested-docs": "3.85.2",
+    "payload": "^3.0.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.9"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "payload",
+    "payloadcms",
+    "payload-plugin",
+    "routing",
+    "localization"
+  ]
+}

@@ -1,4 +1,5 @@
 import { sqliteAdapter } from '@payloadcms/db-sqlite'
+import { nestedDocsPlugin } from '@payloadcms/plugin-nested-docs'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import os from 'node:os'
 import path from 'node:path'
@@ -8,7 +9,9 @@ import sharp from 'sharp'
 
 import { linkFieldPlugin, linkField } from '@sittari/payload-link-field'
 import { pagesPlugin } from '@sittari/payload-pages'
+import { pathFieldPlugin } from '@sittari/payload-path-field'
 import { seoPlugin } from '@sittari/payload-seo'
+import { createSlugField } from '@sittari/payload-slug-field'
 import { templateField, templatesPlugin } from '@sittari/payload-templates'
 
 import { uk } from '@payloadcms/translations/languages/uk'
@@ -23,6 +26,26 @@ import { testEmailAdapter } from './helpers/testEmailAdapter.js'
 import { devUser, seed } from './seed.js'
 
 const siteUrl = process.env.SITE_URL ?? 'http://localhost:3000'
+
+const resolvePagePath = (document: Record<string, unknown>): null | string => {
+  if (typeof document.slug !== 'string' || !document.slug) return null
+  return document.slug === 'home' ? '/' : `/${document.slug}`
+}
+
+const resolveCategoryPath = (document: Record<string, unknown>): null | string => {
+  if (typeof document.slug !== 'string' || !document.slug) return null
+
+  const parent = document.parent
+  const parentPath =
+    parent &&
+    typeof parent === 'object' &&
+    'path' in parent &&
+    typeof parent.path === 'string'
+      ? parent.path
+      : '/categories'
+
+  return `${parentPath}/${document.slug}`
+}
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -97,6 +120,22 @@ export default buildConfig({
         }),
       ],
     },
+    {
+      slug: 'categories',
+      admin: {
+        useAsTitle: 'title',
+      },
+      fields: [
+        {
+          name: 'title',
+          type: 'text',
+          required: true,
+        },
+        createSlugField({
+          localized: false,
+        }),
+      ],
+    },
   ],
   db: sqliteAdapter({
     client: {
@@ -151,6 +190,30 @@ export default buildConfig({
         }
       })
     }),
+    nestedDocsPlugin({
+      collections: ['categories'],
+    }),
+    pathFieldPlugin({
+      collections: {
+        categories: {
+          parentField: 'parent',
+        },
+        pages: true,
+      },
+      resolveDocumentUrl: ({ collection, doc }) => {
+        const resolvedPath =
+          collection === 'categories'
+            ? resolveCategoryPath(doc)
+            : resolvePagePath(doc)
+        if (!resolvedPath) {
+          throw new Error(
+            `Documents in "${collection}" require a slug before their path can be resolved.`,
+          )
+        }
+
+        return resolvedPath
+      },
+    }),
     seoPlugin({
       siteUrl,
       collections: {
@@ -171,13 +234,11 @@ export default buildConfig({
         },
       },
       resolveUrl: ({ document, collection }) => {
-        if (typeof document.slug !== 'string' || !document.slug) return null;
-
         if (collection === 'pages') {
-          return document.slug === 'home' ? '/' : `/${document.slug}`;
+          return resolvePagePath(document)
         }
 
-        return null;
+        return null
       },
       resolveChunkUrl: ({ collection, locale, page }) =>
         new URL(`/sitemaps/${collection}/${locale}/${page}.xml`, siteUrl).toString(),

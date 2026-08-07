@@ -95,6 +95,52 @@ const ensureSamplePage = async (payload: Payload): Promise<void> => {
   })
 }
 
+const ensureSampleCategories = async (payload: Payload): Promise<void> => {
+  const roots = await payload.find({
+    collection: 'categories',
+    depth: 0,
+    limit: 1,
+    where: {
+      slug: {
+        equals: 'apparel',
+      },
+    },
+  })
+
+  const root =
+    roots.docs[0] ??
+    (await payload.create({
+      collection: 'categories',
+      data: {
+        slug: 'apparel',
+        title: 'Apparel',
+      },
+    }))
+  const rootID = getDocumentID(root)
+  if (typeof rootID !== 'number') return
+
+  const children = await payload.find({
+    collection: 'categories',
+    depth: 0,
+    limit: 1,
+    where: {
+      slug: {
+        equals: 'shoes',
+      },
+    },
+  })
+
+  if (children.docs[0]) return
+  await payload.create({
+    collection: 'categories',
+    data: {
+      parent: rootID,
+      slug: 'shoes',
+      title: 'Shoes',
+    },
+  })
+}
+
 const ensureSeoSettings = async (payload: Payload): Promise<void> => {
   const settings = await payload.findGlobal({
     slug: 'seo-settings',
@@ -128,6 +174,7 @@ export const seed = async (payload: Payload): Promise<void> => {
   await ensureDevUser(payload)
   await ensureSeoSettings(payload)
   await ensureSamplePage(payload)
+  await ensureSampleCategories(payload)
 }
 
 export const script = async (config: SanitizedConfig): Promise<void> => {
