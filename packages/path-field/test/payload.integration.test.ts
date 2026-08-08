@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto'
 import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { buildConfig, getPayload, type Payload } from 'payload'
+import { buildConfig, getPayload, type Payload, ValidationError } from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { createPathHelpers, pathFieldPlugin } from '../src/index.js'
@@ -48,7 +48,9 @@ beforeAll(async () => {
       pathFieldPlugin({
         collections: { pages: true },
         resolveDocumentUrl: ({ doc, locale }) =>
-          `/${locale}/${String(doc.slug)}`,
+          doc.slug === 'unresolved'
+            ? null
+            : `/${locale}/${String(doc.slug)}`,
       }),
     ],
   })
@@ -323,6 +325,43 @@ describe('startup backfill', () => {
 })
 
 describe('real Payload path field behavior', () => {
+  it('allows creation without a path, then rejects updates until one resolves', async () => {
+    const created = await payload.create({
+      collection: 'pages',
+      data: { slug: 'unresolved' },
+      locale: 'en',
+    }) as unknown as { id: number | string; path?: null | string }
+    expect(created.path).toBeNull()
+
+    const update = payload.update({
+      collection: 'pages',
+      data: { slug: 'unresolved' },
+      id: created.id,
+      locale: 'en',
+    })
+    await expect(update).rejects.toBeInstanceOf(ValidationError)
+    await expect(update).rejects.toMatchObject({
+      data: {
+        collection: 'pages',
+        errors: [
+          {
+            message: 'Path must be a non-empty string.',
+            path: 'path',
+          },
+        ],
+      },
+      status: 400,
+    })
+
+    const resolved = await payload.update({
+      collection: 'pages',
+      data: { slug: 'resolved' },
+      id: created.id,
+      locale: 'en',
+    }) as unknown as { path?: null | string }
+    expect(resolved.path).toBe('/en/resolved')
+  })
+
   it('stores localized generated paths and prevents client overrides', async () => {
     const created = await payload.create({
       collection: 'pages',

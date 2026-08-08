@@ -1,10 +1,15 @@
-import type { CollectionBeforeChangeHook, PayloadRequest } from 'payload'
+import {
+  ValidationError,
+  type CollectionBeforeChangeHook,
+  type PayloadRequest,
+} from 'payload'
 
-import { assertValidDocumentPath } from './path.js'
+import { validateDocumentPath } from './path.js'
 import type {
   PathCollectionOptions,
   ResolveDocumentUrl,
 } from './types.js'
+import { PATH_REBUILD_CONTEXT_KEY } from './types.js'
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -40,6 +45,26 @@ const getRelationshipID = (value: unknown): number | string | undefined => {
   return undefined
 }
 
+const assertResolvedDocumentPath: (
+  path: unknown,
+  collection: string,
+  req: PayloadRequest,
+) => asserts path is string = (path, collection, req) => {
+  const validationResult = validateDocumentPath(path)
+  if (validationResult !== true) {
+    throw new ValidationError({
+      collection,
+      errors: [
+        {
+          message: validationResult,
+          path: 'path',
+        },
+      ],
+      req,
+    })
+  }
+}
+
 const populateParent = async ({
   collection,
   doc,
@@ -72,6 +97,7 @@ const populateParent = async ({
 const resolveForLocale = async ({
   collection,
   data,
+  allowUnresolved,
   locale,
   locales,
   options,
@@ -81,13 +107,14 @@ const resolveForLocale = async ({
 }: {
   collection: string
   data: Record<string, unknown>
+  allowUnresolved: boolean
   locale?: string
   locales: Set<string>
   options: PathCollectionOptions
   originalDoc?: Record<string, unknown>
   req: PayloadRequest
   resolver: ResolveDocumentUrl
-}): Promise<string> => {
+}): Promise<null | string> => {
   const localizedOriginal = locale
     ? (valueForLocale(originalDoc ?? {}, locale, locales) as Record<string, unknown>)
     : (originalDoc ?? {})
@@ -111,7 +138,8 @@ const resolveForLocale = async ({
     payload: req.payload,
     req,
   })
-  assertValidDocumentPath(path)
+  if (path === null && allowUnresolved) return null
+  assertResolvedDocumentPath(path, collection, req)
   return path
 }
 
@@ -130,15 +158,18 @@ export const createPathBeforeChangeHook = ({
 }): CollectionBeforeChangeHook => {
   const locales = new Set(localeCodes)
 
-  return async ({ data, originalDoc, req }) => {
+  return async ({ context, data, operation, originalDoc, req }) => {
     const requestLocale = (req as PayloadRequest & { locale?: string }).locale
+    const allowUnresolved =
+      operation === 'create' || context[PATH_REBUILD_CONTEXT_KEY] === true
 
     if (requestLocale === 'all') {
-      const paths: Record<string, string> = {}
+      const paths: Record<string, null | string> = {}
       for (const locale of localeCodes) {
         paths[locale] = await resolveForLocale({
           collection,
           data,
+          allowUnresolved,
           locale,
           locales,
           options,
@@ -156,6 +187,7 @@ export const createPathBeforeChangeHook = ({
     const path = await resolveForLocale({
       collection,
       data,
+      allowUnresolved,
       locale,
       locales,
       options,

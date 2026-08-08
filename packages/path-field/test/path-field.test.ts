@@ -1,4 +1,4 @@
-import type { Config, Field, Payload } from 'payload'
+import { ValidationError, type Config, type Field, type Payload } from 'payload'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
@@ -10,6 +10,7 @@ import {
   pathFieldPlugin,
   validateDocumentPath,
 } from '../src/index.js'
+import { PATH_REBUILD_CONTEXT_KEY } from '../src/types.js'
 
 const baseConfig = (): Config => ({
   collections: [
@@ -206,10 +207,10 @@ describe('pathFieldPlugin', () => {
     expect(resolver).toHaveBeenCalledTimes(2)
   })
 
-  it('fails writes when the resolver returns an invalid path', async () => {
+  it('allows initial document creation when no path can be resolved yet', async () => {
     const output = pathFieldPlugin({
       collections: { pages: true },
-      resolveDocumentUrl: () => 'https://example.com',
+      resolveDocumentUrl: () => null,
     })(baseConfig()) as Config
     const hook = output.collections?.[0]?.hooks?.beforeChange?.at(-1)
 
@@ -217,11 +218,59 @@ describe('pathFieldPlugin', () => {
       hook?.({
         collection: {} as never,
         context: {},
-        data: { slug: 'bad' },
+        data: { slug: 'not-ready' },
         operation: 'create',
         req: { locale: 'en', payload: {} } as never,
       }),
-    ).rejects.toThrow(/invalid resolved path/)
+    ).resolves.toMatchObject({ path: null })
+  })
+
+  it('keeps unresolved documents from failing internal path rebuilds', async () => {
+    const output = pathFieldPlugin({
+      collections: { pages: true },
+      resolveDocumentUrl: () => null,
+    })(baseConfig()) as Config
+    const hook = output.collections?.[0]?.hooks?.beforeChange?.at(-1)
+
+    await expect(
+      hook?.({
+        collection: {} as never,
+        context: { [PATH_REBUILD_CONTEXT_KEY]: true },
+        data: {},
+        operation: 'update',
+        originalDoc: { id: 1, slug: 'not-ready' },
+        req: { locale: 'en', payload: {} } as never,
+      }),
+    ).resolves.toMatchObject({ path: null })
+  })
+
+  it.each([
+    ['an empty path', ''],
+    ['no path yet', null],
+    ['an absolute URL', 'https://example.com'],
+  ])('fails writes when the resolver returns %s', async (_label, resolvedPath) => {
+    const output = pathFieldPlugin({
+      collections: { pages: true },
+      resolveDocumentUrl: () => resolvedPath,
+    })(baseConfig()) as Config
+    const hook = output.collections?.[0]?.hooks?.beforeChange?.at(-1)
+
+    const write = hook?.({
+        collection: {} as never,
+        context: {},
+        data: { slug: 'bad' },
+        operation: resolvedPath === null ? 'update' : 'create',
+        req: { locale: 'en', payload: {} } as never,
+      })
+
+    await expect(write).rejects.toBeInstanceOf(ValidationError)
+    await expect(write).rejects.toMatchObject({
+      data: {
+        collection: 'pages',
+        errors: [{ path: 'path' }],
+      },
+      status: 400,
+    })
   })
 })
 

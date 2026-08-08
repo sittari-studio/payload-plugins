@@ -27,7 +27,7 @@ export type ResolveDocumentUrlArgs = {
 
 export type ResolveDocumentUrl = (
   args: ResolveDocumentUrlArgs,
-) => Promise<string> | string
+) => Promise<null | string> | null | string
 
 export type PathFieldRuntimeConfig = {
   collections: Record<string, PathCollectionOptions>
