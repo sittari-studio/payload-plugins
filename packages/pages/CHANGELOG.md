@@ -1,5 +1,11 @@
 # @sittari/payload-pages
 
+## 1.0.0
+
+### Major Changes
+
+- 602b5cd: Replace implicit default page types and the page-types callback with explicit composition. Export `createStandardContentPageType` and `createFlexiblePageType`, require a page-types object when the plugin is enabled, and move `blockSlugs` to the flexible page-type factory.
+
 ## 0.2.2
 
 ### Patch Changes
