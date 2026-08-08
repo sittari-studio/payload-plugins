@@ -1,5 +1,11 @@
 # @sittari/payload-path-field
 
+## 0.3.0
+
+### Minor Changes
+
+- fix(path-field): allow unresolved paths in drafts and autosaves
+
 ## 0.2.1
 
 ### Patch Changes
