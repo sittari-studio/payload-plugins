@@ -6,7 +6,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Button,
   Drawer,
-  DrawerContentContainer,
   FieldLabel,
   PlusIcon,
   RenderFields,
@@ -29,7 +28,7 @@ import {
   hasReferenceTitle,
 } from "../utils/getReferenceSummary.js";
 import { translate } from "../translations/index.js";
-import { EditIcon, XIcon } from "@payloadcms/ui";
+import { LinkActionButtons, LinkDrawerBody } from "./SharedLinkControls.js";
 
 const getFieldPath = (parentPath: string, name: string): string =>
   parentPath ? `${parentPath}.${name}` : name;
@@ -427,35 +426,20 @@ export const LinkField = (props: GroupFieldClientProps) => {
             </div>
             <div className="link-field__summary-secondary">{secondaryText}</div>
           </div>
-          <div className="link-field__actions">
-            <Button
-              buttonStyle="icon-label"
-              className="link-field__button"
-              disabled={readOnly}
-              onClick={handleOpenDrawer}
-              type="button"
-              icon={<EditIcon />}
-              aria-label={t("edit")}
-            ></Button>
-            {hasValue ? (
-              <Button
-                buttonStyle="icon-label"
-                className="link-field__button link-field__button--clear"
-                disabled={readOnly}
-                onClick={handleClear}
-                type="button"
-                icon={<XIcon />}
-                aria-label={t("clear")}
-              ></Button>
-            ) : null}
-          </div>
+          <LinkActionButtons
+            editLabel={t("edit")}
+            onEdit={handleOpenDrawer}
+            onRemove={hasValue ? handleClear : undefined}
+            readOnly={readOnly}
+            removeLabel={t("clear")}
+          />
         </div>
       )}
       <Drawer
         slug={drawerSlug}
         title={typeof field.label === "string" ? field.label : t("link")}
       >
-        <DrawerContentContainer>
+        <LinkDrawerBody doneLabel={t("done")} onDone={() => closeModal(drawerSlug)}>
           <NestedFields
             fields={nestedFields}
             path={path}
@@ -463,10 +447,7 @@ export const LinkField = (props: GroupFieldClientProps) => {
             readOnly={readOnly}
             schemaPath={schemaPath ?? ""}
           />
-          <Button buttonStyle="primary" onClick={() => closeModal(drawerSlug)}>
-            {t("done")}
-          </Button>
-        </DrawerContentContainer>
+        </LinkDrawerBody>
       </Drawer>
     </div>
   );

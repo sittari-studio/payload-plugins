@@ -1,9 +1,15 @@
 import type { Config, Field, GroupField, RelationshipField, TextField } from 'payload'
+import { createHeadlessEditor } from '@payloadcms/richtext-lexical/lexical/headless'
 import { describe, expect, it, vi } from 'vitest'
 
 import { createResolveUrlHook } from '../src/hooks/resolveUrl.js'
-import { linkField, linkFieldPlugin } from '../src/index.js'
-import { LINK_FIELD_MARKER } from '../src/types.js'
+import {
+  LinkFieldAutoLinkNode,
+  LinkFieldNode,
+  linkField,
+  linkFieldPlugin,
+} from '../src/index.js'
+import { LINK_FIELD_MARKER, LINK_FIELD_RUNTIME_CONFIG_KEY } from '../src/types.js'
 import { getReferenceDocumentUrl } from '../src/utils/getReferenceDocumentUrl.js'
 import { getReferenceIdentity } from '../src/utils/getReferenceIdentity.js'
 import {
@@ -51,6 +57,13 @@ describe('linkField', () => {
     })
     expect(getChildField(field, 'newTab')).toMatchObject({
       type: 'checkbox',
+    })
+    expect(getChildField<RelationshipField>(field, 'reference')).toMatchObject({
+      admin: {
+        components: {
+          Field: '@sittari/payload-link-field/client#ReadableRelationshipField',
+        },
+      },
     })
     expect(getChildField<TextField>(field, 'url')).toMatchObject({
       admin: {
@@ -176,6 +189,9 @@ describe('linkFieldPlugin', () => {
       },
     })
     expect(getChildField<TextField>(link, 'url').hooks?.afterRead).toHaveLength(1)
+    expect(outputConfig.custom?.[LINK_FIELD_RUNTIME_CONFIG_KEY]).toMatchObject({
+      resolveDocumentUrl: expect.any(Function),
+    })
   })
 
   it('filters the current document from same-collection reference options', async () => {
@@ -474,6 +490,91 @@ describe('linkFieldPlugin', () => {
     expect(
       getChildField<TextField>(reusableBlock.fields[0], 'url').hooks?.afterRead,
     ).toBeUndefined()
+  })
+})
+
+describe('Lexical link nodes', () => {
+  it('imports Payload-native custom nodes and exports only the plugin-owned shape', () => {
+    const editor = createHeadlessEditor({ nodes: [LinkFieldNode, LinkFieldAutoLinkNode] })
+    const state = editor.parseEditorState({
+      root: {
+        children: [{
+          children: [{
+            detail: 0,
+            format: 0,
+            mode: 'normal',
+            style: '',
+            text: 'Read more',
+            type: 'text',
+            version: 1,
+          }],
+          direction: null,
+          fields: {
+            linkType: 'custom',
+            newTab: true,
+            url: '/about',
+          },
+          format: '',
+          indent: 0,
+          type: 'link',
+          version: 3,
+        }],
+        direction: null,
+        format: '',
+        indent: 0,
+        type: 'root',
+        version: 1,
+      },
+    } as never)
+
+    const node = (state.toJSON().root.children[0] as any)
+    expect(node.fields).toEqual({
+      customUrl: '/about',
+      label: 'Read more',
+      newTab: true,
+      type: 'custom',
+      url: '/about',
+    })
+    expect(node.version).toBe(1)
+  })
+
+  it('imports Payload-native internal nodes as references', () => {
+    const editor = createHeadlessEditor({ nodes: [LinkFieldNode, LinkFieldAutoLinkNode] })
+    const state = editor.parseEditorState({
+      root: {
+        children: [{
+          children: [{
+            detail: 0,
+            format: 0,
+            mode: 'normal',
+            style: '',
+            text: 'Post',
+            type: 'text',
+            version: 1,
+          }],
+          direction: null,
+          fields: {
+            doc: { relationTo: 'posts', value: 'post-1' },
+            linkType: 'internal',
+          },
+          format: '',
+          indent: 0,
+          type: 'link',
+          version: 3,
+        }],
+        direction: null,
+        format: '',
+        indent: 0,
+        type: 'root',
+        version: 1,
+      },
+    } as never)
+
+    expect((state.toJSON().root.children[0] as any).fields).toMatchObject({
+      label: 'Post',
+      reference: { relationTo: 'posts', value: 'post-1' },
+      type: 'reference',
+    })
   })
 })
 

@@ -6,6 +6,7 @@ import type {
   Payload,
   PayloadRequest,
 } from 'payload'
+import type { SerializedElementNode, SerializedLexicalNode } from '@payloadcms/richtext-lexical/lexical'
 
 import type { ReferenceSummaryCollections } from './utils/getReferenceSummary.js'
 
@@ -28,6 +29,13 @@ export type LinkFieldPluginConfig = {
   resolveDocumentUrl: ResolveDocumentUrl
 }
 
+export type LinkFieldFeatureConfig = {
+  defaultType?: LinkFieldType
+  relationTo?: CollectionSlug | CollectionSlug[]
+  showLabel?: boolean
+  showNewTab?: boolean
+}
+
 export type LinkFieldValue = {
   customUrl?: string
   label?: string
@@ -35,6 +43,27 @@ export type LinkFieldValue = {
   reference?: unknown
   type?: LinkFieldType
   url?: null | string
+}
+
+export type LinkFieldNodeFields = LinkFieldValue & {
+  type: LinkFieldType
+}
+
+export type SerializedLinkFieldNode<
+  TChild extends SerializedLexicalNode = SerializedLexicalNode,
+> = SerializedElementNode<TChild> & {
+  fields: LinkFieldNodeFields
+  id?: string
+  type: 'link'
+  version: 1
+}
+
+export type SerializedLinkFieldAutoLinkNode<
+  TChild extends SerializedLexicalNode = SerializedLexicalNode,
+> = SerializedElementNode<TChild> & {
+  fields: LinkFieldNodeFields
+  type: 'autolink'
+  version: 1
 }
 
 export type ResolveDocumentUrlArgs = {
@@ -75,3 +104,15 @@ export const LINK_FIELD_MARKER = '@sittari/payload-link-field'
 
 export const LINK_FIELD_ADMIN_COMPONENT =
   '@sittari/payload-link-field/client#LinkField'
+
+export const LINK_FIELD_RELATIONSHIP_COMPONENT =
+  '@sittari/payload-link-field/client#ReadableRelationshipField'
+
+export const LINK_FIELD_FEATURE_CLIENT =
+  '@sittari/payload-link-field/client#LinkFieldFeatureClient'
+
+export const LINK_FIELD_RUNTIME_CONFIG_KEY = '@sittari/payload-link-field/runtime'
+
+export type LinkFieldRuntimeConfig = {
+  resolveDocumentUrl: ResolveDocumentUrl
+}

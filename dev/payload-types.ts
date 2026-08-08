@@ -196,13 +196,59 @@ export interface LinkFieldTest {
     type: 'custom' | 'reference';
     label?: string | null;
     customUrl?: string | null;
-    reference?: {
-      relationTo: 'pages';
-      value: number | Page;
-    } | null;
+    reference?:
+      | ({
+          relationTo: 'users';
+          value: number | User;
+        } | null)
+      | ({
+          relationTo: 'media';
+          value: number | Media;
+        } | null)
+      | ({
+          relationTo: 'link-field-test';
+          value: number | LinkFieldTest;
+        } | null)
+      | ({
+          relationTo: 'categories';
+          value: number | Category;
+        } | null)
+      | ({
+          relationTo: 'pages';
+          value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'seo-redirects';
+          value: number | SeoRedirect;
+        } | null);
     newTab?: boolean | null;
     url?: string | null;
   };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories".
+ */
+export interface Category {
+  id: number;
+  title: string;
+  /**
+   * When enabled, the slug will auto-generate from the title field on save and autosave.
+   */
+  generateSlug?: boolean | null;
+  slug: string;
+  parent?: (number | null) | Category;
+  breadcrumbs?:
+    | {
+        doc?: (number | null) | Category;
+        url?: string | null;
+        label?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  path?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -218,7 +264,7 @@ export interface Page {
    */
   generateSlug?: boolean | null;
   slug: string;
-  pageType: 'standardContent' | 'flexible' | 'templates';
+  pageType: 'standardContent' | 'flexible' | 'richText' | 'templates';
   standardContent?: {
     content?: {
       root: {
@@ -238,6 +284,23 @@ export interface Page {
   };
   flexible?: {
     blocks?: unknown[] | null;
+  };
+  richText?: {
+    content?: {
+      root: {
+        type: string;
+        children: {
+          type: any;
+          version: number;
+          [k: string]: unknown;
+        }[];
+        direction: ('ltr' | 'rtl') | null;
+        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+        indent: number;
+        version: number;
+      };
+      [k: string]: unknown;
+    } | null;
   };
   templates?: {
     cta?: {
@@ -334,31 +397,6 @@ export interface Page {
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "categories".
- */
-export interface Category {
-  id: number;
-  title: string;
-  /**
-   * When enabled, the slug will auto-generate from the title field on save and autosave.
-   */
-  generateSlug?: boolean | null;
-  slug: string;
-  parent?: (number | null) | Category;
-  breadcrumbs?:
-    | {
-        doc?: (number | null) | Category;
-        url?: string | null;
-        label?: string | null;
-        id?: string | null;
-      }[]
-    | null;
-  path?: string | null;
-  updatedAt: string;
-  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -674,6 +712,11 @@ export interface PagesSelect<T extends boolean = true> {
     | T
     | {
         blocks?: T | {};
+      };
+  richText?:
+    | T
+    | {
+        content?: T;
       };
   templates?:
     | T

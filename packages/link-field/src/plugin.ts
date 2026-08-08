@@ -12,6 +12,7 @@ import type {
 import { createResolveUrlHook } from './hooks/resolveUrl.js'
 import {
   LINK_FIELD_MARKER,
+  LINK_FIELD_RUNTIME_CONFIG_KEY,
   type LinkFieldAdminCustom,
   type LinkFieldPluginConfig,
 } from './types.js'
@@ -233,6 +234,12 @@ export const linkFieldPlugin =
           ...global,
           fields: traverseFields(global.fields, createTransformField()) ?? [],
         })),
+        custom: {
+          ...(incomingConfig.custom ?? {}),
+          [LINK_FIELD_RUNTIME_CONFIG_KEY]: {
+            resolveDocumentUrl: pluginConfig.resolveDocumentUrl,
+          },
+        },
       }
       return finalConfig
     }
