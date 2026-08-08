@@ -12,12 +12,21 @@ pnpm add @sittari/payload-pages
 
 ```ts
 import { buildConfig } from "payload";
-import { pagesPlugin } from "@sittari/payload-pages";
+import {
+  createFlexiblePageType,
+  createStandardContentPageType,
+  pagesPlugin,
+} from "@sittari/payload-pages";
 
 export default buildConfig({
   plugins: [
     pagesPlugin({
-      blockSlugs: ["hero", "content"],
+      pageTypes: {
+        standardContent: createStandardContentPageType(),
+        flexible: createFlexiblePageType({
+          blockSlugs: ["hero", "content"],
+        }),
+      },
     }),
   ],
   collections: [],
@@ -26,38 +35,48 @@ export default buildConfig({
 
 ## Configuration
 
-All options are optional.
+`pageTypes` is required unless the plugin is disabled.
 
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
-| `blockSlugs` | `string[]` | `[]` | Block slugs available to the default `flexible` page type. |
 | `enabled` | `boolean` | `true` | Set to `false` to return the incoming Payload config unchanged. |
 | `localizeTitle` | `boolean` | `true` | Enables or disables localization on the default `title` field. |
-| `pageTypes` | `({ defaultPageTypes }) => PageTypes` | Default page types | Extends, removes, or replaces the page-type definitions. |
+| `pageTypes` | `PageTypes` | Required | Page-type definitions keyed by the value stored in `pageType`. |
 | `slugField` | `({ defaultSlugField }) => RowField` | Default slug field | Extends or replaces the generated slug row. |
 | `overrides` | `(defaultCollection) => CollectionConfig` | Default collection | Extends or replaces the final `pages` collection configuration. Applied last. |
 
-The plugin also exports the `PagesPluginConfig`, `PageTypeConfig`, and `PageTypes` TypeScript types from the package root and from `@sittari/payload-pages/types`.
+The package root exports `createStandardContentPageType` and `createFlexiblePageType`. Their option types and the `PagesPluginConfig`, `PageTypeConfig`, and `PageTypes` types are also available from the package root and from `@sittari/payload-pages/types`.
 
 ### Enable or disable the plugin
 
 ```ts
 pagesPlugin({
-  enabled: process.env.ENABLE_PAGES !== "false",
+  enabled: false,
 });
 ```
 
 When disabled, the plugin does not add the `pages` collection.
 
-### Configure flexible-page blocks
+### Compose page types
 
 ```ts
 pagesPlugin({
-  blockSlugs: ["hero", "content", "gallery"],
+  pageTypes: {
+    standardContent: createStandardContentPageType(),
+    flexible: createFlexiblePageType({
+      blockSlugs: ["hero", "content", "gallery"],
+    }),
+    blogIndex: {
+      label: "Blog Index",
+      fields: [{ name: "heading", type: "text" }],
+    },
+  },
 });
 ```
 
-These values become `blockReferences` on the `blocks` field of the default `flexible` page type.
+The object key becomes the stored value and group-field name. Its `label` is used in the page-type selector. The first entry is the default selection.
+
+The built-in factories are optional. Include either, both, or neither of them.
 
 ### Configure title localization
 
@@ -65,45 +84,42 @@ The default title is localized. Disable localization when the Payload project do
 
 ```ts
 pagesPlugin({
+  pageTypes: {
+    standardContent: createStandardContentPageType(),
+  },
   localizeTitle: false,
 });
 ```
 
-### Extend or replace page types
+### Customize a built-in page type
 
-Spread `defaultPageTypes` to retain the built-in types while adding your own:
+Factory options shallowly replace the generated page-type properties. This keeps array replacement explicit and avoids deep-merge behavior:
 
 ```ts
 pagesPlugin({
-  pageTypes: ({ defaultPageTypes }) => ({
-    ...defaultPageTypes,
-    blogIndex: {
-      label: "Blog Index",
+  pageTypes: {
+    standardContent: createStandardContentPageType({
+      label: "Article",
       fields: [
         {
-          name: "heading",
-          type: "text",
+          name: "content",
+          type: "richText",
+          localized: false,
+          editor: customEditor,
         },
       ],
-    },
-  }),
+    }),
+  },
 });
 ```
 
-Return a new object without spreading `defaultPageTypes` to replace all built-in page types:
+The flexible factory accepts `blockSlugs`, which become `blockReferences` on its `blocks` field:
 
 ```ts
-pagesPlugin({
-  pageTypes: () => ({
-    landingPage: {
-      label: "Landing Page",
-      fields: [{ name: "sections", type: "blocks", blocks: [] }],
-    },
-  }),
+createFlexiblePageType({
+  blockSlugs: ["hero", "content", "gallery"],
 });
 ```
-
-Each page type creates a group field named after its object key. The group is shown when the document's `pageType` value matches that key. The first page type is used as the default selection.
 
 ### Override the slug field
 
@@ -111,6 +127,9 @@ The callback receives the complete default row created by `createSlugField()` fr
 
 ```ts
 pagesPlugin({
+  pageTypes: {
+    standardContent: createStandardContentPageType(),
+  },
   slugField: ({ defaultSlugField }) => ({
     ...defaultSlugField,
     admin: {
@@ -129,6 +148,9 @@ The default slug row is required, localized, positioned in the sidebar, and gene
 
 ```ts
 pagesPlugin({
+  pageTypes: {
+    standardContent: createStandardContentPageType(),
+  },
   overrides: (defaultCollection) => ({
     ...defaultCollection,
     admin: {
@@ -161,9 +183,9 @@ The generated collection has:
 - A required, localized `slug` generated from `title`
 - A required `pageType` select followed by one conditional group per page type
 
-## Default page types
+## Built-in page-type factories
 
-- `standardContent` contains a localized `content` rich-text field.
-- `flexible` contains a `blocks` field whose `blockReferences` come from `blockSlugs`.
+- `createStandardContentPageType()` creates a localized `content` rich-text field.
+- `createFlexiblePageType()` creates a `blocks` field and accepts a `blockSlugs` option.
 
-Payload localization must be configured in the consuming project when using the default localized fields.
+The plugin does not add these types automatically. Payload localization must be configured in the consuming project when using the standard-content factory's localized field.

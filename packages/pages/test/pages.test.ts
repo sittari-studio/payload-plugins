@@ -1,7 +1,11 @@
 import type { Config, Field } from 'payload'
 import { describe, expect, it } from 'vitest'
 
-import { pagesPlugin } from '../src/index.js'
+import {
+  createFlexiblePageType,
+  createStandardContentPageType,
+  pagesPlugin,
+} from '../src/index.js'
 
 const getPagesCollection = (config: Config) =>
   config.collections?.find((collection) => collection.slug === 'pages')
@@ -26,7 +30,11 @@ describe('pagesPlugin', () => {
       collections: [existingCollection],
     } as unknown as Config
 
-    const outputConfig = pagesPlugin()(inputConfig)
+    const outputConfig = pagesPlugin({
+      pageTypes: {
+        standardContent: createStandardContentPageType(),
+      },
+    })(inputConfig)
 
     expect(outputConfig.collections).toHaveLength(2)
     expect(outputConfig.collections?.[0]).toBe(existingCollection)
@@ -51,10 +59,15 @@ describe('pagesPlugin', () => {
     expect(outputConfig).toBe(inputConfig)
   })
 
-  it('creates the default page types and applies block references', () => {
-    const outputConfig = pagesPlugin({ blockSlugs: ['hero', 'content'] })({
-      collections: [],
-    } as unknown as Config)
+  it('creates page types from the exported factories', () => {
+    const outputConfig = pagesPlugin({
+      pageTypes: {
+        standardContent: createStandardContentPageType(),
+        flexible: createFlexiblePageType({
+          blockSlugs: ['hero', 'content'],
+        }),
+      },
+    })({ collections: [] } as unknown as Config)
     const pages = getPagesCollection(outputConfig)
 
     const pageType = getNamedField(pages?.fields ?? [], 'pageType')
@@ -95,15 +108,15 @@ describe('pagesPlugin', () => {
     })
   })
 
-  it('allows page types to be extended', () => {
+  it('accepts custom page types alongside factory-created page types', () => {
     const outputConfig = pagesPlugin({
-      pageTypes: ({ defaultPageTypes }) => ({
-        ...defaultPageTypes,
+      pageTypes: {
+        standardContent: createStandardContentPageType(),
         blogIndex: {
           label: 'Blog Index',
           fields: [{ name: 'heading', type: 'text' }],
         },
-      }),
+      },
     })({ collections: [] } as unknown as Config)
     const pages = getPagesCollection(outputConfig)
 
@@ -118,8 +131,32 @@ describe('pagesPlugin', () => {
     })
   })
 
+  it('allows factory defaults to be replaced without merging', () => {
+    const standardContent = createStandardContentPageType({
+      label: 'Article',
+      fields: [{ name: 'body', type: 'textarea' }],
+    })
+    const flexible = createFlexiblePageType({
+      label: 'Page builder',
+      fields: [{ name: 'layout', type: 'json' }],
+      blockSlugs: ['unused-when-fields-are-replaced'],
+    })
+
+    expect(standardContent).toEqual({
+      label: 'Article',
+      fields: [{ name: 'body', type: 'textarea' }],
+    })
+    expect(flexible).toEqual({
+      label: 'Page builder',
+      fields: [{ name: 'layout', type: 'json' }],
+    })
+  })
+
   it('allows the slug field and final collection config to be overridden', () => {
     const outputConfig = pagesPlugin({
+      pageTypes: {
+        standardContent: createStandardContentPageType(),
+      },
       slugField: ({ defaultSlugField }) => ({
         ...defaultSlugField,
         admin: { position: 'sidebar' },
@@ -142,5 +179,11 @@ describe('pagesPlugin', () => {
     expect(getNamedField(pages?.fields ?? [], 'internalName')).toMatchObject({
       type: 'text',
     })
+  })
+
+  it('requires at least one page type', () => {
+    expect(() =>
+      pagesPlugin({ pageTypes: {} })({ collections: [] } as unknown as Config),
+    ).toThrow('pagesPlugin requires at least one page type')
   })
 })

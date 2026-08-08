@@ -12,7 +12,11 @@ import {
   linkField,
   LinkFieldFeature,
 } from "@sittari/payload-link-field";
-import { pagesPlugin } from "@sittari/payload-pages";
+import {
+  createFlexiblePageType,
+  createStandardContentPageType,
+  pagesPlugin,
+} from "@sittari/payload-pages";
 import { pathFieldPlugin } from "@sittari/payload-path-field";
 import { seoPlugin } from "@sittari/payload-seo";
 import { createSlugField } from "@sittari/payload-slug-field";
@@ -174,42 +178,41 @@ export default buildConfig({
   },
   plugins: [
     pagesPlugin({
-      pageTypes: ({ defaultPageTypes }) => {
-        return {
-          ...defaultPageTypes,
-          richText: {
-            label: "Rich text",
-            fields: [
-              {
-                type: "richText",
-                name: "content",
-                editor: lexicalEditor({
-                  features: ({ defaultFeatures }) => [
-                    ...defaultFeatures.filter(
-                      (feature) => feature.key !== "link",
-                    ),
-                    LinkFieldFeature({
-                      relationTo: ["pages"],
-                    }),
-                  ],
-                }),
-              },
-            ],
-          },
-          templates: {
-            label: "Templates",
-            fields: [
-              templateField({
-                name: "cta",
-                label: "CTA",
-                template: "404",
-                admin: {
-                  hideGutter: true,
-                },
+      pageTypes: {
+        standardContent: createStandardContentPageType(),
+        flexible: createFlexiblePageType(),
+        richText: {
+          label: "Rich text",
+          fields: [
+            {
+              type: "richText",
+              name: "content",
+              editor: lexicalEditor({
+                features: ({ defaultFeatures }) => [
+                  ...defaultFeatures.filter(
+                    (feature) => feature.key !== "link",
+                  ),
+                  LinkFieldFeature({
+                    relationTo: ["pages"],
+                  }),
+                ],
               }),
-            ],
-          },
-        };
+            },
+          ],
+        },
+        templates: {
+          label: "Templates",
+          fields: [
+            templateField({
+              name: "cta",
+              label: "CTA",
+              template: "404",
+              admin: {
+                hideGutter: true,
+              },
+            }),
+          ],
+        },
       },
     }),
     nestedDocsPlugin({

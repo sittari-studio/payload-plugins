@@ -4,36 +4,6 @@ import { createSlugField } from "@sittari/payload-slug-field";
 import { localizedText } from "./translations/index.js";
 import type { PagesPluginConfig, PageTypes } from "./types.js";
 
-const createDefaultPageTypes = (blockSlugs: string[]): PageTypes => ({
-  standardContent: {
-    label: localizedText("standardContent"),
-    fields: [
-      {
-        name: "content",
-        label: localizedText("content"),
-        type: "richText",
-        localized: true,
-      },
-    ],
-  },
-  flexible: {
-    label: localizedText("flexible"),
-    fields: [
-      {
-        name: "blocks",
-        type: "blocks",
-        label: localizedText("blocks"),
-        labels: {
-          singular: localizedText("block"),
-          plural: localizedText("blocks"),
-        },
-        blockReferences: blockSlugs,
-        blocks: [],
-      },
-    ],
-  },
-});
-
 const createDefaultSlugField = () =>
   createSlugField({
     instruction: localizedText("homeSlugInstruction"),
@@ -55,11 +25,11 @@ const createPageTypeFields = (pageTypes: PageTypes): Field[] =>
 const createPagesCollection = (
   pluginConfig: PagesPluginConfig,
 ): CollectionConfig => {
-  const defaultPageTypes = createDefaultPageTypes(
-    pluginConfig.blockSlugs ?? [],
-  );
-  const pageTypes =
-    pluginConfig.pageTypes?.({ defaultPageTypes }) ?? defaultPageTypes;
+  const pageTypes = pluginConfig.pageTypes;
+
+  if (!pageTypes || Object.keys(pageTypes).length === 0) {
+    throw new Error("pagesPlugin requires at least one page type");
+  }
 
   const defaultSlugField = createDefaultSlugField();
   const slugField =
@@ -117,7 +87,7 @@ const createPagesCollection = (
 };
 
 export const pagesPlugin =
-  (pluginConfig: PagesPluginConfig = {}) =>
+  (pluginConfig: PagesPluginConfig) =>
   (incomingConfig: Config): Config => {
     if (pluginConfig.enabled === false) {
       return incomingConfig;
