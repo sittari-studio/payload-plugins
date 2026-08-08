@@ -6,7 +6,10 @@ import {
   getLocaleCodes,
   validateFinalConfig,
 } from './config.js'
-import { createPathBeforeChangeHook } from './hook.js'
+import {
+  createPathBeforeChangeHook,
+  markPathUnresolvedOperation,
+} from './hook.js'
 import { rebuildDocumentPathsWithPayload } from './rebuild.js'
 import { pathLabel } from './translations.js'
 import {
@@ -151,6 +154,10 @@ export const pathFieldPlugin = (
         fields: [...collection.fields, createPathField(localeCodes.length > 0)],
         hooks: {
           ...collection.hooks,
+          beforeOperation: [
+            ...(collection.hooks?.beforeOperation ?? []),
+            markPathUnresolvedOperation,
+          ],
           beforeChange: [
             ...(collection.hooks?.beforeChange ?? []),
             createPathBeforeChangeHook({

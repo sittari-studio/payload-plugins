@@ -10,7 +10,10 @@ import {
   pathFieldPlugin,
   validateDocumentPath,
 } from '../src/index.js'
-import { PATH_REBUILD_CONTEXT_KEY } from '../src/types.js'
+import {
+  PATH_ALLOW_UNRESOLVED_CONTEXT_KEY,
+  PATH_REBUILD_CONTEXT_KEY,
+} from '../src/types.js'
 
 const baseConfig = (): Config => ({
   collections: [
@@ -207,7 +210,7 @@ describe('pathFieldPlugin', () => {
     expect(resolver).toHaveBeenCalledTimes(2)
   })
 
-  it('allows initial document creation when no path can be resolved yet', async () => {
+  it('allows initial draft creation when no path can be resolved yet', async () => {
     const output = pathFieldPlugin({
       collections: { pages: true },
       resolveDocumentUrl: () => null,
@@ -217,7 +220,7 @@ describe('pathFieldPlugin', () => {
     await expect(
       hook?.({
         collection: {} as never,
-        context: {},
+        context: { [PATH_ALLOW_UNRESOLVED_CONTEXT_KEY]: true },
         data: { slug: 'not-ready' },
         operation: 'create',
         req: { locale: 'en', payload: {} } as never,
@@ -242,6 +245,64 @@ describe('pathFieldPlugin', () => {
         req: { locale: 'en', payload: {} } as never,
       }),
     ).resolves.toMatchObject({ path: null })
+  })
+
+  it.each([
+    ['autosave', { autosave: true }],
+    ['draft save', { draft: true }],
+  ])('allows unresolved paths during %s updates', async (_label, operationArgs) => {
+    const output = pathFieldPlugin({
+      collections: { pages: true },
+      resolveDocumentUrl: () => null,
+    })(baseConfig()) as Config
+    const beforeOperation = output.collections?.[0]?.hooks?.beforeOperation?.at(-1)
+    const beforeChange = output.collections?.[0]?.hooks?.beforeChange?.at(-1)
+    const context: Record<string, unknown> = {}
+    const req = { context, locale: 'en', payload: {} } as never
+
+    await beforeOperation?.({
+      args: { ...operationArgs, req } as never,
+      collection: {} as never,
+      context: {},
+      operation: 'update',
+      req,
+    })
+
+    expect(context).toMatchObject({ [PATH_ALLOW_UNRESOLVED_CONTEXT_KEY]: true })
+    await expect(
+      beforeChange?.({
+        collection: {} as never,
+        context,
+        data: {},
+        operation: 'update',
+        originalDoc: { id: 1, slug: 'not-ready' },
+        req,
+      }),
+    ).resolves.toMatchObject({ path: null })
+  })
+
+  it('does not allow an unresolved path when a draft is being published', async () => {
+    const output = pathFieldPlugin({
+      collections: { pages: true },
+      resolveDocumentUrl: () => null,
+    })(baseConfig()) as Config
+    const beforeOperation = output.collections?.[0]?.hooks?.beforeOperation?.at(-1)
+    const context: Record<string, unknown> = {}
+    const req = { context, locale: 'en', payload: {} } as never
+
+    await beforeOperation?.({
+      args: {
+        data: { _status: 'published' },
+        draft: true,
+        req,
+      } as never,
+      collection: {} as never,
+      context,
+      operation: 'update',
+      req,
+    })
+
+    expect(context[PATH_ALLOW_UNRESOLVED_CONTEXT_KEY]).toBeUndefined()
   })
 
   it.each([

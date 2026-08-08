@@ -1,6 +1,7 @@
 import {
   ValidationError,
   type CollectionBeforeChangeHook,
+  type CollectionBeforeOperationHook,
   type PayloadRequest,
 } from 'payload'
 
@@ -9,7 +10,10 @@ import type {
   PathCollectionOptions,
   ResolveDocumentUrl,
 } from './types.js'
-import { PATH_REBUILD_CONTEXT_KEY } from './types.js'
+import {
+  PATH_ALLOW_UNRESOLVED_CONTEXT_KEY,
+  PATH_REBUILD_CONTEXT_KEY,
+} from './types.js'
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -94,6 +98,28 @@ const populateParent = async ({
   return { ...doc, [options.parentField]: parent }
 }
 
+export const markPathUnresolvedOperation: CollectionBeforeOperationHook = ({
+  args,
+  operation,
+}) => {
+  const isPublishing =
+    'data' in args &&
+    isRecord(args.data) &&
+    (args.data as Record<string, unknown>)._status === 'published'
+  const allowsUnresolved =
+    (operation === 'create' || operation === 'update') &&
+    !isPublishing &&
+    (
+      ('autosave' in args && args.autosave === true) ||
+      ('draft' in args && args.draft === true)
+    )
+
+  if (allowsUnresolved) {
+    args.req.context[PATH_ALLOW_UNRESOLVED_CONTEXT_KEY] = true
+  }
+  return args
+}
+
 const resolveForLocale = async ({
   collection,
   data,
@@ -161,7 +187,8 @@ export const createPathBeforeChangeHook = ({
   return async ({ context, data, operation, originalDoc, req }) => {
     const requestLocale = (req as PayloadRequest & { locale?: string }).locale
     const allowUnresolved =
-      operation === 'create' || context[PATH_REBUILD_CONTEXT_KEY] === true
+      context[PATH_ALLOW_UNRESOLVED_CONTEXT_KEY] === true ||
+      context[PATH_REBUILD_CONTEXT_KEY] === true
 
     if (requestLocale === 'all') {
       const paths: Record<string, null | string> = {}

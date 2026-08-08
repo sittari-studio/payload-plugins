@@ -15,9 +15,10 @@ pathFieldPlugin({
 })
 ```
 
-`resolveDocumentUrl` may return `null` while a new document does not contain
-enough data to build its path. The initial document is created without a path;
-later saves are rejected with a `path` validation error until the resolver
+`resolveDocumentUrl` may return `null` while a draft does not contain enough
+data to build its path. Initial draft creation, autosaves, and explicit draft
+saves continue while the path is unresolved, but publishing or saving a
+non-draft document is rejected with a `path` validation error until the resolver
 returns a valid, non-empty path. Returning an empty string is always rejected.
 
 When `parentField` is used, the plugin which creates that relationship (such as

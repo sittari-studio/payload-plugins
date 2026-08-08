@@ -34,6 +34,7 @@ export type PathFieldRuntimeConfig = {
 }
 
 export const PATH_FIELD_RUNTIME_CONFIG_KEY = '@sittari/payload-path-field/config'
+export const PATH_ALLOW_UNRESOLVED_CONTEXT_KEY = 'sittariPathFieldAllowUnresolved'
 export const PATH_REBUILD_CONTEXT_KEY = 'sittariPathFieldRebuild'
 
 export type PathLookupQueryOptions = {

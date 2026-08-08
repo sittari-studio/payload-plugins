@@ -1,6 +1,6 @@
 {
   "name": "@sittari/payload-pages",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "PayloadCMS pages plugin.",
   "type": "module",
   "license": "MIT",

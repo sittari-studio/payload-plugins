@@ -34,6 +34,9 @@ beforeAll(async () => {
       {
         slug: 'pages',
         access: { read: () => true },
+        versions: {
+          drafts: { autosave: true },
+        },
         fields: [
           {
             name: 'slug',
@@ -329,9 +332,29 @@ describe('real Payload path field behavior', () => {
     const created = await payload.create({
       collection: 'pages',
       data: { slug: 'unresolved' },
+      draft: true,
       locale: 'en',
     }) as unknown as { id: number | string; path?: null | string }
     expect(created.path).toBeNull()
+
+    const autosaved = await payload.update({
+      autosave: true,
+      collection: 'pages',
+      data: { slug: 'unresolved' },
+      draft: true,
+      id: created.id,
+      locale: 'en',
+    }) as unknown as { path?: null | string }
+    expect(autosaved.path).toBeNull()
+
+    const draftSaved = await payload.update({
+      collection: 'pages',
+      data: { slug: 'unresolved' },
+      draft: true,
+      id: created.id,
+      locale: 'en',
+    }) as unknown as { path?: null | string }
+    expect(draftSaved.path).toBeNull()
 
     const update = payload.update({
       collection: 'pages',
