@@ -74,7 +74,9 @@ const editor = lexicalEditor({
 ```
 
 The feature accepts `defaultType`, `relationTo`, `showLabel`, and `showNewTab`.
-When `relationTo` is omitted, all collections are considered and collections the
-current admin user cannot read are removed from the relationship selector.
+When `relationTo` is omitted, all non-internal collections are considered and
+collections the current admin user cannot read are removed from the relationship
+selector. Collections whose slugs start with `payload-` are always discarded,
+including when explicitly provided.
 Existing Payload-native custom and internal link nodes are normalized lazily when read or
 opened in the editor; their next save writes only the plugin-owned field shape.

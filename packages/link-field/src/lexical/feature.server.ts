@@ -14,7 +14,7 @@ import {
 } from 'payload'
 
 import { createResolveUrlHook } from '../hooks/resolveUrl.js'
-import { createLinkFields } from '../linkFields.js'
+import { createLinkFields, discardPayloadCollections } from '../linkFields.js'
 import {
   LINK_FIELD_FEATURE_CLIENT,
   LINK_FIELD_RUNTIME_CONFIG_KEY,
@@ -217,7 +217,9 @@ export const LinkFieldFeature = createServerFeature<
   key: 'link',
   feature: async ({ config, isRoot, parentIsLocalized, props = {} }) => {
     const runtime = getRuntime(config)
-    const relationTo = props.relationTo ?? config.collections.map(({ slug }) => slug)
+    const relationTo = discardPayloadCollections(
+      props.relationTo ?? config.collections.map(({ slug }) => slug),
+    )
     const rawFields = attachUrlResolver(
       createLinkFields({
         defaultType: props.defaultType,

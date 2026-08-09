@@ -26,6 +26,20 @@ const editor = lexicalEditor({
   ],
 })
 
+const filteredRelationEditor = lexicalEditor({
+  features: ({ defaultFeatures }) => [
+    ...defaultFeatures.filter((feature) => feature.key !== 'link'),
+    LinkFieldFeature({ relationTo: ['pages', 'payload-locked-documents'] }),
+  ],
+})
+
+const defaultRelationEditor = lexicalEditor({
+  features: ({ defaultFeatures }) => [
+    ...defaultFeatures.filter((feature) => feature.key !== 'link'),
+    LinkFieldFeature(),
+  ],
+})
+
 const richTextValue = (link: Record<string, unknown>) => ({
   root: {
     children: [
@@ -117,6 +131,16 @@ beforeAll(async () => {
             name: 'content',
             type: 'richText',
             editor,
+          },
+          {
+            name: 'filteredRelationContent',
+            type: 'richText',
+            editor: filteredRelationEditor,
+          },
+          {
+            name: 'defaultRelationContent',
+            type: 'richText',
+            editor: defaultRelationEditor,
           },
           {
             name: 'referencedLayout',
@@ -281,6 +305,35 @@ describe('real Payload Lexical link feature', () => {
     expect(content.editor.editorConfig.features.converters.html.some(
       (converter: any) => converter.nodeTypes.includes('link'),
     )).toBe(true)
+
+    const filteredContent = payload.config.collections[0].fields.find(
+      (field) => 'name' in field && field.name === 'filteredRelationContent',
+    ) as any
+    const filteredFeature = filteredContent.editor.editorConfig.resolvedFeatureMap.get('link')
+    const filteredLinkNode = filteredFeature.nodes.find(
+      (entry: any) => entry.node.getType() === 'link',
+    )
+    const filteredReference = filteredLinkNode.getSubFields().find(
+      (field: any) => field.name === 'reference',
+    )
+
+    expect(filteredReference.relationTo).toEqual(['pages'])
+
+    const defaultContent = payload.config.collections[0].fields.find(
+      (field) => 'name' in field && field.name === 'defaultRelationContent',
+    ) as any
+    const defaultFeature = defaultContent.editor.editorConfig.resolvedFeatureMap.get('link')
+    const defaultLinkNode = defaultFeature.nodes.find(
+      (entry: any) => entry.node.getType() === 'link',
+    )
+    const defaultReference = defaultLinkNode.getSubFields().find(
+      (field: any) => field.name === 'reference',
+    )
+
+    expect(defaultReference.relationTo).toContain('pages')
+    expect(defaultReference.relationTo).not.toContain('payload-locked-documents')
+    expect(defaultReference.relationTo.every((slug: string) => !slug.startsWith('payload-')))
+      .toBe(true)
   })
 
   it('normalizes native nodes, synchronizes labels, and resolves custom URLs', async () => {

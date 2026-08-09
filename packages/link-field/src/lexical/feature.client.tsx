@@ -22,7 +22,7 @@ import {
   useEditorConfigContext,
   useLexicalDrawer,
 } from '@payloadcms/richtext-lexical/client'
-import { formatDrawerSlug, useEditDepth } from '@payloadcms/ui'
+import { formatDrawerSlug, useEditDepth, useModal } from '@payloadcms/ui'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -155,6 +155,8 @@ const LinkFieldEditor = ({
     slug: `lexical-link-field-${uuid}`,
   })
   const { toggleDrawer } = useLexicalDrawer(drawerSlug)
+  const { modalState } = useModal()
+  const isDrawerOpen = Boolean(modalState?.[drawerSlug]?.isOpen)
   const [state, setState] = useState<DrawerState>()
   const [activeLink, setActiveLink] = useState<LinkFieldNode | null>(null)
   const editorRef = useRef<HTMLDivElement>(null)
@@ -162,13 +164,13 @@ const LinkFieldEditor = ({
   const readSelection = useCallback(() => {
     const link = getSelectedLink()
     setActiveLink(link)
-    if (!link) return
+    if (!link || isDrawerOpen) return
     setState({
       data: { ...link.getFields(), label: link.getTextContent() },
       selectedNodes: link.getChildren(),
       text: link.getTextContent(),
     })
-  }, [])
+  }, [isDrawerOpen])
 
   useEffect(
     () =>

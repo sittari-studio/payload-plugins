@@ -17,6 +17,18 @@ export const normalizeRelationTo = (
   relationTo: CollectionSlug | CollectionSlug[] | undefined,
 ): CollectionSlug | CollectionSlug[] => relationTo ?? []
 
+const isPayloadCollection = (slug: CollectionSlug): boolean => slug.startsWith('payload-')
+
+export const discardPayloadCollections = (
+  relationTo: CollectionSlug | CollectionSlug[],
+): CollectionSlug | CollectionSlug[] => {
+  if (typeof relationTo === 'string') {
+    return isPayloadCollection(relationTo) ? [] : relationTo
+  }
+
+  return relationTo.filter((slug) => !isPayloadCollection(slug))
+}
+
 const isActiveType = (type: LinkFieldType) => (_: unknown, siblingData?: { type?: string }) =>
   (siblingData?.type ?? 'custom') === type
 

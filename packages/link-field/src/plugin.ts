@@ -10,6 +10,7 @@ import type {
 } from 'payload'
 
 import { createResolveUrlHook } from './hooks/resolveUrl.js'
+import { discardPayloadCollections } from './linkFields.js'
 import {
   LINK_FIELD_MARKER,
   LINK_FIELD_RUNTIME_CONFIG_KEY,
@@ -170,7 +171,9 @@ const transformLinkField = ({
       return {
         ...childField,
         filterOptions: withSelfReferenceFilter(childField.filterOptions, ownerCollectionSlug),
-        relationTo: hasEmptyRelationTo(childField) ? allCollectionSlugs : childField.relationTo,
+        relationTo: discardPayloadCollections(
+          hasEmptyRelationTo(childField) ? allCollectionSlugs : childField.relationTo,
+        ),
       } as RelationshipField
     }
 

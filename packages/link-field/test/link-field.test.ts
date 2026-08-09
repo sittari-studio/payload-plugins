@@ -157,7 +157,7 @@ describe('linkField', () => {
 })
 
 describe('linkFieldPlugin', () => {
-  it('resolves empty relationTo to all collection slugs and attaches the url hook', () => {
+  it('resolves empty relationTo to non-Payload collection slugs and attaches the url hook', () => {
     const field = linkField({ name: 'link' })
     const outputConfig = applyPlugin({
       collections: [
@@ -167,6 +167,10 @@ describe('linkFieldPlugin', () => {
         },
         {
           slug: 'posts',
+          fields: [],
+        },
+        {
+          slug: 'payload-jobs',
           fields: [],
         },
       ],
@@ -314,7 +318,7 @@ describe('linkFieldPlugin', () => {
     const existingHook = vi.fn()
     const field = linkField({
       name: 'link',
-      relationTo: ['pages'],
+      relationTo: ['pages', 'payload-jobs'],
     })
     const url = getChildField<TextField>(field, 'url')
     url.hooks = {
@@ -335,6 +339,10 @@ describe('linkFieldPlugin', () => {
           slug: 'posts',
           fields: [],
         },
+        {
+          slug: 'payload-jobs',
+          fields: [],
+        },
       ],
     } as Config)
     const link = outputConfig.collections?.[0]?.fields[0] as GroupField
@@ -343,6 +351,24 @@ describe('linkFieldPlugin', () => {
     expect(getChildField<RelationshipField>(link, 'reference').relationTo).toEqual(['pages'])
     expect(getChildField<TextField>(link, 'url').hooks?.afterRead?.[0]).toBe(existingHook)
     expect(getChildField<TextField>(link, 'url').hooks?.afterRead).toHaveLength(2)
+  })
+
+  it('discards a user-provided Payload collection relation', () => {
+    const outputConfig = applyPlugin({
+      collections: [
+        {
+          slug: 'pages',
+          fields: [linkField({ name: 'link', relationTo: 'payload-jobs' })],
+        },
+        {
+          slug: 'payload-jobs',
+          fields: [],
+        },
+      ],
+    } as Config)
+    const link = outputConfig.collections?.[0]?.fields[0] as GroupField
+
+    expect(getChildField<RelationshipField>(link, 'reference').relationTo).toEqual([])
   })
 
   it('walks collections, globals, arrays, blocks, groups, and tabs', () => {
