@@ -1,6 +1,6 @@
 {
   "name": "@sittari/payload-link-field",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "PayloadCMS link-field plugin.",
   "type": "module",
   "license": "MIT",

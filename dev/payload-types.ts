@@ -264,7 +264,7 @@ export interface Page {
    */
   generateSlug?: boolean | null;
   slug: string;
-  pageType: 'standardContent' | 'flexible' | 'richText' | 'templates';
+  pageType: 'standardContent' | 'flexible' | 'templates';
   standardContent?: {
     content?: {
       root: {
@@ -284,23 +284,6 @@ export interface Page {
   };
   flexible?: {
     blocks?: unknown[] | null;
-  };
-  richText?: {
-    content?: {
-      root: {
-        type: string;
-        children: {
-          type: any;
-          version: number;
-          [k: string]: unknown;
-        }[];
-        direction: ('ltr' | 'rtl') | null;
-        format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-        indent: number;
-        version: number;
-      };
-      [k: string]: unknown;
-    } | null;
   };
   templates?: {
     cta?: {
@@ -712,11 +695,6 @@ export interface PagesSelect<T extends boolean = true> {
     | T
     | {
         blocks?: T | {};
-      };
-  richText?:
-    | T
-    | {
-        content?: T;
       };
   templates?:
     | T

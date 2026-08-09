@@ -1,6 +1,7 @@
 'use client'
 
 import { useLexicalComposerContext } from '@payloadcms/richtext-lexical/lexical/react/LexicalComposerContext'
+import { useLexicalEditable } from '@payloadcms/richtext-lexical/lexical/react/useLexicalEditable'
 import { $findMatchingParent, mergeRegister } from '@payloadcms/richtext-lexical/lexical/utils'
 import {
   $createTextNode,
@@ -8,7 +9,9 @@ import {
   $isElementNode,
   $isRangeSelection,
   $isTextNode,
+  COMMAND_PRIORITY_HIGH,
   COMMAND_PRIORITY_LOW,
+  KEY_ESCAPE_COMMAND,
   PASTE_COMMAND,
   SELECTION_CHANGE_COMMAND,
   TextNode,
@@ -18,16 +21,29 @@ import {
   createClientFeature,
   FieldsDrawer,
   getSelectedNode,
+  setFloatingElemPositionForLinkEditor,
   toolbarFeatureButtonsGroupWithItems,
   useEditorConfigContext,
   useLexicalDrawer,
 } from '@payloadcms/richtext-lexical/client'
-import { formatDrawerSlug, useEditDepth, useModal } from '@payloadcms/ui'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  CloseMenuIcon,
+  EditIcon,
+  ExternalLinkIcon,
+  formatDrawerSlug,
+  useConfig,
+  useEditDepth,
+  useLocale,
+  useModal,
+  useTranslation,
+} from '@payloadcms/ui'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
 import type { LinkFieldFeatureConfig, LinkFieldNodeFields } from '../types.js'
-import { LinkActionButtons } from '../admin/SharedLinkControls.js'
+import { translate } from '../translations/index.js'
+import { getReferenceDocumentUrl } from '../utils/getReferenceDocumentUrl.js'
+import { getReferenceIdentity } from '../utils/getReferenceIdentity.js'
 import { isValidUrl } from '../utils/validateUrl.js'
 import { LinkFieldMarkdownTransformer } from './markdown.js'
 import {
@@ -44,7 +60,16 @@ import {
 
 type ClientProps = Required<
   Pick<LinkFieldFeatureConfig, 'defaultType' | 'showLabel' | 'showNewTab'>
->
+> & Pick<LinkFieldFeatureConfig, 'relationTo'>
+
+const getTranslatedLabel = (label: unknown, language: string): string | undefined => {
+  if (typeof label === 'string') return label
+  if (!label || typeof label !== 'object') return undefined
+
+  const translations = label as Record<string, unknown>
+  const translated = translations[language] ?? translations.en ?? Object.values(translations)[0]
+  return typeof translated === 'string' ? translated : undefined
+}
 
 const LinkIcon = () => (
   <svg aria-hidden="true" fill="none" height="18" viewBox="0 0 24 24" width="18">
@@ -148,7 +173,11 @@ const LinkFieldEditor = ({
   clientProps: ClientProps
 }) => {
   const [editor] = useLexicalComposerContext()
+  const isEditable = useLexicalEditable()
   const { fieldProps: { schemaPath }, uuid } = useEditorConfigContext()
+  const { config, getEntityConfig } = useConfig()
+  const locale = useLocale()
+  const { i18n, t } = useTranslation<object, 'lexical:link:loadingWithEllipsis'>()
   const editDepth = useEditDepth()
   const drawerSlug = formatDrawerSlug({
     depth: editDepth,
@@ -159,30 +188,77 @@ const LinkFieldEditor = ({
   const isDrawerOpen = Boolean(modalState?.[drawerSlug]?.isOpen)
   const [state, setState] = useState<DrawerState>()
   const [activeLink, setActiveLink] = useState<LinkFieldNode | null>(null)
+  const [linkLabel, setLinkLabel] = useState<null | string>(null)
+  const [linkUrl, setLinkUrl] = useState<null | string>(null)
   const editorRef = useRef<HTMLDivElement>(null)
+  const selectedNodeRectRef = useRef<DOMRect | null>(null)
 
-  const readSelection = useCallback(() => {
-    const link = getSelectedLink()
-    setActiveLink(link)
-    if (!link || isDrawerOpen) return
-    setState({
-      data: { ...link.getFields(), label: link.getTextContent() },
-      selectedNodes: link.getChildren(),
-      text: link.getTextContent(),
+  const setNotLink = useCallback(() => {
+    setActiveLink(null)
+    selectedNodeRectRef.current = null
+    if (editorRef.current) {
+      editorRef.current.style.opacity = '0'
+      editorRef.current.style.transform = 'translate(-10000px, -10000px)'
+    }
+  }, [])
+
+  const updateLinkEditor = useCallback(() => {
+    const selection = $getSelection()
+
+    if (!$isRangeSelection(selection)) {
+      setNotLink()
+      return
+    }
+
+    const selectedNode = getSelectedNode(selection)
+    const link = $findMatchingParent(selectedNode, $isLinkFieldNode)
+    const selectionLeavesLink = selection.getNodes().some((node) => {
+      const nodeLink = $findMatchingParent(node, $isLinkFieldNode)
+      return (link && !link.is(nodeLink)) || (nodeLink && !nodeLink.is(link))
     })
-  }, [isDrawerOpen])
+
+    if (!link || selectionLeavesLink) {
+      setNotLink()
+      return
+    }
+
+    const text = link.getTextContent()
+    setActiveLink(link)
+    if (!isDrawerOpen) {
+      setState({
+        data: { ...link.getFields(), label: text },
+        selectedNodes: selection.getNodes(),
+        text,
+      })
+    }
+
+    const selectedNodeRect = editor.getElementByKey(selectedNode.getKey())?.getBoundingClientRect()
+    if (selectedNodeRect) {
+      selectedNodeRect.y += 40
+      selectedNodeRectRef.current = selectedNodeRect
+    }
+  }, [editor, isDrawerOpen, setNotLink])
 
   useEffect(
     () =>
       mergeRegister(
-        editor.registerUpdateListener(({ editorState }) => editorState.read(readSelection)),
+        editor.registerUpdateListener(({ editorState }) => editorState.read(updateLinkEditor)),
         editor.registerCommand(
           SELECTION_CHANGE_COMMAND,
           () => {
-            readSelection()
+            updateLinkEditor()
             return false
           },
           COMMAND_PRIORITY_LOW,
+        ),
+        editor.registerCommand(
+          KEY_ESCAPE_COMMAND,
+          () => {
+            if (!activeLink) return false
+            setNotLink()
+            return true
+          },
+          COMMAND_PRIORITY_HIGH,
         ),
         editor.registerCommand(
           OPEN_LINK_FIELD_DRAWER_COMMAND,
@@ -204,25 +280,176 @@ const LinkFieldEditor = ({
           COMMAND_PRIORITY_LOW,
         ),
       ),
-    [clientProps.showLabel, editor, readSelection, toggleDrawer],
+    [activeLink, clientProps.showLabel, editor, setNotLink, toggleDrawer, updateLinkEditor],
   )
 
-  const displayUrl = activeLink
-    ? state?.data.url ?? state?.data.customUrl
-    : undefined
+  useLayoutEffect(() => {
+    if (!activeLink || !editorRef.current || !selectedNodeRectRef.current) return
+    setFloatingElemPositionForLinkEditor(
+      selectedNodeRectRef.current,
+      editorRef.current,
+      anchorElem,
+    )
+  }, [activeLink, anchorElem, state?.text])
+
+  useEffect(() => {
+    const scrollerElement = anchorElem.parentElement
+    const update = () => editor.getEditorState().read(updateLinkEditor)
+
+    window.addEventListener('resize', update)
+    scrollerElement?.addEventListener('scroll', update)
+
+    return () => {
+      window.removeEventListener('resize', update)
+      scrollerElement?.removeEventListener('scroll', update)
+    }
+  }, [anchorElem.parentElement, editor, updateLinkEditor])
+
+  useEffect(() => {
+    editor.getEditorState().read(updateLinkEditor)
+  }, [editor, updateLinkEditor])
+
+  useEffect(() => {
+    const fields = state?.data
+    if (!activeLink || !fields) {
+      setLinkLabel(null)
+      setLinkUrl(null)
+      return
+    }
+
+    if (fields.type === 'custom') {
+      setLinkLabel(null)
+      setLinkUrl(fields.customUrl ?? fields.url ?? null)
+      return
+    }
+
+    const identity = getReferenceIdentity({
+      reference: fields.reference,
+      relationTo: clientProps.relationTo,
+    })
+    if (!identity) {
+      setLinkLabel(fields.label ?? null)
+      setLinkUrl(fields.url ?? null)
+      return
+    }
+
+    const collection = getEntityConfig({ collectionSlug: identity.collectionSlug })
+    if (!collection) {
+      setLinkLabel(fields.label ?? null)
+      setLinkUrl(fields.url ?? null)
+      return
+    }
+
+    const collectionLabel =
+      getTranslatedLabel(collection.labels.singular, i18n.language) ?? identity.collectionSlug
+    const useAsTitle = collection.admin?.useAsTitle ?? 'id'
+    const formatLabel = (title: unknown): string =>
+      t('fields:linkedTo', {
+        label: `${collectionLabel} - ${String(title)}`,
+      }).replace(/<[^>]*>?/g, '')
+    const documentTitle = identity.document?.[useAsTitle]
+
+    setLinkUrl(
+      `${config.routes.admin === '/' ? '' : config.routes.admin}/collections/${identity.collectionSlug}/${identity.documentId}`,
+    )
+
+    if (documentTitle !== undefined && documentTitle !== null && documentTitle !== '') {
+      setLinkLabel(formatLabel(documentTitle))
+      return
+    }
+
+    setLinkLabel(
+      t('fields:linkedTo', {
+        label: `${collectionLabel} - ${t('lexical:link:loadingWithEllipsis')}`,
+      }).replace(/<[^>]*>?/g, ''),
+    )
+
+    const abortController = new AbortController()
+    void fetch(
+      `${config.serverURL}${getReferenceDocumentUrl({
+        apiRoute: config.routes.api,
+        collectionSlug: identity.collectionSlug,
+        documentId: identity.documentId,
+        locale: locale?.code,
+      })}`,
+      {
+        credentials: 'same-origin',
+        headers: { 'Accept-Language': i18n.language },
+        signal: abortController.signal,
+      },
+    )
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`)
+        return response.json() as Promise<Record<string, unknown>>
+      })
+      .then((document) => {
+        setLinkLabel(formatLabel(document[useAsTitle]))
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
+        setLinkLabel(
+          formatLabel(`${t('general:untitled')} - ID: ${identity.documentId}`),
+        )
+      })
+
+    return () => abortController.abort()
+  }, [
+    activeLink,
+    clientProps.relationTo,
+    config.routes.admin,
+    config.routes.api,
+    config.serverURL,
+    getEntityConfig,
+    i18n.language,
+    locale?.code,
+    state?.data,
+    t,
+  ])
 
   return createPortal(
     <>
       {activeLink ? (
         <div className="link-editor" ref={editorRef}>
           <div className="link-input">
-            <span>{displayUrl || state?.text}</span>
-            <LinkActionButtons
-              editLabel="Edit link"
-              onEdit={toggleDrawer}
-              onRemove={() => editor.dispatchCommand(TOGGLE_LINK_FIELD_COMMAND, null)}
-              removeLabel="Remove link"
-            />
+            {linkUrl ? (
+              <a href={linkUrl} rel="noopener noreferrer" target="_blank">
+                {state?.data.newTab ? <ExternalLinkIcon /> : null}
+                {linkLabel || linkUrl}
+              </a>
+            ) : (
+              <span className="link-input__label-pure">
+                {translate('noUrlSet', i18n.language)}
+              </span>
+            )}
+            {isEditable ? (
+              <>
+                <button
+                  aria-label="Edit link"
+                  className="link-edit"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    toggleDrawer()
+                  }}
+                  onMouseDown={(event) => event.preventDefault()}
+                  tabIndex={0}
+                  type="button"
+                >
+                  <EditIcon />
+                </button>
+                {!$isLinkFieldAutoLinkNode(activeLink) ? (
+                  <button
+                    aria-label="Remove link"
+                    className="link-trash"
+                    onClick={() => editor.dispatchCommand(TOGGLE_LINK_FIELD_COMMAND, null)}
+                    onMouseDown={(event) => event.preventDefault()}
+                    tabIndex={0}
+                    type="button"
+                  >
+                    <CloseMenuIcon />
+                  </button>
+                ) : null}
+              </>
+            ) : null}
           </div>
         </div>
       ) : null}
@@ -230,7 +457,7 @@ const LinkFieldEditor = ({
         className="lexical-link-edit-drawer"
         data={state?.data as never}
         drawerSlug={drawerSlug}
-        drawerTitle="Edit link"
+        drawerTitle={t('fields:editLink')}
         featureKey="link"
         handleDrawerSubmit={(_fields, data) => {
           const currentText = state?.text ?? ''

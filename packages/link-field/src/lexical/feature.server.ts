@@ -30,7 +30,7 @@ import { normalizeSerializedLinkNode } from './normalize.js'
 
 type LinkFieldFeatureClientProps = Required<
   Pick<LinkFieldFeatureConfig, 'defaultType' | 'showLabel' | 'showNewTab'>
->
+> & Pick<LinkFieldFeatureConfig, 'relationTo'>
 
 const isNamedField = (field: Field, name: string): boolean =>
   'name' in field && field.name === name
@@ -240,6 +240,7 @@ export const LinkFieldFeature = createServerFeature<
 
     const clientProps: LinkFieldFeatureClientProps = {
       defaultType: props.defaultType ?? 'custom',
+      relationTo,
       showLabel: props.showLabel ?? true,
       showNewTab: props.showNewTab ?? true,
     }

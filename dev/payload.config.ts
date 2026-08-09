@@ -155,7 +155,12 @@ export default buildConfig({
       ru,
     },
   },
-  editor: lexicalEditor(),
+  editor: lexicalEditor({
+    features: ({ defaultFeatures }) => [
+      ...defaultFeatures.filter((x) => x.key !== "link"),
+      LinkFieldFeature(),
+    ],
+  }),
   email: testEmailAdapter,
   globals: [
     {
@@ -179,27 +184,8 @@ export default buildConfig({
   plugins: [
     pagesPlugin({
       pageTypes: {
-        standardContent: createStandardContentPageType(),
+        standardContent: createStandardContentPageType({}),
         flexible: createFlexiblePageType(),
-        richText: {
-          label: "Rich text",
-          fields: [
-            {
-              type: "richText",
-              name: "content",
-              editor: lexicalEditor({
-                features: ({ defaultFeatures }) => [
-                  ...defaultFeatures.filter(
-                    (feature) => feature.key !== "link",
-                  ),
-                  LinkFieldFeature({
-                    relationTo: ["pages"],
-                  }),
-                ],
-              }),
-            },
-          ],
-        },
         templates: {
           label: "Templates",
           fields: [

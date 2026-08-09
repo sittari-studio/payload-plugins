@@ -1,5 +1,11 @@
 # @sittari/payload-link-field
 
+## 0.2.2
+
+### Patch Changes
+
+- 646a46b: fix(link-field): filter internal relations and preserve drawer labels
+
 ## 0.2.1
 
 ### Patch Changes
