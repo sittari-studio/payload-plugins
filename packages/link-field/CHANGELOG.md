@@ -1,5 +1,11 @@
 # @sittari/payload-link-field
 
+## 0.2.3
+
+### Patch Changes
+
+- fix(link-field): align Lexical floating link editor with Payload
+
 ## 0.2.2
 
 ### Patch Changes
