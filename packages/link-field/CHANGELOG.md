@@ -1,5 +1,11 @@
 # @sittari/payload-link-field
 
+## 0.3.0
+
+### Minor Changes
+
+- 27bf1c8: Add RSC-safe React converters for plugin-owned and legacy Lexical link nodes through the new `/react` entry point.
+
 ## 0.2.3
 
 ### Patch Changes
