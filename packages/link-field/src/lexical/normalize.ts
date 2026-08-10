@@ -1,7 +1,7 @@
 import type { SerializedLexicalNode } from '@payloadcms/richtext-lexical/lexical'
 
 import type { SerializedLinkFieldNode } from '../types.js'
-import { normalizeLinkFields } from './nodes.js'
+import { normalizeLinkFields } from './normalizeLinkFields.js'
 
 export const normalizeSerializedLinkNode = <T extends SerializedLexicalNode>(node: T): T => {
   if ((node.type !== 'link' && node.type !== 'autolink') || !('fields' in node)) return node

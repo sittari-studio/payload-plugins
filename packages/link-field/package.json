@@ -16,6 +16,10 @@
       "types": "./dist/exports/client.d.ts",
       "import": "./dist/exports/client.js"
     },
+    "./react": {
+      "types": "./dist/exports/react.d.ts",
+      "import": "./dist/exports/react.js"
+    },
     "./admin.css": "./dist/admin.css",
     "./types": {
       "types": "./dist/exports/types.d.ts",
