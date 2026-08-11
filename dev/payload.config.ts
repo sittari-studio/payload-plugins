@@ -18,6 +18,7 @@ import {
   pagesPlugin,
 } from "@sittari/payload-pages";
 import { pathFieldPlugin } from "@sittari/payload-path-field";
+import { rbacPlugin } from "@sittari/payload-rbac";
 import { seoPlugin } from "@sittari/payload-seo";
 import { createSlugField } from "@sittari/payload-slug-field";
 import { templateField, templatesPlugin } from "@sittari/payload-templates";
@@ -27,6 +28,7 @@ import { ru } from "@payloadcms/translations/languages/ru";
 import { en } from "@payloadcms/translations/languages/en";
 
 import { testEmailAdapter } from "./helpers/testEmailAdapter.js";
+import { devRbacPluginConfig } from "./rbac.js";
 import { devUser, seed } from "./seed.js";
 
 const siteUrl = process.env.SITE_URL ?? "http://localhost:3000";
@@ -130,6 +132,18 @@ export default buildConfig({
       admin: {
         useAsTitle: "title",
       },
+      labels: {
+        singular: {
+          en: "Category",
+          uk: "Категорія",
+          ru: "Категория",
+        },
+        plural: {
+          en: "Categories",
+          uk: "Категорії",
+          ru: "Категории",
+        },
+      },
       fields: [
         {
           name: "title",
@@ -165,6 +179,11 @@ export default buildConfig({
   globals: [
     {
       slug: "site-settings",
+      label: {
+        en: "Site settings",
+        uk: "Налаштування сайту",
+        ru: "Настройки сайта",
+      },
       fields: [
         {
           name: "title",
@@ -296,6 +315,9 @@ export default buildConfig({
         },
       ],
     }),
+    // Keep RBAC last so its matrix and access rules include collections and
+    // globals introduced by every plugin above.
+    rbacPlugin(devRbacPluginConfig),
   ],
 
   secret: process.env.PAYLOAD_SECRET || "dev-secret-change-me",

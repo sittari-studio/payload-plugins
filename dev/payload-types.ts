@@ -68,6 +68,7 @@ export interface Config {
   blocks: {};
   collections: {
     users: User;
+    roles: Role;
     media: Media;
     'link-field-test': LinkFieldTest;
     categories: Category;
@@ -83,6 +84,7 @@ export interface Config {
   collectionsJoins: {};
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
+    roles: RolesSelect<false> | RolesSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     'link-field-test': LinkFieldTestSelect<false> | LinkFieldTestSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
@@ -147,6 +149,10 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: number;
+  /**
+   * Roles controlling what this user can access.
+   */
+  roles?: (number | Role)[] | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -165,6 +171,74 @@ export interface User {
     | null;
   password?: string | null;
   collection: 'users';
+}
+/**
+ * Roles control what users can access. Assign them on the user document.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "roles".
+ */
+export interface Role {
+  id: number;
+  name: string;
+  description?: string | null;
+  permissions?:
+    | (
+        | '*'
+        | '*:create'
+        | '*:read'
+        | '*:update'
+        | '*:delete'
+        | 'users:*'
+        | 'users:create'
+        | 'users:read'
+        | 'users:update'
+        | 'users:delete'
+        | 'media:*'
+        | 'media:create'
+        | 'media:read'
+        | 'media:update'
+        | 'media:delete'
+        | 'link-field-test:*'
+        | 'link-field-test:create'
+        | 'link-field-test:read'
+        | 'link-field-test:update'
+        | 'link-field-test:delete'
+        | 'categories:*'
+        | 'categories:create'
+        | 'categories:read'
+        | 'categories:update'
+        | 'categories:delete'
+        | 'pages:*'
+        | 'pages:create'
+        | 'pages:read'
+        | 'pages:update'
+        | 'pages:delete'
+        | 'seo-redirects:*'
+        | 'seo-redirects:create'
+        | 'seo-redirects:read'
+        | 'seo-redirects:update'
+        | 'seo-redirects:delete'
+        | 'templates:*'
+        | 'templates:create'
+        | 'templates:read'
+        | 'templates:update'
+        | 'templates:delete'
+        | 'roles:*'
+        | 'roles:create'
+        | 'roles:read'
+        | 'roles:update'
+        | 'roles:delete'
+        | 'site-settings:*'
+        | 'site-settings:read'
+        | 'site-settings:update'
+        | 'seo-settings:*'
+        | 'seo-settings:read'
+        | 'seo-settings:update'
+      )[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -532,6 +606,10 @@ export interface PayloadLockedDocument {
         value: number | User;
       } | null)
     | ({
+        relationTo: 'roles';
+        value: number | Role;
+      } | null)
+    | ({
         relationTo: 'media';
         value: number | Media;
       } | null)
@@ -602,6 +680,7 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  roles?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -618,6 +697,17 @@ export interface UsersSelect<T extends boolean = true> {
         createdAt?: T;
         expiresAt?: T;
       };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "roles_select".
+ */
+export interface RolesSelect<T extends boolean = true> {
+  name?: T;
+  description?: T;
+  permissions?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

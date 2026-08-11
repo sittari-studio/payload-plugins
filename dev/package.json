@@ -13,6 +13,7 @@
   "dependencies": {
     "@sittari/payload-link-field": "workspace:*",
     "@sittari/payload-path-field": "workspace:*",
+    "@sittari/payload-rbac": "workspace:*",
     "@sittari/payload-seo": "workspace:*",
     "@sittari/payload-pages": "workspace:*",
     "@sittari/payload-slug-field": "workspace:*",

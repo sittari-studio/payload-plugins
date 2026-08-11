@@ -2,6 +2,8 @@ import type { Payload, SanitizedConfig } from 'payload'
 
 import { getPayload } from 'payload'
 
+import { devAdminRoleName } from './rbac.js'
+
 export const devUser = {
   email: 'dev@example.com',
   password: 'password',
@@ -18,6 +20,17 @@ const getDocumentID = (doc: unknown): number | string | undefined => {
 }
 
 const ensureDevUser = async (payload: Payload): Promise<void> => {
+  const adminRoles = await payload.find({
+    collection: 'roles',
+    depth: 0,
+    limit: 1,
+    where: {
+      name: {
+        equals: devAdminRoleName,
+      },
+    },
+  })
+  const adminRoleID = getDocumentID(adminRoles.docs[0])
   const existing = await payload.find({
     collection: 'users',
     depth: 0,
@@ -29,14 +42,32 @@ const ensureDevUser = async (payload: Payload): Promise<void> => {
     },
   })
 
-  if (getDocumentID(existing.docs[0])) {
+  const existingUser = existing.docs[0]
+  const existingUserID = getDocumentID(existingUser)
+
+  if (!existingUserID) {
+    await payload.create({
+      collection: 'users',
+      data: devUser,
+    })
     return
   }
 
-  await payload.create({
-    collection: 'users',
-    data: devUser,
-  })
+  const existingRoleIDs = Array.isArray(existingUser.roles)
+    ? existingUser.roles
+        .map((role) => getDocumentID(role) ?? role)
+        .filter((role): role is number => typeof role === 'number')
+    : []
+
+  if (typeof adminRoleID === 'number' && !existingRoleIDs.includes(adminRoleID)) {
+    await payload.update({
+      collection: 'users',
+      id: existingUserID,
+      data: {
+        roles: [...existingRoleIDs, adminRoleID],
+      },
+    })
+  }
 }
 
 const ensureSamplePage = async (payload: Payload): Promise<void> => {

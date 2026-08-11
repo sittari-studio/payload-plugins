@@ -1,3 +1,4 @@
+import { PermissionsMatrixField as PermissionsMatrixField_d611180aa8333dbacd963adf22dd168e } from '@sittari/payload-rbac/client'
 import { ReadableRelationshipField as ReadableRelationshipField_7b4a5a75e2be17255c0117015e74ed55 } from '@sittari/payload-link-field/client'
 import { LinkField as LinkField_7b4a5a75e2be17255c0117015e74ed55 } from '@sittari/payload-link-field/client'
 import { SlugField as SlugField_2b8867833a34864a02ddf429b0728a40 } from '@payloadcms/next/client'
@@ -33,6 +34,7 @@ import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } f
 
 /** @type import('payload').ImportMap */
 export const importMap = {
+  "@sittari/payload-rbac/client#PermissionsMatrixField": PermissionsMatrixField_d611180aa8333dbacd963adf22dd168e,
   "@sittari/payload-link-field/client#ReadableRelationshipField": ReadableRelationshipField_7b4a5a75e2be17255c0117015e74ed55,
   "@sittari/payload-link-field/client#LinkField": LinkField_7b4a5a75e2be17255c0117015e74ed55,
   "@payloadcms/next/client#SlugField": SlugField_2b8867833a34864a02ddf429b0728a40,

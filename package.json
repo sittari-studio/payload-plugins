@@ -6,8 +6,8 @@
   "packageManager": "pnpm@11.7.0",
   "scripts": {
     "build": "turbo build --filter='./packages/*'",
-    "dev": "pnpm --filter dev dev",
-    "dev:plugins": "turbo dev --filter='./packages/*'",
+    "dev": "turbo run dev",
+    "dev:plugins": "turbo run dev --filter='./packages/*'",
     "test": "turbo test --filter='./packages/*'",
     "typecheck": "turbo typecheck --filter='./packages/*'",
     "clean": "turbo clean --filter='./packages/*' && rm -rf node_modules",
