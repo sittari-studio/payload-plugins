@@ -1,4 +1,4 @@
-import type { Payload } from 'payload'
+import { ValidationError, type Payload, type Where } from 'payload'
 
 import { getLocaleCodes, getPathRuntimeConfig } from './config.js'
 import {
@@ -28,27 +28,31 @@ const rebuildCollectionLocale = async ({
   missingOnly: boolean
   payload: Payload
 }): Promise<number> => {
+  const skippedDocumentIds: Array<number | string> = []
   let updated = 0
   let page = 1
-  const missingPath = {
+  const missingPath: Where = {
     or: [
       { path: { exists: false } },
       { path: { equals: null } },
       { path: { equals: '' } },
     ],
   }
-  const where = draftOnly
-    ? {
-        and: [
-          ...(missingOnly ? [missingPath] : []),
-          { _status: { not_equals: 'published' } },
-        ],
-      }
-    : missingOnly
-      ? missingPath
-      : undefined
 
   while (true) {
+    const constraints: Where[] = [
+      ...(missingOnly ? [missingPath] : []),
+      ...(draftOnly ? [{ _status: { not_equals: 'published' } }] : []),
+      ...(missingOnly && skippedDocumentIds.length > 0
+        ? [{ id: { not_in: skippedDocumentIds } }]
+        : []),
+    ]
+    const where =
+      constraints.length === 0
+        ? undefined
+        : constraints.length === 1
+          ? constraints[0]
+          : { and: constraints }
     const result = await payload.find({
       collection: collection as never,
       depth: 0,
@@ -67,17 +71,31 @@ const rebuildCollectionLocale = async ({
       id: number | string
     }>) {
       if (draftOnly && document._status === 'published') continue
-      await payload.update({
-        collection: collection as never,
-        context: { [PATH_REBUILD_CONTEXT_KEY]: true },
-        data: {},
-        draft,
-        fallbackLocale: false,
-        id: document.id,
-        locale: locale as never,
-        overrideAccess: true,
-      })
-      updated += 1
+      try {
+        await payload.update({
+          collection: collection as never,
+          context: { [PATH_REBUILD_CONTEXT_KEY]: true },
+          data: {},
+          draft,
+          fallbackLocale: false,
+          id: document.id,
+          locale: locale as never,
+          overrideAccess: true,
+        })
+        updated += 1
+      } catch (error) {
+        if (!(error instanceof ValidationError)) throw error
+
+        skippedDocumentIds.push(document.id)
+        payload.logger.error({
+          collection,
+          documentID: document.id,
+          draft,
+          err: error,
+          locale: locale ?? null,
+          msg: '@sittari/payload-path-field: skipped rebuilding a missing document path because document validation failed.',
+        })
+      }
     }
 
     if (!result.hasNextPage) break

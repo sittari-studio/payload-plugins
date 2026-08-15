@@ -221,7 +221,7 @@ describe('startup backfill', () => {
         push: true,
         transactionOptions: {},
       })
-    const collection = () => ({
+    const collection = (requiredLocalizedField = false) => ({
       slug: 'articles',
       versions: { drafts: true },
       fields: [
@@ -230,6 +230,12 @@ describe('startup backfill', () => {
           type: 'text' as const,
           localized: true,
           required: true,
+        },
+        {
+          name: 'requiredLocalizedField',
+          type: 'text' as const,
+          localized: true,
+          required: requiredLocalizedField,
         },
       ],
     })
@@ -250,26 +256,57 @@ describe('startup backfill', () => {
     })
     const published = await oldPayload.create({
       collection: 'articles',
-      data: { _status: 'published', slug: 'news' },
+      data: {
+        _status: 'published',
+        requiredLocalizedField: 'English value',
+        slug: 'news',
+      },
       locale: 'en',
     })
     await oldPayload.update({
       collection: 'articles',
-      data: { _status: 'published', slug: 'novyny' },
+      data: {
+        _status: 'published',
+        requiredLocalizedField: 'Ukrainian value',
+        slug: 'novyny',
+      },
       id: published.id,
       locale: 'uk',
     })
     const draft = await oldPayload.create({
       collection: 'articles',
-      data: { _status: 'draft', slug: 'preview' },
+      data: {
+        _status: 'draft',
+        requiredLocalizedField: 'English draft value',
+        slug: 'preview',
+      },
       draft: true,
       locale: 'en',
     })
     await oldPayload.update({
       collection: 'articles',
-      data: { _status: 'draft', slug: 'poperednii' },
+      data: {
+        _status: 'draft',
+        requiredLocalizedField: 'Ukrainian draft value',
+        slug: 'poperednii',
+      },
       draft: true,
       id: draft.id,
+      locale: 'uk',
+    })
+    const invalid = await oldPayload.create({
+      collection: 'articles',
+      data: {
+        _status: 'published',
+        requiredLocalizedField: 'Only an English value',
+        slug: 'legacy',
+      },
+      locale: 'en',
+    })
+    await oldPayload.update({
+      collection: 'articles',
+      data: { _status: 'published', slug: 'zastarilyi' },
+      id: invalid.id,
       locale: 'uk',
     })
     await oldPayload.db.destroy?.()
@@ -282,7 +319,7 @@ describe('startup backfill', () => {
         fallback: false,
         locales: ['en', 'uk'],
       },
-      collections: [collection()],
+      collections: [collection(true)],
       plugins: [
         pathFieldPlugin({
           collections: { articles: true },
@@ -317,10 +354,26 @@ describe('startup backfill', () => {
       id: draft.id,
       locale: 'en',
     })
+    const ukrainianDraft = await backfilledPayload.findByID({
+      collection: 'articles',
+      draft: true,
+      fallbackLocale: false,
+      id: draft.id,
+      locale: 'uk',
+    })
+    const invalidUkrainian = await backfilledPayload.findByID({
+      collection: 'articles',
+      draft: false,
+      fallbackLocale: false,
+      id: invalid.id,
+      locale: 'uk',
+    })
 
     expect(englishPublished.path).toBe('/en/news')
     expect(ukrainianPublished.path).toBe('/uk/novyny')
     expect(currentDraft.path).toBe('/en/preview')
+    expect(ukrainianDraft.path).toBe('/uk/poperednii')
+    expect(invalidUkrainian.path).toBeNull()
 
     await backfilledPayload.db.destroy?.()
     await rm(backfillDatabaseFile, { force: true })

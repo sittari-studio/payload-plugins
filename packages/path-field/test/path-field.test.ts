@@ -182,6 +182,52 @@ describe('pathFieldPlugin', () => {
     await expect(output.onInit?.(payload)).resolves.toBeUndefined()
   })
 
+  it('skips invalid documents during startup backfill and continues rebuilding paths', async () => {
+    const output = pathFieldPlugin({
+      collections: { pages: true },
+      resolveDocumentUrl: () => '/',
+    })(baseConfig()) as Config
+    const logError = vi.fn()
+    let englishFinds = 0
+    const find = vi.fn(async ({ locale }: { locale?: string }) => {
+      if (locale !== 'en') return { docs: [], hasNextPage: false }
+      englishFinds += 1
+      return englishFinds === 1
+        ? { docs: [{ id: 1 }], hasNextPage: true }
+        : { docs: [{ id: 2 }], hasNextPage: false }
+    })
+    const validationError = new ValidationError({
+      collection: 'pages',
+      errors: [{ message: 'Required', path: 'title' }],
+      req: {} as never,
+    })
+    const update = vi.fn(async ({ id }: { id: number | string }) => {
+      if (id === 1) throw validationError
+    })
+    const payload = {
+      config: output,
+      find,
+      logger: { error: logError },
+      update,
+    } as unknown as Payload
+
+    await expect(output.onInit?.(payload)).resolves.toBeUndefined()
+
+    expect(update.mock.calls.map(([args]) => args.id)).toEqual([1, 2])
+    expect(find.mock.calls[1]?.[0]).toMatchObject({
+      locale: 'en',
+      where: { and: expect.arrayContaining([{ id: { not_in: [1] } }]) },
+    })
+    expect(logError).toHaveBeenCalledWith({
+      collection: 'pages',
+      documentID: 1,
+      draft: false,
+      err: validationError,
+      locale: 'en',
+      msg: '@sittari/payload-path-field: skipped rebuilding a missing document path because document validation failed.',
+    })
+  })
+
   it('replaces client paths and resolves every locale for locale all', async () => {
     const resolver = vi.fn(({ doc, locale }) => `/${locale}/${String(doc.slug)}`)
     const output = pathFieldPlugin({
