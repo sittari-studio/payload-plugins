@@ -1,5 +1,11 @@
 # @sittari/payload-path-field
 
+## 0.3.1
+
+### Patch Changes
+
+- b6e39b7: Keep startup path backfills from rejecting Payload initialization when legacy documents fail current schema validation. Invalid documents are logged and skipped per collection, locale, and draft state while other missing paths continue rebuilding.
+
 ## 0.3.0
 
 ### Minor Changes
