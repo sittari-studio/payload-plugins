@@ -7,10 +7,17 @@ import {
   validateFinalConfig,
 } from './config.js'
 import {
+  createPathAfterChangeHook,
+  createPathAfterDeleteHook,
   createPathBeforeChangeHook,
   markPathUnresolvedOperation,
 } from './hook.js'
 import { rebuildDocumentPathsWithPayload } from './rebuild.js'
+import {
+  backfillPublishedPathRoutes,
+  createPathRoutesCollection,
+  PATH_ROUTES_COLLECTION,
+} from './routes.js'
 import { pathLabel } from './translations.js'
 import {
   PATH_FIELD_RUNTIME_CONFIG_KEY,
@@ -80,9 +87,7 @@ const createPathField = (localized: boolean): Field => ({
   name: 'path',
   type: 'text',
   label: pathLabel,
-  index: true,
   localized,
-  unique: true,
   access: {
     create: () => false,
     update: () => false,
@@ -146,6 +151,16 @@ export const pathFieldPlugin = (
     const localeCodes = getLocaleCodes(incomingConfig)
     const defaultLocale = getDefaultLocale(incomingConfig)
 
+    if (
+      incomingConfig.collections?.some(
+        ({ slug }) => slug === PATH_ROUTES_COLLECTION,
+      )
+    ) {
+      throw new Error(
+        `@sittari/payload-path-field: a collection with slug "${PATH_ROUTES_COLLECTION}" already exists.`,
+      )
+    }
+
     const transformed = new Map<string, CollectionConfig>()
     for (const [slug, options] of Object.entries(runtime.collections)) {
       const collection = assertCollectionIsReady(incomingConfig, slug, options)
@@ -168,15 +183,33 @@ export const pathFieldPlugin = (
               resolver: pluginConfig.resolveDocumentUrl,
             }),
           ],
+          afterChange: [
+            ...(collection.hooks?.afterChange ?? []),
+            createPathAfterChangeHook({
+              collection: slug,
+              collectionHasDrafts:
+                typeof collection.versions === 'object' &&
+                Boolean(collection.versions.drafts),
+              defaultLocale,
+              localeCodes,
+            }),
+          ],
+          afterDelete: [
+            ...(collection.hooks?.afterDelete ?? []),
+            createPathAfterDeleteHook({ collection: slug }),
+          ],
         },
       })
     }
 
     const output: Config = {
       ...incomingConfig,
-      collections: (incomingConfig.collections ?? []).map(
-        (collection) => transformed.get(collection.slug) ?? collection,
-      ),
+      collections: [
+        ...(incomingConfig.collections ?? []).map(
+          (collection) => transformed.get(collection.slug) ?? collection,
+        ),
+        createPathRoutesCollection(localeCodes.length > 0),
+      ],
       custom: {
         ...(incomingConfig.custom ?? {}),
         [PATH_FIELD_RUNTIME_CONFIG_KEY]: runtime,
@@ -186,7 +219,18 @@ export const pathFieldPlugin = (
     output.onInit = async (payload) => {
       await incomingConfig.onInit?.(payload)
       validateFinalConfig(payload.config as unknown as Config, runtime)
+      // Path repair may populate part of an initially empty registry.
+      const routes = await payload.find({
+        collection: PATH_ROUTES_COLLECTION as never,
+        depth: 0,
+        limit: 1,
+        overrideAccess: true,
+        pagination: false,
+      } as never)
       await rebuildDocumentPathsWithPayload(payload, { missingOnly: true })
+      if (routes.docs.length === 0) {
+        await backfillPublishedPathRoutes(payload, { force: true })
+      }
     }
     return output
   }

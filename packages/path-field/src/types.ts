@@ -3,8 +3,6 @@ import type {
   Config,
   Payload,
   PayloadRequest,
-  SelectType,
-  Where,
 } from 'payload'
 
 export type PathCollectionOptions = {
@@ -35,31 +33,12 @@ export type PathFieldRuntimeConfig = {
 
 export const PATH_FIELD_RUNTIME_CONFIG_KEY = '@sittari/payload-path-field/config'
 export const PATH_ALLOW_UNRESOLVED_CONTEXT_KEY = 'sittariPathFieldAllowUnresolved'
+export const PATH_REMOVE_ALL_ROUTES_CONTEXT_KEY = 'sittariPathFieldRemoveAllRoutes'
 export const PATH_REBUILD_CONTEXT_KEY = 'sittariPathFieldRebuild'
 
-export type PathLookupQueryOptions = {
-  context?: Record<string, unknown>
-  currentDepth?: number
-  depth?: number
-  disableErrors?: boolean
-  draft?: boolean
-  fallbackLocale?: false | null | string | string[]
-  includeLockStatus?: boolean
-  joins?: Record<string, unknown> | false
-  overrideAccess?: boolean
-  populate?: Record<string, unknown>
-  req?: Partial<PayloadRequest>
-  select?: SelectType
-  showHiddenFields?: boolean
-  trash?: boolean
-  user?: Record<string, unknown>
-}
-
-export type FindDocumentByPathArgs = PathLookupQueryOptions & {
-  collection?: string
-  locale?: string
-  pagination?: boolean
+export type FindDocumentByPathArgs = {
   path: string
+  overrideAccess?: boolean
 }
 
 export type PathRoute = {
@@ -103,5 +82,3 @@ export type PathBeforeChangeHook = CollectionBeforeChangeHook
 export type PathConfig = Config & {
   custom?: Record<string, unknown>
 }
-
-export type PathWhere = Where

@@ -55,14 +55,14 @@ describe('pathFieldPlugin', () => {
       name: 'path',
       type: 'text',
       localized: true,
-      unique: true,
-      index: true,
       admin: {
         position: 'sidebar',
         readOnly: true,
       },
     })
     expect('required' in (getPathField(output) ?? {})).toBe(false)
+    expect('unique' in (getPathField(output) ?? {})).toBe(false)
+    expect('index' in (getPathField(output) ?? {})).toBe(false)
     expect(getPathField(output)?.admin?.custom).toBeUndefined()
     expect(output.collections?.[0]?.hooks?.beforeChange?.[0]).toBe(existingHook)
     expect(output.collections?.[0]?.hooks?.beforeChange).toHaveLength(2)
@@ -214,7 +214,11 @@ describe('pathFieldPlugin', () => {
     await expect(output.onInit?.(payload)).resolves.toBeUndefined()
 
     expect(update.mock.calls.map(([args]) => args.id)).toEqual([1, 2])
-    expect(find.mock.calls[1]?.[0]).toMatchObject({
+    const paginatedFind = find.mock.calls.find(([args]) =>
+      (args as { locale?: string; where?: { and?: unknown[] } }).locale === 'en' &&
+      Array.isArray((args as { where?: { and?: unknown[] } }).where?.and),
+    )
+    expect(paginatedFind?.[0]).toMatchObject({
       locale: 'en',
       where: { and: expect.arrayContaining([{ id: { not_in: [1] } }]) },
     })

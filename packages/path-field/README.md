@@ -37,6 +37,5 @@ export const paths = createPathHelpers({
 ```
 
 Document lookup enforces access control, excludes drafts, disables locale
-fallback, and requires an explicit locale when Payload localization is enabled.
-Pass `pagination: true` to resolve terminal `/page/:page` routes without storing
-those derived paths.
+fallback, and resolves the locale from the stored route. Terminal `/page/:page`
+routes are interpreted automatically without storing derived paths.

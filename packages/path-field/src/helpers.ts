@@ -1,6 +1,6 @@
 import type { Payload } from 'payload'
 
-import { getPathRuntimeConfig } from './config.js'
+import { findPathRouteByPath } from './routes.js'
 import { buildPaginatedPath, parsePaginatedPath } from './pagination.js'
 import {
   cleanPathSegment,
@@ -13,59 +13,56 @@ import type {
   FindDocumentByPathArgs,
   FoundDocumentByPath,
   PathHelpers,
-  PathLookupQueryOptions,
 } from './types.js'
 
 export type CreatePathHelpersArgs = {
   getPayload: () => Payload | Promise<Payload>
 }
 
-const findExact = async ({
-  args,
-  collections,
-  path,
+const getRouteDocumentID = ({
   payload,
+  route,
+}: {
+  payload: Payload
+  route: { collection: string; documentID: string }
+}): number | string => {
+  const collection = payload.collections[route.collection] as
+    | { customIDType?: 'number' | 'text' }
+    | undefined
+  const idType = collection?.customIDType ?? payload.db.defaultIDType
+  return idType === 'number' ? Number(route.documentID) : route.documentID
+}
+
+const findRouteDocument = async ({
+  args,
+  payload,
+  path,
 }: {
   args: FindDocumentByPathArgs
-  collections: string[]
   path: string
   payload: Payload
 }): Promise<FoundDocumentByPath | null> => {
-  const {
-    collection: _collection,
-    locale,
-    pagination: _pagination,
-    path: _path,
-    ...queryOptions
-  } = args
-  const matches: FoundDocumentByPath[] = []
+  const route = await findPathRouteByPath({ path, payload })
+  if (!route) return null
 
-  for (const collection of collections) {
-    const result = await payload.find({
-      ...(queryOptions as PathLookupQueryOptions),
-      collection: collection as never,
-      draft: queryOptions.draft ?? false,
-      fallbackLocale:
-        'fallbackLocale' in queryOptions
-          ? queryOptions.fallbackLocale
-          : false,
-      limit: 2,
-      locale: locale as never,
-      overrideAccess: queryOptions.overrideAccess ?? false,
-      pagination: false,
-      where: { path: { equals: path } },
-    } as never)
-    for (const document of result.docs as Record<string, unknown>[]) {
-      matches.push({ collection, document })
-    }
-  }
+  const document = await payload.findByID({
+    collection: route.collection as never,
+    draft: false,
+    fallbackLocale: false,
+    id: getRouteDocumentID({ payload, route }),
+    ...(route.locale ? { locale: route.locale } : {}),
+    overrideAccess: args.overrideAccess ?? false,
+  } as never)
 
-  if (matches.length > 1) {
-    throw new Error(
-      `@sittari/payload-path-field: path "${path}" is ambiguous across enabled collections.`,
-    )
+  return {
+    collection: route.collection,
+    document: document as unknown as Record<string, unknown>,
+    route: {
+      canonicalPath: path,
+      isCanonical: true,
+      page: 1,
+    },
   }
-  return matches[0] ?? null
 }
 
 export const createPathHelpers = ({
@@ -81,54 +78,18 @@ export const createPathHelpers = ({
   findDocumentByPath: async (args) => {
     if (!isValidDocumentPath(args.path)) return null
     const payload = await getPayload()
-    const runtime = getPathRuntimeConfig(payload)
-    if (!runtime) {
-      throw new Error(
-        '@sittari/payload-path-field: pathFieldPlugin is not configured on this Payload instance.',
-      )
-    }
-    if (payload.config.localization && !args.locale) {
-      throw new Error(
-        '@sittari/payload-path-field: locale is required for localized path lookup.',
-      )
-    }
-
-    const collections = args.collection
-      ? [args.collection]
-      : Object.keys(runtime.collections)
-    for (const collection of collections) {
-      if (!runtime.collections[collection]) {
-        throw new Error(
-          `@sittari/payload-path-field: collection "${collection}" is not enabled.`,
-        )
-      }
-    }
-
-    const exact = await findExact({
+    const exact = await findRouteDocument({
       args,
-      collections,
       path: args.path,
       payload,
     })
-    if (exact) {
-      return args.pagination
-        ? {
-            ...exact,
-            route: {
-              canonicalPath: args.path,
-              isCanonical: true,
-              page: 1,
-            },
-          }
-        : exact
-    }
-    if (!args.pagination) return null
+    if (exact) return exact
 
     const parsed = parsePaginatedPath(args.path)
     if (!parsed) return null
-    const base = await findExact({
+
+    const base = await findRouteDocument({
       args,
-      collections,
       path: parsed.basePath,
       payload,
     })

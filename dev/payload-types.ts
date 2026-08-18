@@ -73,6 +73,7 @@ export interface Config {
     'link-field-test': LinkFieldTest;
     categories: Category;
     pages: Page;
+    'path-routes': PathRoute;
     'seo-redirects': SeoRedirect;
     templates: Template;
     'payload-kv': PayloadKv;
@@ -89,6 +90,7 @@ export interface Config {
     'link-field-test': LinkFieldTestSelect<false> | LinkFieldTestSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
+    'path-routes': PathRoutesSelect<false> | PathRoutesSelect<true>;
     'seo-redirects': SeoRedirectsSelect<false> | SeoRedirectsSelect<true>;
     templates: TemplatesSelect<false> | TemplatesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -214,6 +216,11 @@ export interface Role {
         | 'pages:read'
         | 'pages:update'
         | 'pages:delete'
+        | 'path-routes:*'
+        | 'path-routes:create'
+        | 'path-routes:read'
+        | 'path-routes:update'
+        | 'path-routes:delete'
         | 'seo-redirects:*'
         | 'seo-redirects:create'
         | 'seo-redirects:read'
@@ -290,6 +297,10 @@ export interface LinkFieldTest {
       | ({
           relationTo: 'pages';
           value: number | Page;
+        } | null)
+      | ({
+          relationTo: 'path-routes';
+          value: number | PathRoute;
         } | null)
       | ({
           relationTo: 'seo-redirects';
@@ -454,6 +465,16 @@ export interface Page {
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "path-routes".
+ */
+export interface PathRoute {
+  id: number;
+  path: string;
+  collection: string;
+  documentID: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -624,6 +645,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'pages';
         value: number | Page;
+      } | null)
+    | ({
+        relationTo: 'path-routes';
+        value: number | PathRoute;
       } | null)
     | ({
         relationTo: 'seo-redirects';
@@ -860,6 +885,15 @@ export interface PagesSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "path-routes_select".
+ */
+export interface PathRoutesSelect<T extends boolean = true> {
+  path?: T;
+  collection?: T;
+  documentID?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

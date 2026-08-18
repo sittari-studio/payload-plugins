@@ -34,6 +34,7 @@ beforeAll(async () => {
       {
         slug: 'pages',
         access: { read: () => true },
+        trash: true,
         versions: {
           drafts: { autosave: true },
         },
@@ -46,10 +47,34 @@ beforeAll(async () => {
           },
         ],
       },
+      {
+        slug: 'posts',
+        access: { read: () => true },
+        versions: { drafts: true },
+        fields: [
+          {
+            name: 'slug',
+            type: 'text',
+            required: true,
+          },
+        ],
+      },
+      {
+        slug: 'private-pages',
+        access: { read: () => false },
+        versions: { drafts: true },
+        fields: [
+          {
+            name: 'slug',
+            type: 'text',
+            required: true,
+          },
+        ],
+      },
     ],
     plugins: [
       pathFieldPlugin({
-        collections: { pages: true },
+        collections: { pages: true, posts: true, 'private-pages': true },
         resolveDocumentUrl: ({ doc, locale }) =>
           doc.slug === 'unresolved'
             ? null
@@ -368,12 +393,20 @@ describe('startup backfill', () => {
       id: invalid.id,
       locale: 'uk',
     })
+    const routes = await backfilledPayload.find({
+      collection: 'path-routes' as never,
+      limit: 100,
+      overrideAccess: true,
+    })
 
     expect(englishPublished.path).toBe('/en/news')
     expect(ukrainianPublished.path).toBe('/uk/novyny')
     expect(currentDraft.path).toBe('/en/preview')
     expect(ukrainianDraft.path).toBe('/uk/poperednii')
     expect(invalidUkrainian.path).toBeNull()
+    expect(routes.docs.map((route) => route.path)).not.toEqual(
+      expect.arrayContaining(['/en/preview', '/uk/poperednii']),
+    )
 
     await backfilledPayload.db.destroy?.()
     await rm(backfillDatabaseFile, { force: true })
@@ -473,19 +506,17 @@ describe('real Payload path field behavior', () => {
   it('resolves canonical and paginated paths with exact-document precedence', async () => {
     await payload.create({
       collection: 'pages',
-      data: { slug: 'catalog' },
+      data: { _status: 'published', slug: 'catalog' },
       locale: 'en',
     })
     const exactPageDocument = await payload.create({
       collection: 'pages',
-      data: { slug: 'catalog/page/2' },
+      data: { _status: 'published', slug: 'catalog/page/2' },
       locale: 'en',
     })
     const paths = createPathHelpers({ getPayload: () => payload })
 
     const base = await paths.findDocumentByPath({
-      locale: 'en',
-      pagination: true,
       path: '/en/catalog',
     })
     expect(base?.route).toEqual({
@@ -495,8 +526,6 @@ describe('real Payload path field behavior', () => {
     })
 
     const pageOne = await paths.findDocumentByPath({
-      locale: 'en',
-      pagination: true,
       path: '/en/catalog/page/1',
     })
     expect(pageOne?.route).toEqual({
@@ -506,16 +535,12 @@ describe('real Payload path field behavior', () => {
     })
 
     const exact = await paths.findDocumentByPath({
-      locale: 'en',
-      pagination: true,
       path: '/en/catalog/page/2',
     })
     expect(exact?.document.id).toBe(exactPageDocument.id)
     expect(exact?.route?.page).toBe(1)
 
     const pageThree = await paths.findDocumentByPath({
-      locale: 'en',
-      pagination: true,
       path: '/en/catalog/page/3',
     })
     expect(pageThree?.route).toEqual({
@@ -523,5 +548,201 @@ describe('real Payload path field behavior', () => {
       isCanonical: true,
       page: 3,
     })
+  })
+
+  it('synchronizes published routes through the document lifecycle', async () => {
+    const draft = await payload.create({
+      collection: 'pages',
+      data: { slug: 'lifecycle' },
+      draft: true,
+      locale: 'en',
+    })
+    const paths = createPathHelpers({ getPayload: () => payload })
+
+    expect(await paths.findDocumentByPath({ path: '/en/lifecycle' })).toBeNull()
+
+    await payload.update({
+      collection: 'pages',
+      data: { _status: 'published' },
+      draft: true,
+      id: draft.id,
+      locale: 'en',
+    })
+    expect((await paths.findDocumentByPath({ path: '/en/lifecycle' }))?.document.id).toBe(
+      draft.id,
+    )
+
+    await payload.update({
+      collection: 'pages',
+      data: { slug: 'lifecycle-moved' },
+      id: draft.id,
+      locale: 'en',
+    })
+    expect(await paths.findDocumentByPath({ path: '/en/lifecycle' })).toBeNull()
+    expect(
+      (await paths.findDocumentByPath({ path: '/en/lifecycle-moved' }))?.document.id,
+    ).toBe(draft.id)
+
+    await payload.update({
+      collection: 'pages',
+      data: { slug: 'lifecycle-selected' },
+      id: draft.id,
+      locale: 'en',
+      select: { id: true },
+    })
+    expect(await paths.findDocumentByPath({ path: '/en/lifecycle-moved' })).toBeNull()
+    expect(
+      (await paths.findDocumentByPath({ path: '/en/lifecycle-selected' }))?.document.id,
+    ).toBe(draft.id)
+
+    await payload.delete({
+      collection: 'path-routes' as never,
+      overrideAccess: true,
+      where: { path: { equals: '/en/lifecycle-selected' } },
+    })
+    await paths.rebuildDocumentPaths({ collection: 'pages' })
+    expect(
+      (await paths.findDocumentByPath({ path: '/en/lifecycle-selected' }))?.document.id,
+    ).toBe(draft.id)
+
+    await payload.update({
+      collection: 'pages',
+      data: { slug: 'lifecycle-draft' },
+      draft: true,
+      id: draft.id,
+      locale: 'en',
+    })
+    expect(await paths.findDocumentByPath({ path: '/en/lifecycle-draft' })).toBeNull()
+    expect(
+      (await paths.findDocumentByPath({ path: '/en/lifecycle-selected' }))?.document.id,
+    ).toBe(draft.id)
+
+    await payload.update({
+      autosave: true,
+      collection: 'pages',
+      data: { slug: 'lifecycle-autosave' },
+      draft: true,
+      id: draft.id,
+      locale: 'en',
+    })
+    expect(await paths.findDocumentByPath({ path: '/en/lifecycle-autosave' })).toBeNull()
+    expect(
+      (await paths.findDocumentByPath({ path: '/en/lifecycle-selected' }))?.document.id,
+    ).toBe(draft.id)
+
+    await payload.update({
+      collection: 'pages',
+      data: {},
+      id: draft.id,
+      locale: 'en',
+      unpublishAllLocales: true,
+    })
+    expect(await paths.findDocumentByPath({ path: '/en/lifecycle-selected' })).toBeNull()
+  })
+
+  it('releases routes when documents are trashed or deleted', async () => {
+    const paths = createPathHelpers({ getPayload: () => payload })
+    const trashed = await payload.create({
+      collection: 'pages',
+      data: { _status: 'published', slug: 'lifecycle-trash' },
+      locale: 'en',
+    })
+    await payload.update({
+      collection: 'pages',
+      data: { deletedAt: new Date().toISOString() },
+      id: trashed.id,
+      locale: 'en',
+      trash: true,
+    })
+    expect(await paths.findDocumentByPath({ path: '/en/lifecycle-trash' })).toBeNull()
+
+    const deleted = await payload.create({
+      collection: 'pages',
+      data: { _status: 'published', slug: 'lifecycle-delete' },
+      locale: 'en',
+    })
+    await payload.delete({
+      collection: 'pages',
+      id: deleted.id,
+    })
+    expect(await paths.findDocumentByPath({ path: '/en/lifecycle-delete' })).toBeNull()
+  })
+
+  it('keeps locale routes independent and converts numeric IDs', async () => {
+    const localized = await payload.create({
+      collection: 'pages',
+      data: { _status: 'published', slug: 'locale-en' },
+      locale: 'en',
+    })
+    await payload.update({
+      collection: 'pages',
+      data: { _status: 'published', slug: 'locale-uk' },
+      fallbackLocale: false,
+      id: localized.id,
+      locale: 'uk',
+    })
+    const paths = createPathHelpers({ getPayload: () => payload })
+    const english = await paths.findDocumentByPath({ path: '/en/locale-en' })
+    const ukrainian = await paths.findDocumentByPath({ path: '/uk/locale-uk' })
+
+    expect(english?.document.id).toBe(localized.id)
+    expect(typeof english?.document.id).toBe('number')
+    expect(ukrainian?.document.id).toBe(localized.id)
+    expect(
+      (await payload.find({
+        collection: 'path-routes' as never,
+        overrideAccess: true,
+        where: { path: { equals: '/en/locale-en' } },
+      })).docs[0],
+    ).toMatchObject({
+      collection: 'pages',
+      documentID: String(localized.id),
+      locale: 'en',
+    })
+
+    await payload.update({
+      collection: 'pages',
+      data: {},
+      id: localized.id,
+      locale: 'en',
+      unpublishAllLocales: true,
+    })
+    expect(await paths.findDocumentByPath({ path: '/en/locale-en' })).toBeNull()
+    expect(await paths.findDocumentByPath({ path: '/uk/locale-uk' })).toBeNull()
+  })
+
+  it('enforces global path collisions and supports overrideAccess', async () => {
+    const first = await payload.create({
+      collection: 'pages',
+      data: { _status: 'published', slug: 'global-collision' },
+      locale: 'en',
+    })
+    await expect(
+      payload.create({
+        collection: 'posts',
+        data: { _status: 'published', slug: 'global-collision' },
+        locale: 'en',
+      }),
+    ).rejects.toThrow()
+    const paths = createPathHelpers({ getPayload: () => payload })
+    expect(
+      (await paths.findDocumentByPath({ path: '/en/global-collision' }))?.document.id,
+    ).toBe(first.id)
+
+    const privatePage = await payload.create({
+      collection: 'private-pages',
+      data: { _status: 'published', slug: 'private-route' },
+      locale: 'en',
+    })
+    await expect(
+      paths.findDocumentByPath({ path: '/en/private-route' }),
+    ).rejects.toThrow()
+    expect(
+      (await paths.findDocumentByPath({
+        overrideAccess: true,
+        path: '/en/private-route',
+      }))?.document.id,
+    ).toBe(privatePage.id)
+    expect(first.id).toBeDefined()
   })
 })

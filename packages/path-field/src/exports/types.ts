@@ -4,7 +4,6 @@ export type {
   PathCollectionOptions,
   PathFieldPluginConfig,
   PathHelpers,
-  PathLookupQueryOptions,
   PathRoute,
   RebuildDocumentPathsArgs,
   RebuildDocumentPathsResult,
