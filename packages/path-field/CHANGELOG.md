@@ -1,5 +1,11 @@
 # @sittari/payload-path-field
 
+## 0.4.0
+
+### Minor Changes
+
+- 51813d7: Add an internal route registry for published path lookup and lifecycle synchronization. Simplify `findDocumentByPath` to accept only `path` and `overrideAccess`.
+
 ## 0.3.1
 
 ### Patch Changes
