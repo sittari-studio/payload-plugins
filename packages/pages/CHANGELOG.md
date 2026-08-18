@@ -1,5 +1,12 @@
 # @sittari/payload-pages
 
+## 1.0.2
+
+### Patch Changes
+
+- Updated dependencies [e4c4fbc]
+  - @sittari/payload-slug-field@0.3.0
+
 ## 1.0.1
 
 ### Patch Changes

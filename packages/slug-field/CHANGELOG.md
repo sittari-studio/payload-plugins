@@ -1,5 +1,11 @@
 # @sittari/payload-slug-field
 
+## 0.3.0
+
+### Minor Changes
+
+- e4c4fbc: fix(slug-field): allow empty draft slugs
+
 ## 0.2.1
 
 ### Patch Changes
