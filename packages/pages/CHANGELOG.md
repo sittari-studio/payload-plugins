@@ -1,5 +1,11 @@
 # @sittari/payload-pages
 
+## 2.0.0
+
+### Major Changes
+
+- 0ac43d9: Replace resolver-based path generation with WordPress-style collection prefixes, built-in slug generation, locale prefixing, hierarchical permalinks, and an integrated permalink editor. The pages plugin no longer creates or configures slugs; permalink ownership belongs to `@sittari/payload-permalink`.
+
 ## 1.0.2
 
 ### Patch Changes
