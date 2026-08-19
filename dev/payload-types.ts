@@ -319,11 +319,6 @@ export interface LinkFieldTest {
 export interface Category {
   id: number;
   title: string;
-  /**
-   * When enabled, the slug will auto-generate from the title field on save and autosave.
-   */
-  generateSlug?: boolean | null;
-  slug: string;
   parent?: (number | null) | Category;
   breadcrumbs?:
     | {
@@ -333,6 +328,7 @@ export interface Category {
         id?: string | null;
       }[]
     | null;
+  slug?: string | null;
   path?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -344,11 +340,6 @@ export interface Category {
 export interface Page {
   id: number;
   title: string;
-  /**
-   * When enabled, the slug will auto-generate from the title field on save and autosave.
-   */
-  generateSlug?: boolean | null;
-  slug: string;
   pageType: 'standardContent' | 'flexible' | 'templates';
   standardContent?: {
     content?: {
@@ -376,6 +367,7 @@ export interface Page {
       message?: string | null;
     };
   };
+  slug?: string | null;
   path?: string | null;
   seo: {
     title?: string | null;
@@ -777,8 +769,6 @@ export interface LinkFieldTestSelect<T extends boolean = true> {
  */
 export interface CategoriesSelect<T extends boolean = true> {
   title?: T;
-  generateSlug?: T;
-  slug?: T;
   parent?: T;
   breadcrumbs?:
     | T
@@ -788,6 +778,7 @@ export interface CategoriesSelect<T extends boolean = true> {
         label?: T;
         id?: T;
       };
+  slug?: T;
   path?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -798,8 +789,6 @@ export interface CategoriesSelect<T extends boolean = true> {
  */
 export interface PagesSelect<T extends boolean = true> {
   title?: T;
-  generateSlug?: T;
-  slug?: T;
   pageType?: T;
   standardContent?:
     | T
@@ -821,6 +810,7 @@ export interface PagesSelect<T extends boolean = true> {
               message?: T;
             };
       };
+  slug?: T;
   path?: T;
   seo?:
     | T

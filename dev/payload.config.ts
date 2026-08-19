@@ -17,10 +17,9 @@ import {
   createStandardContentPageType,
   pagesPlugin,
 } from "@sittari/payload-pages";
-import { pathFieldPlugin } from "@sittari/payload-path-field";
+import { permalinkPlugin } from "@sittari/payload-permalink";
 import { rbacPlugin } from "@sittari/payload-rbac";
 import { seoPlugin } from "@sittari/payload-seo";
-import { createSlugField } from "@sittari/payload-slug-field";
 import { templateField, templatesPlugin } from "@sittari/payload-templates";
 
 import { uk } from "@payloadcms/translations/languages/uk";
@@ -34,25 +33,9 @@ import { devUser, seed } from "./seed.js";
 const siteUrl = process.env.SITE_URL ?? "http://localhost:3000";
 
 const resolvePagePath = (document: Record<string, unknown>): null | string => {
+  if (typeof document.path === "string") return document.path;
   if (typeof document.slug !== "string" || !document.slug) return null;
-  return document.slug === "home" ? "/" : `/${document.slug}`;
-};
-
-const resolveCategoryPath = (
-  document: Record<string, unknown>,
-): null | string => {
-  if (typeof document.slug !== "string" || !document.slug) return null;
-
-  const parent = document.parent;
-  const parentPath =
-    parent &&
-    typeof parent === "object" &&
-    "path" in parent &&
-    typeof parent.path === "string"
-      ? parent.path
-      : "/categories";
-
-  return `${parentPath}/${document.slug}`;
+  return `/${document.slug}`;
 };
 
 const filename = fileURLToPath(import.meta.url);
@@ -150,9 +133,6 @@ export default buildConfig({
           type: "text",
           required: true,
         },
-        createSlugField({
-          localized: false,
-        }),
       ],
     },
   ],
@@ -223,23 +203,17 @@ export default buildConfig({
     nestedDocsPlugin({
       collections: ["categories"],
     }),
-    pathFieldPlugin({
+    permalinkPlugin({
+      siteUrl,
+      localePrefix: "as-needed",
       collections: {
         categories: {
+          prefix: "categories",
           parentField: "parent",
         },
-        pages: true,
-      },
-      resolveDocumentUrl: ({ collection, doc }) => {
-        const resolvedPath =
-          collection === "categories"
-            ? resolveCategoryPath(doc)
-            : resolvePagePath(doc);
-        if (!resolvedPath) {
-          return null;
-        }
-
-        return resolvedPath;
+        pages: {
+          prefix: "",
+        },
       },
     }),
     seoPlugin({

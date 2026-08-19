@@ -42,10 +42,31 @@ export default buildConfig({
 | `enabled` | `boolean` | `true` | Set to `false` to return the incoming Payload config unchanged. |
 | `localizeTitle` | `boolean` | `true` | Enables or disables localization on the default `title` field. |
 | `pageTypes` | `PageTypes` | Required | Page-type definitions keyed by the value stored in `pageType`. |
-| `slugField` | `({ defaultSlugField }) => RowField` | Default slug field | Extends or replaces the generated slug row. |
 | `overrides` | `(defaultCollection) => CollectionConfig` | Default collection | Extends or replaces the final `pages` collection configuration. Applied last. |
 
 The package root exports `createStandardContentPageType` and `createFlexiblePageType`. Their option types and the `PagesPluginConfig`, `PageTypeConfig`, and `PageTypes` types are also available from the package root and from `@sittari/payload-pages/types`.
+
+### Permalinks
+
+`pagesPlugin` does not create a slug or path field. Use `@sittari/payload-permalink` after `pagesPlugin` when the collection needs WordPress-style slugs and permalinks:
+
+```ts
+import { permalinkPlugin } from '@sittari/payload-permalink'
+
+plugins: [
+  pagesPlugin({
+    pageTypes: {
+      standardContent: createStandardContentPageType(),
+    },
+  }),
+  permalinkPlugin({
+    siteUrl: 'https://example.com',
+    collections: {
+      pages: { prefix: '' },
+    },
+  }),
+]
+```
 
 ### Enable or disable the plugin
 
@@ -121,30 +142,9 @@ createFlexiblePageType({
 });
 ```
 
-### Override the slug field
-
-The callback receives the complete default row created by `createSlugField()` from `@sittari/payload-slug-field`:
-
-```ts
-pagesPlugin({
-  pageTypes: {
-    standardContent: createStandardContentPageType(),
-  },
-  slugField: ({ defaultSlugField }) => ({
-    ...defaultSlugField,
-    admin: {
-      ...defaultSlugField.admin,
-      position: "sidebar",
-    },
-  }),
-});
-```
-
-The default slug row is required, localized, positioned in the sidebar, and generated from `title`. It includes the Pages-specific instruction for the home page. For standalone use or to configure a different instruction, import `createSlugField` from `@sittari/payload-slug-field`.
-
 ### Override the collection
 
-`overrides` runs after page types, the slug field, and all default fields have been assembled. Use it for access control, hooks, admin settings, versions, or additional fields:
+`overrides` runs after page types and all default fields have been assembled. Use it for access control, hooks, admin settings, versions, or additional fields:
 
 ```ts
 pagesPlugin({
@@ -178,9 +178,8 @@ The generated collection has:
 - `title` as the admin display title
 - English, Russian, and Ukrainian collection and field labels
 - Drafts and versions enabled
-- Draft autosave every 500 milliseconds
+- Draft autosave every 375 milliseconds
 - A required `title` field, localized by default
-- A required, localized `slug` generated from `title`
 - A required `pageType` select followed by one conditional group per page type
 
 ## Built-in page-type factories

@@ -12,20 +12,31 @@ export {
   joinPathSegments,
   validateDocumentPath,
 } from './path.js'
-export { pathFieldPlugin } from './plugin.js'
+export {
+  HOME_SLUG,
+  joinUrl,
+  normalizePath,
+  normalizeSiteUrl,
+  permalinkDisplayPath,
+  permalinkPrefix,
+} from './permalink.js'
+export {
+  permalinkPlugin,
+  PERMALINK_FIELD_COMPONENT,
+  PERMALINK_FIELD_NAME,
+} from './plugin.js'
 export { rebuildDocumentPathsWithPayload } from './rebuild.js'
 export { PATH_FIELD_RUNTIME_CONFIG_KEY } from './types.js'
 export type {
   FindDocumentByPathArgs,
   FoundDocumentByPath,
+  LocalePrefixMode,
   PathCollectionOptions,
-  PathFieldPluginConfig,
   PathHelpers,
   PathRoute,
+  PermalinkPluginConfig,
   RebuildDocumentPathsArgs,
   RebuildDocumentPathsResult,
-  ResolveDocumentUrl,
-  ResolveDocumentUrlArgs,
 } from './types.js'
 
-export { pathFieldPlugin as default } from './plugin.js'
+export { permalinkPlugin as default } from './plugin.js'

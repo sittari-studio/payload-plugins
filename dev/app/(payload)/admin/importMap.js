@@ -1,8 +1,7 @@
 import { PermissionsMatrixField as PermissionsMatrixField_d611180aa8333dbacd963adf22dd168e } from '@sittari/payload-rbac/client'
 import { ReadableRelationshipField as ReadableRelationshipField_7b4a5a75e2be17255c0117015e74ed55 } from '@sittari/payload-link-field/client'
 import { LinkField as LinkField_7b4a5a75e2be17255c0117015e74ed55 } from '@sittari/payload-link-field/client'
-import { SlugField as SlugField_2b8867833a34864a02ddf429b0728a40 } from '@payloadcms/next/client'
-import { SlugInstruction as SlugInstruction_1a78c7bfe3ae87de4034359f0bc0467f } from '@sittari/payload-slug-field/client'
+import { PermalinkField as PermalinkField_008f72efbdb3c241fa6871c4349b60e1 } from '@sittari/payload-permalink/client'
 import { RscEntryLexicalCell as RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
 import { RscEntryLexicalField as RscEntryLexicalField_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
 import { LexicalDiffComponent as LexicalDiffComponent_44fe37237e0ebf4470c9990d8cb7b07e } from '@payloadcms/richtext-lexical/rsc'
@@ -37,8 +36,7 @@ export const importMap = {
   "@sittari/payload-rbac/client#PermissionsMatrixField": PermissionsMatrixField_d611180aa8333dbacd963adf22dd168e,
   "@sittari/payload-link-field/client#ReadableRelationshipField": ReadableRelationshipField_7b4a5a75e2be17255c0117015e74ed55,
   "@sittari/payload-link-field/client#LinkField": LinkField_7b4a5a75e2be17255c0117015e74ed55,
-  "@payloadcms/next/client#SlugField": SlugField_2b8867833a34864a02ddf429b0728a40,
-  "@sittari/payload-slug-field/client#SlugInstruction": SlugInstruction_1a78c7bfe3ae87de4034359f0bc0467f,
+  "@sittari/payload-permalink/client#PermalinkField": PermalinkField_008f72efbdb3c241fa6871c4349b60e1,
   "@payloadcms/richtext-lexical/rsc#RscEntryLexicalCell": RscEntryLexicalCell_44fe37237e0ebf4470c9990d8cb7b07e,
   "@payloadcms/richtext-lexical/rsc#RscEntryLexicalField": RscEntryLexicalField_44fe37237e0ebf4470c9990d8cb7b07e,
   "@payloadcms/richtext-lexical/rsc#LexicalDiffComponent": LexicalDiffComponent_44fe37237e0ebf4470c9990d8cb7b07e,

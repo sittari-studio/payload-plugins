@@ -1,4 +1,4 @@
-# @sittari/payload-path-field
+# @sittari/payload-permalink
 
 ## 0.4.0
 

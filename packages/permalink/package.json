@@ -1,7 +1,7 @@
 {
-  "name": "@sittari/payload-path-field",
+  "name": "@sittari/payload-permalink",
   "version": "0.4.0",
-  "description": "Localized canonical path fields and routing helpers for Payload CMS.",
+  "description": "WordPress-style slugs, canonical paths, permalinks, and routing helpers for Payload CMS.",
   "type": "module",
   "license": "MIT",
   "main": "./dist/index.js",
@@ -38,11 +38,17 @@
     "prepublishOnly": "pnpm run clean && pnpm run build"
   },
   "peerDependencies": {
-    "payload": "^3.0.0"
+    "@payloadcms/ui": "^3.0.0",
+    "payload": "^3.0.0",
+    "react": "^19.0.0"
+  },
+  "dependencies": {
+    "slugify": "^1.6.9"
   },
   "devDependencies": {
     "@payloadcms/db-sqlite": "^3.0.0",
     "@payloadcms/plugin-nested-docs": "3.85.2",
+    "@types/react": "^19.0.0",
     "payload": "^3.0.0",
     "typescript": "5.9.3",
     "vitest": "4.1.9"
@@ -54,7 +60,9 @@
     "payload",
     "payloadcms",
     "payload-plugin",
+    "permalink",
     "routing",
+    "slug",
     "localization"
   ]
 }

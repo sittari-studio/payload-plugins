@@ -1,12 +1,11 @@
 export type {
   FindDocumentByPathArgs,
   FoundDocumentByPath,
+  LocalePrefixMode,
   PathCollectionOptions,
-  PathFieldPluginConfig,
   PathHelpers,
   PathRoute,
+  PermalinkPluginConfig,
   RebuildDocumentPathsArgs,
   RebuildDocumentPathsResult,
-  ResolveDocumentUrl,
-  ResolveDocumentUrlArgs,
 } from '../types.js'

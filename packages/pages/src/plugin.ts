@@ -1,13 +1,7 @@
 import type { CollectionConfig, Config, Field } from "payload";
-import { createSlugField } from "@sittari/payload-slug-field";
 
 import { localizedText } from "./translations/index.js";
 import type { PagesPluginConfig, PageTypes } from "./types.js";
-
-const createDefaultSlugField = () =>
-  createSlugField({
-    instruction: localizedText("homeSlugInstruction"),
-  });
 
 const createPageTypeFields = (pageTypes: PageTypes): Field[] =>
   Object.entries(pageTypes).map(([name, pageType]) => ({
@@ -31,10 +25,6 @@ const createPagesCollection = (
     throw new Error("pagesPlugin requires at least one page type");
   }
 
-  const defaultSlugField = createDefaultSlugField();
-  const slugField =
-    pluginConfig.slugField?.({ defaultSlugField }) ?? defaultSlugField;
-
   const defaultFields: Field[] = [
     {
       name: "title",
@@ -43,7 +33,6 @@ const createPagesCollection = (
       required: true,
       localized: pluginConfig?.localizeTitle ?? true,
     },
-    slugField,
     {
       name: "pageType",
       type: "select",

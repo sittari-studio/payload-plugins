@@ -13,13 +13,6 @@ const getPagesCollection = (config: Config) =>
 const getNamedField = (fields: Field[], name: string) =>
   fields.find((field) => 'name' in field && field.name === name)
 
-const getRowContainingField = (fields: Field[], name: string) =>
-  fields.find(
-    (field) =>
-      field.type === 'row' &&
-      field.fields.some((child) => 'name' in child && child.name === name),
-  )
-
 describe('pagesPlugin', () => {
   it('adds the pages collection and preserves existing collections', () => {
     const existingCollection = {
@@ -152,15 +145,11 @@ describe('pagesPlugin', () => {
     })
   })
 
-  it('allows the slug field and final collection config to be overridden', () => {
+  it('allows the final collection config to be overridden', () => {
     const outputConfig = pagesPlugin({
       pageTypes: {
         standardContent: createStandardContentPageType(),
       },
-      slugField: ({ defaultSlugField }) => ({
-        ...defaultSlugField,
-        admin: { position: 'sidebar' },
-      }),
       overrides: (defaultCollection) => ({
         ...defaultCollection,
         fields: [
@@ -171,11 +160,7 @@ describe('pagesPlugin', () => {
     })({ collections: [] } as unknown as Config)
     const pages = getPagesCollection(outputConfig)
 
-    expect(getRowContainingField(pages?.fields ?? [], 'slug')).toMatchObject({
-      type: 'row',
-      admin: { position: 'sidebar' },
-      fields: expect.arrayContaining([expect.objectContaining({ name: 'slug' })]),
-    })
+    expect(getNamedField(pages?.fields ?? [], 'slug')).toBeUndefined()
     expect(getNamedField(pages?.fields ?? [], 'internalName')).toMatchObject({
       type: 'text',
     })

@@ -15,10 +15,6 @@
     "./types": {
       "types": "./dist/exports/types.d.ts",
       "import": "./dist/exports/types.js"
-    },
-    "./client": {
-      "types": "./dist/exports/client.d.ts",
-      "import": "./dist/exports/client.js"
     }
   },
   "files": [
@@ -41,11 +37,11 @@
     "payload": "^3.0.0"
   },
   "devDependencies": {
-    "payload": "^3.0.0",
-    "typescript": "5.9.3",
-    "vitest": "4.1.9",
     "@types/react": "^19.0.0",
-    "react": "^19.0.0"
+    "payload": "^3.0.0",
+    "react": "^19.0.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.9"
   },
   "publishConfig": {
     "access": "public"
@@ -56,8 +52,5 @@
     "payload-plugin",
     "cms",
     "pages"
-  ],
-  "dependencies": {
-    "@sittari/payload-slug-field": "workspace:*"
-  }
+  ]
 }

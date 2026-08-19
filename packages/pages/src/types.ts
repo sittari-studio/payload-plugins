@@ -1,4 +1,4 @@
-import type { CollectionConfig, Field, RowField } from 'payload'
+import type { CollectionConfig, Field } from 'payload'
 
 export type PageTypeConfig = {
   fields: Field[]
@@ -14,9 +14,6 @@ type SharedPagesPluginConfig = {
   localizeTitle?: boolean
   /** Extend or replace the final config of the pages collection. */
   overrides?: (defaultCollection: CollectionConfig) => CollectionConfig
-
-  /** Override the default slug field. */
-  slugField?: (args: { defaultSlugField: RowField }) => RowField
 }
 
 export type PagesPluginConfig = SharedPagesPluginConfig &
