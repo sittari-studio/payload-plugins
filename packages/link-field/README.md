@@ -45,12 +45,17 @@ export default buildConfig({
           label: "Link",
           appearance: "drawer",
           relationTo: ["pages", "posts"],
+          localizeLabel: true,
         }),
       ],
     },
   ],
 });
 ```
+
+`localizeLabel` controls whether the link's nested `label` field is localized.
+It defaults to `true`; set it to `false` when link labels should use one value
+across all locales.
 
 ## Lexical links
 
