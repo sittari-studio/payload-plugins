@@ -1,5 +1,11 @@
 # @sittari/payload-permalink
 
+## 1.0.1
+
+### Patch Changes
+
+- 84bff06: Preserve published documents and routes when rebuilding paths for documents with newer drafts.
+
 ## 1.0.0
 
 ### Major Changes
