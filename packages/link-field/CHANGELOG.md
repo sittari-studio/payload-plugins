@@ -1,5 +1,11 @@
 # @sittari/payload-link-field
 
+## 0.3.2
+
+### Patch Changes
+
+- 6743347: add localizeLabel option
+
 ## 0.3.1
 
 ### Patch Changes
