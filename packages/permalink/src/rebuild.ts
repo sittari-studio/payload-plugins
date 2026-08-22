@@ -14,16 +14,14 @@ type RebuildInternalArgs = RebuildDocumentPathsArgs & {
 const rebuildCollectionLocale = async ({
   batchSize,
   collection,
-  draft,
-  draftOnly,
+  draftStatus,
   locale,
   missingOnly,
   payload,
 }: {
   batchSize: number
   collection: string
-  draft: boolean
-  draftOnly: boolean
+  draftStatus?: 'draft' | 'published'
   locale?: string
   missingOnly: boolean
   payload: Payload
@@ -42,7 +40,11 @@ const rebuildCollectionLocale = async ({
   while (true) {
     const constraints: Where[] = [
       ...(missingOnly ? [missingPath] : []),
-      ...(draftOnly ? [{ _status: { not_equals: 'published' } }] : []),
+      ...(draftStatus === 'published'
+        ? [{ _status: { equals: 'published' } }]
+        : draftStatus === 'draft'
+          ? [{ _status: { not_equals: 'published' } }]
+          : []),
       ...(missingOnly && skippedDocumentIds.length > 0
         ? [{ id: { not_in: skippedDocumentIds } }]
         : []),
@@ -56,7 +58,7 @@ const rebuildCollectionLocale = async ({
     const result = await payload.find({
       collection: collection as never,
       depth: 0,
-      draft,
+      draft: draftStatus !== undefined,
       fallbackLocale: false,
       limit: batchSize,
       locale: locale as never,
@@ -70,13 +72,12 @@ const rebuildCollectionLocale = async ({
       _status?: string
       id: number | string
     }>) {
-      if (draftOnly && document._status === 'published') continue
       try {
         await payload.update({
           collection: collection as never,
           context: { [PATH_REBUILD_CONTEXT_KEY]: true },
           data: {},
-          draft,
+          draft: draftStatus === 'draft',
           fallbackLocale: false,
           id: document.id,
           locale: locale as never,
@@ -90,7 +91,7 @@ const rebuildCollectionLocale = async ({
         payload.logger.error({
           collection,
           documentID: document.id,
-          draft,
+          draft: draftStatus === 'draft',
           err: error,
           locale: locale ?? null,
           msg: '@sittari/payload-path-field: skipped rebuilding a missing document path because document validation failed.',
@@ -148,8 +149,7 @@ export const rebuildDocumentPathsWithPayload = async (
       updated += await rebuildCollectionLocale({
         batchSize,
         collection,
-        draft: false,
-        draftOnly: false,
+        draftStatus: drafts ? 'published' : undefined,
         locale,
         missingOnly: args.missingOnly ?? false,
         payload,
@@ -158,8 +158,7 @@ export const rebuildDocumentPathsWithPayload = async (
         updated += await rebuildCollectionLocale({
           batchSize,
           collection,
-          draft: true,
-          draftOnly: true,
+          draftStatus: 'draft',
           locale,
           missingOnly: args.missingOnly ?? false,
           payload,

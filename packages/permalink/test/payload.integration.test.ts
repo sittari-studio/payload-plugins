@@ -6,7 +6,11 @@ import { join } from 'node:path'
 import { buildConfig, getPayload, type Payload } from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { createPathHelpers, permalinkPlugin } from '../src/index.js'
+import {
+  createPathHelpers,
+  permalinkPlugin,
+  rebuildDocumentPathsWithPayload,
+} from '../src/index.js'
 
 const databaseFile = join(tmpdir(), `payload-permalink-${randomUUID()}.sqlite`)
 let payload: Payload
@@ -46,6 +50,16 @@ beforeAll(async () => {
         ],
       },
       {
+        slug: 'draft-posts',
+        access: { read: () => true },
+        admin: { useAsTitle: 'title' },
+        versions: { drafts: true },
+        fields: [
+          { name: 'title', type: 'text', required: true },
+          { name: 'content', type: 'text' },
+        ],
+      },
+      {
         slug: 'posts',
         access: { read: () => true },
         admin: { useAsTitle: 'title' },
@@ -55,6 +69,7 @@ beforeAll(async () => {
     plugins: [
       permalinkPlugin({
         collections: {
+          'draft-posts': { prefix: 'drafts' },
           pages: { prefix: '' },
           posts: { prefix: 'blog/page' },
         },
@@ -205,6 +220,67 @@ describe('WordPress-style permalink integration', () => {
       (await helpers.findDocumentByPath({ path: '/published-route' }))?.document.id,
     ).toBe(page.id)
     expect(await helpers.findDocumentByPath({ path: '/future-route' })).toBeNull()
+  })
+
+  it('preserves the published route and document when rebuilding a newer draft', async () => {
+    const page = await payload.create({
+      collection: 'draft-posts',
+      data: {
+        _status: 'published',
+        content: 'Published content',
+        title: 'Rebuild Published',
+      },
+    }) as unknown as { id: number | string }
+    const publishedOnly = await payload.create({
+      collection: 'draft-posts',
+      data: { _status: 'published', title: 'Rebuild Stable' },
+    }) as unknown as { id: number | string }
+    const helpers = createPathHelpers({ getPayload: () => payload })
+
+    await payload.update({
+      collection: 'draft-posts',
+      data: { content: 'Draft content' },
+      draft: true,
+      id: page.id,
+    })
+
+    await rebuildDocumentPathsWithPayload(payload, {
+      collection: 'draft-posts',
+    })
+
+    const published = await payload.findByID({
+      collection: 'draft-posts',
+      depth: 0,
+      draft: false,
+      id: page.id,
+    }) as unknown as { _status: string; content: string; path: string }
+    const draft = await payload.findByID({
+      collection: 'draft-posts',
+      depth: 0,
+      draft: true,
+      id: page.id,
+    }) as unknown as { _status: string; content: string; path: string }
+
+    expect(published).toMatchObject({
+      _status: 'published',
+      content: 'Published content',
+      path: '/drafts/rebuild-published',
+    })
+    expect(draft).toMatchObject({
+      _status: 'draft',
+      content: 'Draft content',
+      path: '/drafts/rebuild-published',
+    })
+    expect(
+      (await helpers.findDocumentByPath({
+        path: '/drafts/rebuild-published',
+      }))?.document.id,
+    ).toBe(page.id)
+    expect(
+      (await helpers.findDocumentByPath({
+        path: '/drafts/rebuild-stable',
+      }))?.document.id,
+    ).toBe(publishedOnly.id)
   })
 
   it('moves the route when the changed draft is published', async () => {
