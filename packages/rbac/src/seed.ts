@@ -1,18 +1,18 @@
-import type { Payload } from 'payload'
+import type { Payload } from 'payload';
 
-import type { PredefinedRole } from './types.js'
+import type { PredefinedRole } from './types.js';
 
-import { samePermissions } from './permissions.js'
-import { ensureRolesIndexes } from './utilities/ensureRolesIndexes.js'
-import { isUniqueViolation } from './utilities/isUniqueViolation.js'
-import { retryOnWriteConflict } from './utilities/retryOnWriteConflict.js'
+import { samePermissions } from './permissions.js';
+import { ensureRolesIndexes } from './utilities/ensureRolesIndexes.js';
+import { isUniqueViolation } from './utilities/isUniqueViolation.js';
+import { retryOnWriteConflict } from './utilities/retryOnWriteConflict.js';
 
 export type SeedPredefinedRolesArgs = {
-  roles: PredefinedRole[]
-  rolesCollectionSlug: string
-}
+  roles: PredefinedRole[];
+  rolesCollectionSlug: string;
+};
 
-type ExistingRole = { id: number | string; permissions?: unknown }
+type ExistingRole = { id: number | string; permissions?: unknown };
 
 const findRoleByName = async (
   payload: Payload,
@@ -24,9 +24,9 @@ const findRoleByName = async (
     depth: 0,
     limit: 1,
     where: { name: { equals: name } },
-  })
-  return result.docs[0] as ExistingRole | undefined
-}
+  });
+  return result.docs[0] as ExistingRole | undefined;
+};
 
 /**
  * Creates each predefined role that does not exist yet, keyed by `name`. Existing
@@ -57,12 +57,19 @@ export const seedPredefinedRoles = async (
   // Force the unique index on `name` to exist before the first create, so a
   // concurrent-boot race resolves to a duplicate-key error (handled below)
   // rather than duplicate role documents. Best-effort — see `ensureRolesIndexes`.
-  await ensureRolesIndexes(payload, rolesCollectionSlug)
+  await ensureRolesIndexes(payload, rolesCollectionSlug);
 
   for (const role of roles) {
-    const existingDoc = await findRoleByName(payload, rolesCollectionSlug, role.name)
+    const existingDoc = await findRoleByName(
+      payload,
+      rolesCollectionSlug,
+      role.name,
+    );
     if (existingDoc) {
-      if (role.protected && !samePermissions(existingDoc.permissions, role.permissions)) {
+      if (
+        role.protected &&
+        !samePermissions(existingDoc.permissions, role.permissions)
+      ) {
         await retryOnWriteConflict(() =>
           payload.update({
             id: existingDoc.id,
@@ -71,10 +78,12 @@ export const seedPredefinedRoles = async (
             depth: 0,
             disableTransaction: true,
           }),
-        )
-        payload.logger.info(`[payload-rbac] Restored permissions of protected role "${role.name}"`)
+        );
+        payload.logger.info(
+          `[payload-rbac] Restored permissions of protected role "${role.name}"`,
+        );
       }
-      continue
+      continue;
     }
 
     try {
@@ -91,8 +100,8 @@ export const seedPredefinedRoles = async (
           },
           disableTransaction: true,
         }),
-      )
-      payload.logger.info(`[payload-rbac] Seeded role "${role.name}"`)
+      );
+      payload.logger.info(`[payload-rbac] Seeded role "${role.name}"`);
     } catch (error) {
       // A concurrent boot may have created this role between our find and create.
       // The failure is not always recognizable from the error object — Payload's
@@ -102,14 +111,14 @@ export const seedPredefinedRoles = async (
       // won the race and we continue; otherwise the failure is real and rethrows.
       const alreadySeeded =
         isUniqueViolation(error) ||
-        Boolean(await findRoleByName(payload, rolesCollectionSlug, role.name))
+        Boolean(await findRoleByName(payload, rolesCollectionSlug, role.name));
       if (alreadySeeded) {
         payload.logger.info(
           `[payload-rbac] Role "${role.name}" already created concurrently — skipping`,
-        )
-        continue
+        );
+        continue;
       }
-      throw error
+      throw error;
     }
   }
-}
+};

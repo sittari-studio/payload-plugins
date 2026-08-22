@@ -23,8 +23,8 @@ export const en = {
     'Roles control what users can access. Assign them on the user document.',
   rolesFieldDescription: 'Roles controlling what this user can access.',
   update: 'Update',
-} as const
+} as const;
 
 export type RbacTranslation = {
-  [Key in keyof typeof en]: string
-}
+  [Key in keyof typeof en]: string;
+};

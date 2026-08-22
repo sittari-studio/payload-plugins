@@ -18,17 +18,17 @@ The host application owns:
 
 ## Components
 
-| Component | Responsibility |
-| --- | --- |
-| Plugin transformer | Validates plugin configuration, augments enabled collections, appends the Global and redirects collection, and preserves all existing config. |
-| Field factories | Produce the generated SEO group, conditional subfields, localized Admin labels and validation, and marker metadata. |
-| Global factory | Produces the site SEO and robots configuration Global. |
-| Redirect factory | Produces the exact-path redirects collection with indexes, validation, and access. |
-| Resolver core | Loads documents/settings without locale fallback and turns persisted values into a normalized SEO result. |
-| Helper adapters | Return metadata objects, schema JSON-LD, redirects, robots text, sitemap XML, and sitemap index XML. |
-| Admin components | Render localized previews and schema reset behavior using the same resolver rules where possible. |
-| Translation catalog | Provides one typed set of plugin-owned Admin strings for English, Russian, and Ukrainian, with English fallback. |
-| Validators | Normalize and validate URLs, JSON, paths, redirect graphs, and configuration. |
+| Component           | Responsibility                                                                                                                                |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Plugin transformer  | Validates plugin configuration, augments enabled collections, appends the Global and redirects collection, and preserves all existing config. |
+| Field factories     | Produce the generated SEO group, conditional subfields, localized Admin labels and validation, and marker metadata.                           |
+| Global factory      | Produces the site SEO and robots configuration Global.                                                                                        |
+| Redirect factory    | Produces the exact-path redirects collection with indexes, validation, and access.                                                            |
+| Resolver core       | Loads documents/settings without locale fallback and turns persisted values into a normalized SEO result.                                     |
+| Helper adapters     | Return metadata objects, schema JSON-LD, redirects, robots text, sitemap XML, and sitemap index XML.                                          |
+| Admin components    | Render localized previews and schema reset behavior using the same resolver rules where possible.                                             |
+| Translation catalog | Provides one typed set of plugin-owned Admin strings for English, Russian, and Ukrainian, with English fallback.                              |
+| Validators          | Normalize and validate URLs, JSON, paths, redirect graphs, and configuration.                                                                 |
 
 ## Recommended source layout
 
@@ -36,7 +36,7 @@ This is the intended layout for the existing ESM-only package. Each module
 should use explicit TypeScript types and .js import specifiers, matching the
 repository convention.
 
-~~~text
+```text
 src/
   admin/
     previews/
@@ -65,7 +65,7 @@ src/
   types.ts
   index.ts
   exports/types.ts
-~~~
+```
 
 The layout is a guide, not a requirement to create empty modules in advance.
 
@@ -92,7 +92,7 @@ than replacing them.
 
 ## Resolution flow
 
-~~~text
+```text
 Payload document + active locale
   -> load only that locale, with fallbackLocale false
   -> resolve document SEO and configured document-field mappings
@@ -102,7 +102,7 @@ Payload document + active locale
   -> generate or replace schema
   -> return normalized framework-neutral result
   -> optional Next.js / XML / JSON-LD adapter
-~~~
+```
 
 The resolver core must not make a frontend decision such as setting response
 headers or registering a route. Adapters must be thin projections of the same

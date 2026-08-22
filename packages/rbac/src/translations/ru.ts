@@ -1,4 +1,4 @@
-import type { RbacTranslation } from './en.js'
+import type { RbacTranslation } from './en.js';
 
 export const ru = {
   all: 'Все',
@@ -25,4 +25,4 @@ export const ru = {
     'Роли определяют, к чему имеют доступ пользователи. Назначайте их в документе пользователя.',
   rolesFieldDescription: 'Роли, определяющие доступ этого пользователя.',
   update: 'Обновление',
-} satisfies RbacTranslation
+} satisfies RbacTranslation;

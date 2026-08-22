@@ -14,7 +14,8 @@ export default {
       boxShadow: {
         card: '0 8px 22px color-mix(in srgb, var(--theme-elevation-1000) 8%, transparent)',
         focus: '0 0 0 2px var(--theme-success-400)',
-        popover: '0 8px 24px color-mix(in srgb, var(--theme-elevation-1000) 12%, transparent)',
+        popover:
+          '0 8px 24px color-mix(in srgb, var(--theme-elevation-1000) 12%, transparent)',
       },
       colors: {
         blue: {
@@ -78,4 +79,4 @@ export default {
       },
     },
   },
-}
+};

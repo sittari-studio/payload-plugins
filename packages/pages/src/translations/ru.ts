@@ -1,4 +1,4 @@
-import type { PagesTranslation } from './en.js'
+import type { PagesTranslation } from './en.js';
 
 export const ru = {
   block: 'Блок',
@@ -11,4 +11,4 @@ export const ru = {
   pageType: 'Тип страницы',
   standardContent: 'Стандартный контент',
   title: 'Заголовок',
-} satisfies PagesTranslation
+} satisfies PagesTranslation;

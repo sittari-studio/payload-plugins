@@ -1,7 +1,10 @@
-import type { Payload } from 'payload'
+import type { Payload } from 'payload';
 
-import { isUniqueViolation } from './isUniqueViolation.js'
-import { isTransientMongoError, retryOnWriteConflict } from './retryOnWriteConflict.js'
+import { isUniqueViolation } from './isUniqueViolation.js';
+import {
+  isTransientMongoError,
+  retryOnWriteConflict,
+} from './retryOnWriteConflict.js';
 
 /**
  * Builds the roles collection's indexes on MongoDB before seeding runs.
@@ -27,20 +30,20 @@ export const ensureRolesIndexes = async (
 ): Promise<void> => {
   // Only the mongoose adapter needs (and exposes) a runtime index build.
   if (payload.db.name !== 'mongoose') {
-    return
+    return;
   }
 
   const model = (
     payload.db as unknown as {
-      collections?: Record<string, { createIndexes?: () => Promise<unknown> }>
+      collections?: Record<string, { createIndexes?: () => Promise<unknown> }>;
     }
-  ).collections?.[rolesCollectionSlug]
+  ).collections?.[rolesCollectionSlug];
 
   // `.bind(model)` matters: `createIndexes` is a mongoose model method that
   // needs `this` to be the model, so it must not be called as a bare function.
-  const createIndexes = model?.createIndexes?.bind(model)
+  const createIndexes = model?.createIndexes?.bind(model);
   if (!createIndexes) {
-    return
+    return;
   }
 
   try {
@@ -51,16 +54,18 @@ export const ensureRolesIndexes = async (
     // concurrent `onInit` boots provoke on a fresh replica set — because a
     // `create` racing an in-progress index build is what the unique index is
     // there to make safe in the first place.
-    await retryOnWriteConflict(() => createIndexes(), { shouldRetry: isTransientMongoError })
+    await retryOnWriteConflict(() => createIndexes(), {
+      shouldRetry: isTransientMongoError,
+    });
   } catch (error) {
     if (isUniqueViolation(error)) {
       payload.logger.error(
         `[payload-rbac] Could not build the unique index on "${rolesCollectionSlug}.name" ` +
           `because the collection already contains duplicate role names. Remove the ` +
           `duplicates, then restart so the constraint can be enforced.`,
-      )
-      return
+      );
+      return;
     }
-    throw error
+    throw error;
   }
-}
+};

@@ -1,8 +1,8 @@
-import type { CollectionBeforeChangeHook } from 'payload'
+import type { CollectionBeforeChangeHook } from 'payload';
 
-import { APIError } from 'payload'
+import { APIError } from 'payload';
 
-import { normalizeRoleIds } from './protectRolesField.js'
+import { normalizeRoleIds } from './protectRolesField.js';
 
 export type ProtectCredentialsArgs = {
   /**
@@ -11,14 +11,14 @@ export type ProtectCredentialsArgs = {
    * defined only in the database — is self-only, so a user is exempt only when
    * every role they hold appears on this list.
    */
-  anyoneRoleNames: string[]
-  rolesCollectionSlug: string
-  rolesFieldName: string
+  anyoneRoleNames: string[];
+  rolesCollectionSlug: string;
+  rolesFieldName: string;
   /** Slug of the user collection this hook is installed on. */
-  userCollectionSlug: string
-}
+  userCollectionSlug: string;
+};
 
-const identityFields = ['email', 'username'] as const
+const identityFields = ['email', 'username'] as const;
 
 /**
  * Credential guard installed on each user collection: the password, email, and
@@ -37,34 +37,35 @@ export const createProtectCredentialsHook = ({
   rolesFieldName,
   userCollectionSlug,
 }: ProtectCredentialsArgs): CollectionBeforeChangeHook => {
-  const anyone = new Set(anyoneRoleNames)
+  const anyone = new Set(anyoneRoleNames);
   return async ({ data, operation, originalDoc, req }) => {
     if (!req.user || !data || operation !== 'update') {
-      return data
+      return data;
     }
-    const targetId: unknown = originalDoc?.id
+    const targetId: unknown = originalDoc?.id;
     if (
       req.user.collection === userCollectionSlug &&
       (typeof targetId === 'number' || typeof targetId === 'string') &&
       String(targetId) === String(req.user.id)
     ) {
-      return data
+      return data;
     }
 
     // `data.password` is only deleted after collection beforeChange hooks run,
     // so a password change is visible here; identity fields are compared so a
     // full-document save with an unchanged email still passes.
-    const changingPassword = typeof data.password === 'string' && data.password.length > 0
+    const changingPassword =
+      typeof data.password === 'string' && data.password.length > 0;
     const changedField = identityFields.find(
       (field) => data[field] != null && data[field] !== originalDoc?.[field],
-    )
+    );
     if (!changingPassword && !changedField) {
-      return data
+      return data;
     }
 
-    const targetRoleIds = normalizeRoleIds(originalDoc?.[rolesFieldName])
+    const targetRoleIds = normalizeRoleIds(originalDoc?.[rolesFieldName]);
     if (targetRoleIds.length === 0) {
-      return data
+      return data;
     }
     const { docs } = await req.payload.find({
       collection: rolesCollectionSlug,
@@ -73,25 +74,25 @@ export const createProtectCredentialsHook = ({
       pagination: false,
       req,
       where: { id: { in: targetRoleIds } },
-    })
+    });
     // Self-only unless the role is an explicit opt-out — so a database-defined
     // role (never on the opt-out list) always protects its holders.
     const protectedRole = docs.find(
       (doc) => !(typeof doc.name === 'string' && anyone.has(doc.name)),
-    )
+    );
     if (!protectedRole) {
-      return data
+      return data;
     }
 
     if (changingPassword) {
       throw new APIError(
         `The password of a user holding the "${String(protectedRole.name)}" role can only be changed by that user — send them a password-reset email instead.`,
         403,
-      )
+      );
     }
     throw new APIError(
       `The ${changedField} of a user holding the "${String(protectedRole.name)}" role can only be changed by that user.`,
       403,
-    )
-  }
-}
+    );
+  };
+};

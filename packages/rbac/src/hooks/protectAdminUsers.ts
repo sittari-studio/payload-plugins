@@ -2,20 +2,20 @@ import type {
   CollectionBeforeChangeHook,
   CollectionBeforeDeleteHook,
   PayloadRequest,
-} from 'payload'
+} from 'payload';
 
-import { APIError } from 'payload'
+import { APIError } from 'payload';
 
-import { findRoleIdByName } from '../utilities/roleLookup.js'
-import { normalizeRoleIds } from './protectRolesField.js'
+import { findRoleIdByName } from '../utilities/roleLookup.js';
+import { normalizeRoleIds } from './protectRolesField.js';
 
 export type ProtectAdminUsersArgs = {
-  adminRoleName: string
-  rolesCollectionSlug: string
-  rolesFieldName: string
+  adminRoleName: string;
+  rolesCollectionSlug: string;
+  rolesFieldName: string;
   /** Slug of the user collection this hook is installed on. */
-  userCollectionSlug: string
-}
+  userCollectionSlug: string;
+};
 
 /** Whether the requesting user holds the admin role themselves. */
 const requesterHoldsAdmin = (
@@ -25,7 +25,7 @@ const requesterHoldsAdmin = (
 ): boolean =>
   normalizeRoleIds((req.user as Record<string, unknown>)[rolesFieldName]).some(
     (id) => String(id) === String(adminRoleId),
-  )
+  );
 
 /**
  * Protects administrator accounts from users below the admin tier: a user who
@@ -49,7 +49,7 @@ export const createProtectAdminUsersChangeHook = ({
 }: ProtectAdminUsersArgs): CollectionBeforeChangeHook => {
   return async ({ data, operation, originalDoc, req }) => {
     if (!req.user || !data) {
-      return data
+      return data;
     }
 
     // The roles of the account being written: the incoming set for a create (a
@@ -59,21 +59,25 @@ export const createProtectAdminUsersChangeHook = ({
     const targetRoleIds =
       operation === 'create'
         ? normalizeRoleIds(data[rolesFieldName])
-        : normalizeRoleIds(originalDoc?.[rolesFieldName])
+        : normalizeRoleIds(originalDoc?.[rolesFieldName]);
     if (targetRoleIds.length === 0) {
-      return data
+      return data;
     }
 
-    const adminRoleId = await findRoleIdByName(req, rolesCollectionSlug, adminRoleName)
+    const adminRoleId = await findRoleIdByName(
+      req,
+      rolesCollectionSlug,
+      adminRoleName,
+    );
     if (
       adminRoleId === undefined ||
       !targetRoleIds.some((id) => String(id) === String(adminRoleId))
     ) {
-      return data
+      return data;
     }
 
     if (requesterHoldsAdmin(req, rolesFieldName, adminRoleId)) {
-      return data
+      return data;
     }
 
     throw new APIError(
@@ -81,9 +85,9 @@ export const createProtectAdminUsersChangeHook = ({
         ? `Only a user holding the "${adminRoleName}" role can create an account with that role.`
         : `Only a user holding the "${adminRoleName}" role can modify an account that holds it.`,
       403,
-    )
-  }
-}
+    );
+  };
+};
 
 /**
  * Blocks deleting an account that holds the admin role unless the requester holds
@@ -99,7 +103,7 @@ export const createProtectAdminUsersDeleteHook = ({
 }: ProtectAdminUsersArgs): CollectionBeforeDeleteHook => {
   return async ({ id, req }) => {
     if (!req.user) {
-      return
+      return;
     }
 
     const doc = (await req.payload.findByID({
@@ -109,27 +113,31 @@ export const createProtectAdminUsersDeleteHook = ({
       disableErrors: true,
       overrideAccess: true,
       req,
-    })) as null | Record<string, unknown>
-    const targetRoleIds = normalizeRoleIds(doc?.[rolesFieldName])
+    })) as null | Record<string, unknown>;
+    const targetRoleIds = normalizeRoleIds(doc?.[rolesFieldName]);
     if (targetRoleIds.length === 0) {
-      return
+      return;
     }
 
-    const adminRoleId = await findRoleIdByName(req, rolesCollectionSlug, adminRoleName)
+    const adminRoleId = await findRoleIdByName(
+      req,
+      rolesCollectionSlug,
+      adminRoleName,
+    );
     if (
       adminRoleId === undefined ||
       !targetRoleIds.some((roleId) => String(roleId) === String(adminRoleId))
     ) {
-      return
+      return;
     }
 
     if (requesterHoldsAdmin(req, rolesFieldName, adminRoleId)) {
-      return
+      return;
     }
 
     throw new APIError(
       `Only a user holding the "${adminRoleName}" role can delete an account that holds it.`,
       403,
-    )
-  }
-}
+    );
+  };
+};

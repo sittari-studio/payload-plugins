@@ -1,31 +1,36 @@
-"use client";
+'use client';
 
-import type { UIFieldClientProps } from "payload";
-import { Button, useDocumentInfo, useFormFields, useLocale } from "@payloadcms/ui";
-import { useEffect, useMemo, useState } from "react";
+import type { UIFieldClientProps } from 'payload';
+import {
+  Button,
+  useDocumentInfo,
+  useFormFields,
+  useLocale,
+} from '@payloadcms/ui';
+import { useEffect, useMemo, useState } from 'react';
 
-import type { SeoPreview } from "../types.js";
-import { useAdminText } from "./use-admin-text.js";
+import type { SeoPreview } from '../types.js';
+import { useAdminText } from './use-admin-text.js';
 import {
   previewDocumentFromForm,
   type PreviewFormFields,
-} from "./preview-document.js";
+} from './preview-document.js';
 
 const text = (value: unknown): string | undefined =>
-  typeof value === "string" && value.trim() ? value.trim() : undefined;
+  typeof value === 'string' && value.trim() ? value.trim() : undefined;
 
 const cardStyle = {
-  background: "var(--theme-elevation-0)",
-  border: "1px solid var(--theme-elevation-150)",
-  borderRadius: "8px",
-  overflow: "hidden",
+  background: 'var(--theme-elevation-0)',
+  border: '1px solid var(--theme-elevation-150)',
+  borderRadius: '8px',
+  overflow: 'hidden',
 };
-const mutedStyle = { color: "var(--theme-elevation-600)", fontSize: ".875rem" };
+const mutedStyle = { color: 'var(--theme-elevation-600)', fontSize: '.875rem' };
 const clamp = (lines: number) => ({
-  WebkitBoxOrient: "vertical" as const,
+  WebkitBoxOrient: 'vertical' as const,
   WebkitLineClamp: lines,
-  display: "-webkit-box",
-  overflow: "hidden",
+  display: '-webkit-box',
+  overflow: 'hidden',
 });
 
 const PreviewImage = ({
@@ -43,21 +48,21 @@ const PreviewImage = ({
       src={src}
       style={{
         aspectRatio,
-        display: "block",
-        objectFit: "cover",
-        width: "100%",
+        display: 'block',
+        objectFit: 'cover',
+        width: '100%',
       }}
     />
   ) : (
     <div
       style={{
-        alignItems: "center",
+        alignItems: 'center',
         aspectRatio,
         background:
-          "linear-gradient(135deg, var(--theme-elevation-100), var(--theme-elevation-200))",
-        color: "var(--theme-elevation-600)",
-        display: "flex",
-        justifyContent: "center",
+          'linear-gradient(135deg, var(--theme-elevation-100), var(--theme-elevation-200))',
+        color: 'var(--theme-elevation-600)',
+        display: 'flex',
+        justifyContent: 'center',
       }}
     >
       {missingLabel}
@@ -67,8 +72,8 @@ const PreviewImage = ({
 /** `useDocumentInfo().apiURL` includes the current document ID; plugin endpoints are collection routes. */
 const previewEndpointUrl = (apiURL: string): string => {
   const url = new URL(apiURL, window.location.origin);
-  url.pathname = `${url.pathname.replace(/\/$/, "").replace(/\/[^/]+$/, "")}/seo-preview`;
-  url.search = "";
+  url.pathname = `${url.pathname.replace(/\/$/, '').replace(/\/[^/]+$/, '')}/seo-preview`;
+  url.search = '';
   return url.toString();
 };
 
@@ -91,10 +96,10 @@ export const SeoPreviews = ({ field }: UIFieldClientProps) => {
     const timer = window.setTimeout(async () => {
       try {
         const response = await fetch(previewEndpointUrl(apiURL), {
-          body: JSON.stringify({ document, locale: locale?.code ?? "" }),
-          credentials: "same-origin",
-          headers: { "Content-Type": "application/json" },
-          method: "POST",
+          body: JSON.stringify({ document, locale: locale?.code ?? '' }),
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          method: 'POST',
           signal: controller.signal,
         });
         if (response.ok) setPreview((await response.json()) as SeoPreview);
@@ -108,10 +113,10 @@ export const SeoPreviews = ({ field }: UIFieldClientProps) => {
     };
   }, [apiURL, document, locale?.code]);
 
-  const title = preview?.title ?? t("previewTitle");
-  const description = preview?.description ?? t("previewDescription");
+  const title = preview?.title ?? t('previewTitle');
+  const description = preview?.description ?? t('previewDescription');
   const canonicalUrl = preview?.canonicalUrl;
-  const host = canonicalUrl ? new URL(canonicalUrl).hostname : "";
+  const host = canonicalUrl ? new URL(canonicalUrl).hostname : '';
   const openGraphTitle = preview?.openGraph?.title ?? title;
   const openGraphDescription = preview?.openGraph?.description ?? description;
   const twitterTitle = preview?.twitter?.title ?? openGraphTitle;
@@ -120,7 +125,7 @@ export const SeoPreviews = ({ field }: UIFieldClientProps) => {
   const openGraphImage = preview?.openGraph?.image ?? preview?.image;
   const twitterImage = preview?.twitter?.image ?? openGraphImage;
   const twitterAspectRatio =
-    preview?.twitter?.card === "summary" ? "1 / 1" : "2 / 1";
+    preview?.twitter?.card === 'summary' ? '1 / 1' : '2 / 1';
   const schema = preview?.schema
     ? JSON.stringify(preview.schema, null, 2)
     : undefined;
@@ -138,41 +143,41 @@ export const SeoPreviews = ({ field }: UIFieldClientProps) => {
 
   return (
     <section
-      aria-label={t("previewAriaLabel")}
+      aria-label={t('previewAriaLabel')}
       style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "1.25rem",
-        width: "100%",
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '1.25rem',
+        width: '100%',
       }}
     >
-      <article style={{ ...cardStyle, padding: "1.25rem" }}>
-        <div style={mutedStyle}>{t("googleResult")}</div>
+      <article style={{ ...cardStyle, padding: '1.25rem' }}>
+        <div style={mutedStyle}>{t('googleResult')}</div>
         <div
           style={{
-            alignItems: "center",
-            display: "flex",
-            gap: ".5rem",
-            marginTop: ".75rem",
+            alignItems: 'center',
+            display: 'flex',
+            gap: '.5rem',
+            marginTop: '.75rem',
           }}
         >
           <span
             aria-hidden="true"
             style={{
-              alignItems: "center",
-              background: "var(--theme-elevation-150)",
-              borderRadius: "50%",
-              display: "flex",
-              fontSize: ".75rem",
-              height: "1.5rem",
-              justifyContent: "center",
-              width: "1.5rem",
+              alignItems: 'center',
+              background: 'var(--theme-elevation-150)',
+              borderRadius: '50%',
+              display: 'flex',
+              fontSize: '.75rem',
+              height: '1.5rem',
+              justifyContent: 'center',
+              width: '1.5rem',
             }}
           >
             ◐
           </span>
           <div>
-            {host && <div style={{ fontSize: ".875rem" }}>{host}</div>}
+            {host && <div style={{ fontSize: '.875rem' }}>{host}</div>}
             {canonicalUrl && (
               <div style={{ ...clamp(1), ...mutedStyle }}>{canonicalUrl}</div>
             )}
@@ -181,10 +186,10 @@ export const SeoPreviews = ({ field }: UIFieldClientProps) => {
         <div
           style={{
             ...clamp(2),
-            color: "var(--theme-success-500)",
-            fontSize: "1.25rem",
+            color: 'var(--theme-success-500)',
+            fontSize: '1.25rem',
             lineHeight: 1.3,
-            marginTop: ".75rem",
+            marginTop: '.75rem',
           }}
         >
           {title}
@@ -192,7 +197,7 @@ export const SeoPreviews = ({ field }: UIFieldClientProps) => {
         <p
           style={{
             ...clamp(3),
-            color: "var(--theme-elevation-700)",
+            color: 'var(--theme-elevation-700)',
             lineHeight: 1.5,
             marginBottom: 0,
           }}
@@ -202,26 +207,26 @@ export const SeoPreviews = ({ field }: UIFieldClientProps) => {
       </article>
       <div
         style={{
-          alignItems: "flex-start",
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "1.25rem",
+          alignItems: 'flex-start',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '1.25rem',
         }}
       >
-        <article style={{ ...cardStyle, flex: "1 1 18rem", minWidth: 0 }}>
+        <article style={{ ...cardStyle, flex: '1 1 18rem', minWidth: 0 }}>
           <PreviewImage
             aspectRatio="1.91 / 1"
-            missingLabel={t("previewImageMissing")}
+            missingLabel={t('previewImageMissing')}
             src={openGraphImage}
           />
-          <div style={{ padding: "1rem" }}>
-            <div style={mutedStyle}>{t("openGraphPreview")}</div>
+          <div style={{ padding: '1rem' }}>
+            <div style={mutedStyle}>{t('openGraphPreview')}</div>
             <div
               style={{
                 ...clamp(2),
-                fontSize: "1.1rem",
+                fontSize: '1.1rem',
                 fontWeight: 600,
-                marginTop: ".4rem",
+                marginTop: '.4rem',
               }}
             >
               {openGraphTitle}
@@ -238,39 +243,39 @@ export const SeoPreviews = ({ field }: UIFieldClientProps) => {
             </p>
           </div>
         </article>
-        <article style={{ ...cardStyle, flex: "1 1 18rem", minWidth: 0 }}>
+        <article style={{ ...cardStyle, flex: '1 1 18rem', minWidth: 0 }}>
           <PreviewImage
             aspectRatio={twitterAspectRatio}
-            missingLabel={t("previewImageMissing")}
+            missingLabel={t('previewImageMissing')}
             src={twitterImage}
           />
           <div
             style={{
-              borderTop: "1px solid var(--theme-elevation-150)",
-              padding: "1rem",
+              borderTop: '1px solid var(--theme-elevation-150)',
+              padding: '1rem',
             }}
           >
             <div style={{ ...clamp(2), fontWeight: 600 }}>{twitterTitle}</div>
-            <div style={{ ...clamp(2), ...mutedStyle, marginTop: ".35rem" }}>
+            <div style={{ ...clamp(2), ...mutedStyle, marginTop: '.35rem' }}>
               {twitterDescription}
             </div>
-            <div style={{ ...mutedStyle, marginTop: ".65rem" }}>
-              {t("twitterPreview")}
+            <div style={{ ...mutedStyle, marginTop: '.65rem' }}>
+              {t('twitterPreview')}
             </div>
           </div>
         </article>
       </div>
       {schema && (
-        <article style={{ ...cardStyle, padding: "1rem" }}>
+        <article style={{ ...cardStyle, padding: '1rem' }}>
           <div
             style={{
-              alignItems: "center",
-              display: "flex",
-              gap: ".75rem",
-              justifyContent: "space-between",
+              alignItems: 'center',
+              display: 'flex',
+              gap: '.75rem',
+              justifyContent: 'space-between',
             }}
           >
-            <div style={mutedStyle}>{t("generatedJson")}</div>
+            <div style={mutedStyle}>{t('generatedJson')}</div>
             <Button
               buttonStyle="secondary"
               margin={false}
@@ -278,19 +283,19 @@ export const SeoPreviews = ({ field }: UIFieldClientProps) => {
               size="small"
               type="button"
             >
-              {schemaCopied ? t("copied") : t("copy")}
+              {schemaCopied ? t('copied') : t('copy')}
             </Button>
           </div>
           <pre
             style={{
-              background: "var(--theme-elevation-50)",
-              border: "1px solid var(--theme-elevation-150)",
-              borderRadius: "6px",
-              margin: ".6rem 0 0",
-              maxHeight: "18rem",
-              overflow: "auto",
-              padding: "1rem",
-              whiteSpace: "pre-wrap",
+              background: 'var(--theme-elevation-50)',
+              border: '1px solid var(--theme-elevation-150)',
+              borderRadius: '6px',
+              margin: '.6rem 0 0',
+              maxHeight: '18rem',
+              overflow: 'auto',
+              padding: '1rem',
+              whiteSpace: 'pre-wrap',
             }}
           >
             {schema}

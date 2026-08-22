@@ -18,19 +18,22 @@
  * checked, and its `cause`, since Payload/drivers sometimes wrap it.
  */
 export const isWriteConflict = (error: unknown): boolean => {
-  for (const candidate of [error, (error as { cause?: unknown } | null)?.cause]) {
+  for (const candidate of [
+    error,
+    (error as { cause?: unknown } | null)?.cause,
+  ]) {
     if (typeof candidate !== 'object' || candidate === null) {
-      continue
+      continue;
     }
     if ((candidate as { code?: unknown }).code === 112) {
-      return true
+      return true;
     }
     if ((candidate as { codeName?: unknown }).codeName === 'WriteConflict') {
-      return true
+      return true;
     }
   }
-  return false
-}
+  return false;
+};
 
 /**
  * `codeName`s of MongoDB errors that are transient under concurrency and safe to
@@ -48,7 +51,7 @@ const TRANSIENT_CODE_NAMES = new Set<string>([
   'WriteConcernFailed',
   'WriteConcernTimeout',
   'WriteConflict',
-])
+]);
 
 /**
  * True for a transient, retryable MongoDB error — a superset of
@@ -60,59 +63,67 @@ const TRANSIENT_CODE_NAMES = new Set<string>([
  * original error and its `cause` are both inspected, since Payload/drivers wrap.
  */
 export const isTransientMongoError = (error: unknown): boolean => {
-  for (const candidate of [error, (error as { cause?: unknown } | null)?.cause]) {
+  for (const candidate of [
+    error,
+    (error as { cause?: unknown } | null)?.cause,
+  ]) {
     if (typeof candidate !== 'object' || candidate === null) {
-      continue
+      continue;
     }
     const c = candidate as {
-      code?: unknown
-      codeName?: unknown
-      errorLabels?: unknown
-      hasErrorLabel?: (label: string) => boolean
-      name?: unknown
-      writeConcernError?: unknown
-    }
+      code?: unknown;
+      codeName?: unknown;
+      errorLabels?: unknown;
+      hasErrorLabel?: (label: string) => boolean;
+      name?: unknown;
+      writeConcernError?: unknown;
+    };
     if (c.code === 112) {
-      return true
+      return true;
     }
-    if (typeof c.codeName === 'string' && TRANSIENT_CODE_NAMES.has(c.codeName)) {
-      return true
+    if (
+      typeof c.codeName === 'string' &&
+      TRANSIENT_CODE_NAMES.has(c.codeName)
+    ) {
+      return true;
     }
     if (c.name === 'MongoWriteConcernError' || c.name === 'MongoNetworkError') {
-      return true
+      return true;
     }
     if (c.writeConcernError) {
-      return true
+      return true;
     }
-    const labels = c.errorLabels
+    const labels = c.errorLabels;
     if (
       Array.isArray(labels) &&
-      (labels.includes('RetryableWriteError') || labels.includes('TransientTransactionError'))
+      (labels.includes('RetryableWriteError') ||
+        labels.includes('TransientTransactionError'))
     ) {
-      return true
+      return true;
     }
     if (
       typeof c.hasErrorLabel === 'function' &&
-      (c.hasErrorLabel('RetryableWriteError') || c.hasErrorLabel('TransientTransactionError'))
+      (c.hasErrorLabel('RetryableWriteError') ||
+        c.hasErrorLabel('TransientTransactionError'))
     ) {
-      return true
+      return true;
     }
   }
-  return false
-}
+  return false;
+};
 
 export type RetryOnWriteConflictOptions = {
   /** Backoff between attempts, multiplied by the attempt number. `0` disables the wait. */
-  delayMs?: number
+  delayMs?: number;
   /** Extra attempts after the first, i.e. up to `retries + 1` total. */
-  retries?: number
+  retries?: number;
   /**
    * Which errors to retry. Defaults to {@link isWriteConflict}; pass
    * {@link isTransientMongoError} for idempotent operations that should also
    * ride out write-concern/replica-set churn.
    */
-  shouldRetry?: (error: unknown) => boolean
-}
+  shouldRetry?: (error: unknown) => boolean;
+};
 
 /**
  * Runs `operation`, retrying it while it fails with a retryable error (by
@@ -125,21 +136,27 @@ export type RetryOnWriteConflictOptions = {
  */
 export const retryOnWriteConflict = async <T>(
   operation: () => Promise<T>,
-  { delayMs = 50, retries = 5, shouldRetry = isWriteConflict }: RetryOnWriteConflictOptions = {},
+  {
+    delayMs = 50,
+    retries = 5,
+    shouldRetry = isWriteConflict,
+  }: RetryOnWriteConflictOptions = {},
 ): Promise<T> => {
-  let lastError: unknown
+  let lastError: unknown;
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     try {
-      return await operation()
+      return await operation();
     } catch (error) {
       if (!shouldRetry(error)) {
-        throw error
+        throw error;
       }
-      lastError = error
+      lastError = error;
       if (attempt < retries && delayMs > 0) {
-        await new Promise<void>((resolve) => setTimeout(resolve, delayMs * (attempt + 1)))
+        await new Promise<void>((resolve) =>
+          setTimeout(resolve, delayMs * (attempt + 1)),
+        );
       }
     }
   }
-  throw lastError
-}
+  throw lastError;
+};

@@ -1,11 +1,12 @@
-import type { PredefinedRole, RbacPluginConfig } from '@sittari/payload-rbac'
+import type { PredefinedRole, RbacPluginConfig } from '@sittari/payload-rbac';
 
-export const devAdminRoleName = 'Developer'
+export const devAdminRoleName = 'Developer';
 
 export const devRbacRoles = [
   {
     name: 'Content Editor',
-    description: 'Protected content role used to preview the read-only matrix state.',
+    description:
+      'Protected content role used to preview the read-only matrix state.',
     permissions: [
       '*:read',
       'pages:create',
@@ -17,10 +18,11 @@ export const devRbacRoles = [
   },
   {
     name: 'Viewer',
-    description: 'Editable database-owned role with read access to current and future entities.',
+    description:
+      'Editable database-owned role with read access to current and future entities.',
     permissions: ['*:read'],
   },
-] satisfies PredefinedRole[]
+] satisfies PredefinedRole[];
 
 export const devRbacPluginConfig = {
   adminRole: {
@@ -28,4 +30,4 @@ export const devRbacPluginConfig = {
     description: 'Protected full-access role for the local development user.',
   },
   roles: devRbacRoles,
-} satisfies RbacPluginConfig
+} satisfies RbacPluginConfig;

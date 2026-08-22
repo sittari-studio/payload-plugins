@@ -8,4 +8,4 @@ export type {
   PermalinkPluginConfig,
   RebuildDocumentPathsArgs,
   RebuildDocumentPathsResult,
-} from '../types.js'
+} from '../types.js';

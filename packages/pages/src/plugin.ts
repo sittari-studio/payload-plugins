@@ -1,12 +1,12 @@
-import type { CollectionConfig, Config, Field } from "payload";
+import type { CollectionConfig, Config, Field } from 'payload';
 
-import { localizedText } from "./translations/index.js";
-import type { PagesPluginConfig, PageTypes } from "./types.js";
+import { localizedText } from './translations/index.js';
+import type { PagesPluginConfig, PageTypes } from './types.js';
 
 const createPageTypeFields = (pageTypes: PageTypes): Field[] =>
   Object.entries(pageTypes).map(([name, pageType]) => ({
     name,
-    type: "group",
+    type: 'group',
     label: false,
     fields: pageType.fields,
 
@@ -22,21 +22,21 @@ const createPagesCollection = (
   const pageTypes = pluginConfig.pageTypes;
 
   if (!pageTypes || Object.keys(pageTypes).length === 0) {
-    throw new Error("pagesPlugin requires at least one page type");
+    throw new Error('pagesPlugin requires at least one page type');
   }
 
   const defaultFields: Field[] = [
     {
-      name: "title",
-      type: "text",
-      label: localizedText("title"),
+      name: 'title',
+      type: 'text',
+      label: localizedText('title'),
       required: true,
       localized: pluginConfig?.localizeTitle ?? true,
     },
     {
-      name: "pageType",
-      type: "select",
-      label: localizedText("pageType"),
+      name: 'pageType',
+      type: 'select',
+      label: localizedText('pageType'),
       required: true,
       defaultValue: Object.keys(pageTypes)[0],
       options: Object.entries(pageTypes).map(([value, pageType]) => ({
@@ -48,13 +48,13 @@ const createPagesCollection = (
   ];
 
   const config: CollectionConfig = {
-    slug: "pages",
+    slug: 'pages',
     admin: {
-      useAsTitle: "title",
+      useAsTitle: 'title',
     },
     labels: {
-      singular: localizedText("page"),
-      plural: localizedText("pages"),
+      singular: localizedText('page'),
+      plural: localizedText('pages'),
     },
     versions: {
       drafts: {

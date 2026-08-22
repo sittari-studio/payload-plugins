@@ -20,8 +20,8 @@ export const en = {
   selfReference: 'A link cannot reference the current document.',
   url: 'URL',
   urlRequired: 'URL is required.',
-} as const
+} as const;
 
 export type LinkFieldTranslation = {
-  [Key in keyof typeof en]: string
-}
+  [Key in keyof typeof en]: string;
+};

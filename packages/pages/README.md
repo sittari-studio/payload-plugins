@@ -11,12 +11,12 @@ pnpm add @sittari/payload-pages
 ## Basic usage
 
 ```ts
-import { buildConfig } from "payload";
+import { buildConfig } from 'payload';
 import {
   createFlexiblePageType,
   createStandardContentPageType,
   pagesPlugin,
-} from "@sittari/payload-pages";
+} from '@sittari/payload-pages';
 
 export default buildConfig({
   plugins: [
@@ -24,7 +24,7 @@ export default buildConfig({
       pageTypes: {
         standardContent: createStandardContentPageType(),
         flexible: createFlexiblePageType({
-          blockSlugs: ["hero", "content"],
+          blockSlugs: ['hero', 'content'],
         }),
       },
     }),
@@ -37,12 +37,12 @@ export default buildConfig({
 
 `pageTypes` is required unless the plugin is disabled.
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `enabled` | `boolean` | `true` | Set to `false` to return the incoming Payload config unchanged. |
-| `localizeTitle` | `boolean` | `true` | Enables or disables localization on the default `title` field. |
-| `pageTypes` | `PageTypes` | Required | Page-type definitions keyed by the value stored in `pageType`. |
-| `overrides` | `(defaultCollection) => CollectionConfig` | Default collection | Extends or replaces the final `pages` collection configuration. Applied last. |
+| Option          | Type                                      | Default            | Description                                                                   |
+| --------------- | ----------------------------------------- | ------------------ | ----------------------------------------------------------------------------- |
+| `enabled`       | `boolean`                                 | `true`             | Set to `false` to return the incoming Payload config unchanged.               |
+| `localizeTitle` | `boolean`                                 | `true`             | Enables or disables localization on the default `title` field.                |
+| `pageTypes`     | `PageTypes`                               | Required           | Page-type definitions keyed by the value stored in `pageType`.                |
+| `overrides`     | `(defaultCollection) => CollectionConfig` | Default collection | Extends or replaces the final `pages` collection configuration. Applied last. |
 
 The package root exports `createStandardContentPageType` and `createFlexiblePageType`. Their option types and the `PagesPluginConfig`, `PageTypeConfig`, and `PageTypes` types are also available from the package root and from `@sittari/payload-pages/types`.
 
@@ -51,7 +51,7 @@ The package root exports `createStandardContentPageType` and `createFlexiblePage
 `pagesPlugin` does not create a slug or path field. Use `@sittari/payload-permalink` after `pagesPlugin` when the collection needs WordPress-style slugs and permalinks:
 
 ```ts
-import { permalinkPlugin } from '@sittari/payload-permalink'
+import { permalinkPlugin } from '@sittari/payload-permalink';
 
 plugins: [
   pagesPlugin({
@@ -65,7 +65,7 @@ plugins: [
       pages: { prefix: '' },
     },
   }),
-]
+];
 ```
 
 ### Enable or disable the plugin
@@ -85,11 +85,11 @@ pagesPlugin({
   pageTypes: {
     standardContent: createStandardContentPageType(),
     flexible: createFlexiblePageType({
-      blockSlugs: ["hero", "content", "gallery"],
+      blockSlugs: ['hero', 'content', 'gallery'],
     }),
     blogIndex: {
-      label: "Blog Index",
-      fields: [{ name: "heading", type: "text" }],
+      label: 'Blog Index',
+      fields: [{ name: 'heading', type: 'text' }],
     },
   },
 });
@@ -120,11 +120,11 @@ Factory options shallowly replace the generated page-type properties. This keeps
 pagesPlugin({
   pageTypes: {
     standardContent: createStandardContentPageType({
-      label: "Article",
+      label: 'Article',
       fields: [
         {
-          name: "content",
-          type: "richText",
+          name: 'content',
+          type: 'richText',
           localized: false,
           editor: customEditor,
         },
@@ -138,7 +138,7 @@ The flexible factory accepts `blockSlugs`, which become `blockReferences` on its
 
 ```ts
 createFlexiblePageType({
-  blockSlugs: ["hero", "content", "gallery"],
+  blockSlugs: ['hero', 'content', 'gallery'],
 });
 ```
 
@@ -155,13 +155,13 @@ pagesPlugin({
     ...defaultCollection,
     admin: {
       ...defaultCollection.admin,
-      defaultColumns: ["title", "pageType", "_status", "updatedAt"],
+      defaultColumns: ['title', 'pageType', '_status', 'updatedAt'],
     },
     fields: [
       ...defaultCollection.fields,
       {
-        name: "internalName",
-        type: "text",
+        name: 'internalName',
+        type: 'text',
       },
     ],
   }),

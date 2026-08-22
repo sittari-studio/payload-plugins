@@ -1,35 +1,43 @@
-import type { Block, Field, Tab } from 'payload'
+import type { Block, Field, Tab } from 'payload';
 
-export type FieldTransformer = (field: Field) => Field
+export type FieldTransformer = (field: Field) => Field;
 
 const hasFields = (field: Field): field is Field & { fields: Field[] } =>
-  'fields' in field && Array.isArray(field.fields)
+  'fields' in field && Array.isArray(field.fields);
 
 const transformTab = (tab: Tab, transformer: FieldTransformer): Tab => ({
   ...tab,
   fields: tab.fields.map((field) => traverseField(field, transformer)),
-})
+});
 
-const transformBlock = (block: Block, transformer: FieldTransformer): Block => ({
+const transformBlock = (
+  block: Block,
+  transformer: FieldTransformer,
+): Block => ({
   ...block,
   fields: block.fields.map((field) => traverseField(field, transformer)),
-})
+});
 
-export const traverseField = (field: Field, transformer: FieldTransformer): Field => {
-  let nextField = field
+export const traverseField = (
+  field: Field,
+  transformer: FieldTransformer,
+): Field => {
+  let nextField = field;
 
   if (hasFields(nextField)) {
     nextField = {
       ...nextField,
-      fields: nextField.fields.map((childField) => traverseField(childField, transformer)),
-    } as Field
+      fields: nextField.fields.map((childField) =>
+        traverseField(childField, transformer),
+      ),
+    } as Field;
   }
 
   if (nextField.type === 'tabs') {
     nextField = {
       ...nextField,
       tabs: nextField.tabs.map((tab) => transformTab(tab, transformer)),
-    }
+    };
   }
 
   if (nextField.type === 'blocks') {
@@ -38,13 +46,14 @@ export const traverseField = (field: Field, transformer: FieldTransformer): Fiel
       blocks: nextField.blocks.map((block) =>
         typeof block === 'string' ? block : transformBlock(block, transformer),
       ),
-    }
+    };
   }
 
-  return transformer(nextField)
-}
+  return transformer(nextField);
+};
 
 export const traverseFields = (
   fields: Field[] | undefined,
   transformer: FieldTransformer,
-): Field[] | undefined => fields?.map((field) => traverseField(field, transformer))
+): Field[] | undefined =>
+  fields?.map((field) => traverseField(field, transformer));

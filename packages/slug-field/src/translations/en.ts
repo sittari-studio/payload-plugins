@@ -1,7 +1,7 @@
 export const en = {
   slug: 'Slug',
-} as const
+} as const;
 
 export type SlugFieldTranslation = {
-  [Key in keyof typeof en]: string
-}
+  [Key in keyof typeof en]: string;
+};

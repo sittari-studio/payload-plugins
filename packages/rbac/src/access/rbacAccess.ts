@@ -1,20 +1,20 @@
-import type { Access } from 'payload'
+import type { Access } from 'payload';
 
-import type { RbacAction } from '../shared.js'
+import type { RbacAction } from '../shared.js';
 
-import { permissionCovers, permissionsGrant } from '../permissions.js'
-import { getUserPermissions } from '../utilities/getUserPermissions.js'
+import { permissionCovers, permissionsGrant } from '../permissions.js';
+import { getUserPermissions } from '../utilities/getUserPermissions.js';
 
 export type CreateRbacAccessArgs = {
-  action: RbacAction
+  action: RbacAction;
   /**
    * Actions the requesting user is allowed on their own user document even without
    * the collection permission. Only relevant on auth collections; grants a
    * `{ id: { equals: user.id } }` query constraint.
    */
-  ownAccountActions?: readonly RbacAction[]
-  slug: string
-}
+  ownAccountActions?: readonly RbacAction[];
+  slug: string;
+};
 
 /**
  * Builds the access function the plugin installs for one operation on one
@@ -28,23 +28,23 @@ export const createRbacAccess = ({
   ownAccountActions = [],
 }: CreateRbacAccessArgs): Access => {
   return async ({ req }) => {
-    const { user } = req
+    const { user } = req;
     if (!user) {
-      return false
+      return false;
     }
 
-    const permissions = await getUserPermissions(req)
+    const permissions = await getUserPermissions(req);
     if (permissionsGrant(permissions, slug, action)) {
-      return true
+      return true;
     }
 
     if (ownAccountActions.includes(action) && user.collection === slug) {
-      return { id: { equals: user.id } }
+      return { id: { equals: user.id } };
     }
 
-    return false
-  }
-}
+    return false;
+  };
+};
 
 /**
  * Access factory for composing role checks into your own access control, e.g.
@@ -53,9 +53,9 @@ export const createRbacAccess = ({
 export const requirePermission = (permission: string): Access => {
   return async ({ req }) => {
     if (!req.user) {
-      return false
+      return false;
     }
-    const permissions = await getUserPermissions(req)
-    return permissionCovers(permissions, permission)
-  }
-}
+    const permissions = await getUserPermissions(req);
+    return permissionCovers(permissions, permission);
+  };
+};

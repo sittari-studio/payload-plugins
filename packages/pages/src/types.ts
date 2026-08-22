@@ -1,30 +1,30 @@
-import type { CollectionConfig, Field } from 'payload'
+import type { CollectionConfig, Field } from 'payload';
 
 export type PageTypeConfig = {
-  fields: Field[]
-  label: string | { [locale: string]: string }
-}
+  fields: Field[];
+  label: string | { [locale: string]: string };
+};
 
-export type PageTypes = Record<string, PageTypeConfig>
+export type PageTypes = Record<string, PageTypeConfig>;
 
 type SharedPagesPluginConfig = {
   /** Enable or disable the plugin. */
-  enabled?: boolean
+  enabled?: boolean;
   /** Enable or disable localization of the title field. */
-  localizeTitle?: boolean
+  localizeTitle?: boolean;
   /** Extend or replace the final config of the pages collection. */
-  overrides?: (defaultCollection: CollectionConfig) => CollectionConfig
-}
+  overrides?: (defaultCollection: CollectionConfig) => CollectionConfig;
+};
 
 export type PagesPluginConfig = SharedPagesPluginConfig &
   (
     | {
-        enabled: false
-        pageTypes?: PageTypes
+        enabled: false;
+        pageTypes?: PageTypes;
       }
     | {
-        enabled?: boolean
+        enabled?: boolean;
         /** Page types available in the pages collection. */
-        pageTypes: PageTypes
+        pageTypes: PageTypes;
       }
-  )
+  );

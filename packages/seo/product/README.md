@@ -10,18 +10,18 @@ robots.txt, and sitemap routes and call the exported helpers from those routes.
 
 ## Reading order
 
-| Document | Purpose |
-| --- | --- |
-| [Product requirements](PRODUCT_REQUIREMENTS.md) | Product scope, editor experience, invariants, and acceptance criteria. |
-| [Architecture](ARCHITECTURE.md) | Plugin boundaries, module responsibilities, Payload integration rules, and data flow. |
-| [Public API](PUBLIC_API.md) | Exports, TypeScript contracts, input/output semantics, and route examples. |
-| [Payload integration](PAYLOAD_INTEGRATION.md) | Plugin configuration, generated collection fields, global settings, and redirects collection. |
-| [Admin translations](ADMIN_TRANSLATIONS.md) | English, Russian, and Ukrainian translation contract for plugin-owned Admin UI. |
-| [Resolution rules](RESOLUTION_RULES.md) | Locale, fallback, canonical, metadata, schema, robots.txt, sitemap, and redirect behavior. |
-| [Access and validation](ACCESS_AND_VALIDATION.md) | Authorization boundaries, validation rules, and malformed-data handling. |
-| [Testing strategy](TESTING.md) | Unit, integration, admin UI, regression, and acceptance test requirements. |
-| [Implementation milestones](IMPLEMENTATION_MILESTONES.md) | Ordered, reviewable implementation plan. |
-| [Maintenance](MAINTENANCE.md) | Compatibility, security, release, and operational guidance. |
+| Document                                                  | Purpose                                                                                       |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| [Product requirements](PRODUCT_REQUIREMENTS.md)           | Product scope, editor experience, invariants, and acceptance criteria.                        |
+| [Architecture](ARCHITECTURE.md)                           | Plugin boundaries, module responsibilities, Payload integration rules, and data flow.         |
+| [Public API](PUBLIC_API.md)                               | Exports, TypeScript contracts, input/output semantics, and route examples.                    |
+| [Payload integration](PAYLOAD_INTEGRATION.md)             | Plugin configuration, generated collection fields, global settings, and redirects collection. |
+| [Admin translations](ADMIN_TRANSLATIONS.md)               | English, Russian, and Ukrainian translation contract for plugin-owned Admin UI.               |
+| [Resolution rules](RESOLUTION_RULES.md)                   | Locale, fallback, canonical, metadata, schema, robots.txt, sitemap, and redirect behavior.    |
+| [Access and validation](ACCESS_AND_VALIDATION.md)         | Authorization boundaries, validation rules, and malformed-data handling.                      |
+| [Testing strategy](TESTING.md)                            | Unit, integration, admin UI, regression, and acceptance test requirements.                    |
+| [Implementation milestones](IMPLEMENTATION_MILESTONES.md) | Ordered, reviewable implementation plan.                                                      |
+| [Maintenance](MAINTENANCE.md)                             | Compatibility, security, release, and operational guidance.                                   |
 
 ## Normative language
 

@@ -1,5 +1,5 @@
-import type { SlugFieldTranslation } from './en.js'
+import type { SlugFieldTranslation } from './en.js';
 
 export const uk = {
   slug: 'Слаг',
-} satisfies SlugFieldTranslation
+} satisfies SlugFieldTranslation;

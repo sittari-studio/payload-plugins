@@ -1,3 +1,3 @@
-'use client'
+'use client';
 
-export { TemplateField } from '../admin/TemplateField.js'
+export { TemplateField } from '../admin/TemplateField.js';

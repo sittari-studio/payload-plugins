@@ -1,4 +1,4 @@
-import type { Config } from 'payload'
+import type { Config } from 'payload';
 
 export const extendOnInit = (
   incomingConfig: Config,
@@ -6,12 +6,12 @@ export const extendOnInit = (
 ): NonNullable<Config['onInit']> => {
   return async (payload) => {
     if (incomingConfig.onInit) {
-      await incomingConfig.onInit(payload)
+      await incomingConfig.onInit(payload);
     }
 
-    await onInit(payload)
-  }
-}
+    await onInit(payload);
+  };
+};
 
 export const appendCollections = (
   incomingConfig: Config,
@@ -19,7 +19,7 @@ export const appendCollections = (
 ): NonNullable<Config['collections']> => [
   ...(incomingConfig.collections ?? []),
   ...collections,
-]
+];
 
 export const appendGlobals = (
   incomingConfig: Config,
@@ -27,4 +27,4 @@ export const appendGlobals = (
 ): NonNullable<Config['globals']> => [
   ...(incomingConfig.globals ?? []),
   ...globals,
-]
+];

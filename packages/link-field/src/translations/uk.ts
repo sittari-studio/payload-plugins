@@ -1,4 +1,4 @@
-import type { LinkFieldTranslation } from './en.js'
+import type { LinkFieldTranslation } from './en.js';
 
 export const uk = {
   addLink: 'Додати посилання',
@@ -22,4 +22,4 @@ export const uk = {
   selfReference: 'Посилання не може вести на поточний документ.',
   url: 'URL',
   urlRequired: 'Потрібно вказати URL.',
-} satisfies LinkFieldTranslation
+} satisfies LinkFieldTranslation;

@@ -1,40 +1,40 @@
-import { sqliteAdapter } from "@payloadcms/db-sqlite";
-import { nestedDocsPlugin } from "@payloadcms/plugin-nested-docs";
-import { lexicalEditor } from "@payloadcms/richtext-lexical";
-import os from "node:os";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import { buildConfig } from "payload";
-import sharp from "sharp";
+import { sqliteAdapter } from '@payloadcms/db-sqlite';
+import { nestedDocsPlugin } from '@payloadcms/plugin-nested-docs';
+import { lexicalEditor } from '@payloadcms/richtext-lexical';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { buildConfig } from 'payload';
+import sharp from 'sharp';
 
 import {
   linkFieldPlugin,
   linkField,
   LinkFieldFeature,
-} from "@sittari/payload-link-field";
+} from '@sittari/payload-link-field';
 import {
   createFlexiblePageType,
   createStandardContentPageType,
   pagesPlugin,
-} from "@sittari/payload-pages";
-import { permalinkPlugin } from "@sittari/payload-permalink";
-import { rbacPlugin } from "@sittari/payload-rbac";
-import { seoPlugin } from "@sittari/payload-seo";
-import { templateField, templatesPlugin } from "@sittari/payload-templates";
+} from '@sittari/payload-pages';
+import { permalinkPlugin } from '@sittari/payload-permalink';
+import { rbacPlugin } from '@sittari/payload-rbac';
+import { seoPlugin } from '@sittari/payload-seo';
+import { templateField, templatesPlugin } from '@sittari/payload-templates';
 
-import { uk } from "@payloadcms/translations/languages/uk";
-import { ru } from "@payloadcms/translations/languages/ru";
-import { en } from "@payloadcms/translations/languages/en";
+import { uk } from '@payloadcms/translations/languages/uk';
+import { ru } from '@payloadcms/translations/languages/ru';
+import { en } from '@payloadcms/translations/languages/en';
 
-import { testEmailAdapter } from "./helpers/testEmailAdapter.js";
-import { devRbacPluginConfig } from "./rbac.js";
-import { devUser, seed } from "./seed.js";
+import { testEmailAdapter } from './helpers/testEmailAdapter.js';
+import { devRbacPluginConfig } from './rbac.js';
+import { devUser, seed } from './seed.js';
 
-const siteUrl = process.env.SITE_URL ?? "http://localhost:3000";
+const siteUrl = process.env.SITE_URL ?? 'http://localhost:3000';
 
 const resolvePagePath = (document: Record<string, unknown>): null | string => {
-  if (typeof document.path === "string") return document.path;
-  if (typeof document.slug !== "string" || !document.slug) return null;
+  if (typeof document.path === 'string') return document.path;
+  if (typeof document.slug !== 'string' || !document.slug) return null;
   return `/${document.slug}`;
 };
 
@@ -47,9 +47,9 @@ if (!process.env.ROOT_DIR) {
 
 const databaseURL =
   process.env.DATABASE_URL ||
-  (process.env.NODE_ENV === "test"
+  (process.env.NODE_ENV === 'test'
     ? `file:${path.resolve(os.tmpdir(), `Sittari-payload-plugins-${process.pid}.sqlite`)}`
-    : `file:${path.resolve(dirname, "payload.dev.sqlite")}`);
+    : `file:${path.resolve(dirname, 'payload.dev.sqlite')}`);
 
 process.env.DATABASE_URL = databaseURL;
 
@@ -64,73 +64,73 @@ export default buildConfig({
       prefillOnly: true,
     },
 
-    user: "users",
+    user: 'users',
   },
   bin: [
     {
-      key: "seed",
-      scriptPath: path.resolve(dirname, "seed.ts"),
+      key: 'seed',
+      scriptPath: path.resolve(dirname, 'seed.ts'),
     },
   ],
   collections: [
     {
-      slug: "users",
+      slug: 'users',
       auth: true,
       fields: [],
     },
     {
-      slug: "media",
+      slug: 'media',
       fields: [
         {
-          name: "alt",
-          type: "text",
+          name: 'alt',
+          type: 'text',
         },
       ],
       upload: {
-        staticDir: path.resolve(dirname, "media"),
+        staticDir: path.resolve(dirname, 'media'),
       },
     },
     {
-      slug: "link-field-test",
+      slug: 'link-field-test',
       admin: {
-        useAsTitle: "title",
+        useAsTitle: 'title',
       },
       labels: {
-        singular: "Link Field Test",
-        plural: "Link Field Tests",
+        singular: 'Link Field Test',
+        plural: 'Link Field Tests',
       },
       fields: [
         {
-          type: "text",
-          name: "title",
+          type: 'text',
+          name: 'title',
         },
         linkField({
-          name: "link",
-          label: "Link to page",
+          name: 'link',
+          label: 'Link to page',
         }),
       ],
     },
     {
-      slug: "categories",
+      slug: 'categories',
       admin: {
-        useAsTitle: "title",
+        useAsTitle: 'title',
       },
       labels: {
         singular: {
-          en: "Category",
-          uk: "Категорія",
-          ru: "Категория",
+          en: 'Category',
+          uk: 'Категорія',
+          ru: 'Категория',
         },
         plural: {
-          en: "Categories",
-          uk: "Категорії",
-          ru: "Категории",
+          en: 'Categories',
+          uk: 'Категорії',
+          ru: 'Категории',
         },
       },
       fields: [
         {
-          name: "title",
-          type: "text",
+          name: 'title',
+          type: 'text',
           required: true,
         },
       ],
@@ -151,28 +151,28 @@ export default buildConfig({
   },
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => [
-      ...defaultFeatures.filter((x) => x.key !== "link"),
+      ...defaultFeatures.filter((x) => x.key !== 'link'),
       LinkFieldFeature(),
     ],
   }),
   email: testEmailAdapter,
   globals: [
     {
-      slug: "site-settings",
+      slug: 'site-settings',
       label: {
-        en: "Site settings",
-        uk: "Налаштування сайту",
-        ru: "Настройки сайта",
+        en: 'Site settings',
+        uk: 'Налаштування сайту',
+        ru: 'Настройки сайта',
       },
       fields: [
         {
-          name: "title",
-          type: "text",
+          name: 'title',
+          type: 'text',
           required: true,
         },
         {
-          name: "description",
-          type: "textarea",
+          name: 'description',
+          type: 'textarea',
         },
       ],
     },
@@ -186,12 +186,12 @@ export default buildConfig({
         standardContent: createStandardContentPageType({}),
         flexible: createFlexiblePageType(),
         templates: {
-          label: "Templates",
+          label: 'Templates',
           fields: [
             templateField({
-              name: "cta",
-              label: "CTA",
-              template: "404",
+              name: 'cta',
+              label: 'CTA',
+              template: '404',
               admin: {
                 hideGutter: true,
               },
@@ -201,18 +201,18 @@ export default buildConfig({
       },
     }),
     nestedDocsPlugin({
-      collections: ["categories"],
+      collections: ['categories'],
     }),
     permalinkPlugin({
       siteUrl,
-      localePrefix: "as-needed",
+      localePrefix: 'as-needed',
       collections: {
         categories: {
-          prefix: "categories",
-          parentField: "parent",
+          prefix: 'categories',
+          parentField: 'parent',
         },
         pages: {
-          prefix: "",
+          prefix: '',
         },
       },
     }),
@@ -221,22 +221,22 @@ export default buildConfig({
       collections: {
         pages: {
           fields: {
-            title: "title",
+            title: 'title',
           },
           sitemap: {
-            fields: ["slug"],
+            fields: ['slug'],
           },
         },
       },
       media: {
-        collection: "media",
+        collection: 'media',
         resolveMediaUrl: ({ media }) => {
-          if (typeof media.url !== "string" || !media.url) return null;
+          if (typeof media.url !== 'string' || !media.url) return null;
           return new URL(media.url, siteUrl).toString();
         },
       },
       resolveUrl: ({ document, collection }) => {
-        if (collection === "pages") {
+        if (collection === 'pages') {
           return resolvePagePath(document);
         }
 
@@ -270,21 +270,21 @@ export default buildConfig({
     templatesPlugin({
       templates: [
         {
-          name: "404",
-          label: "Page 404",
+          name: '404',
+          label: 'Page 404',
           fields: [
             {
-              name: "heading",
-              type: "text",
+              name: 'heading',
+              type: 'text',
               required: true,
             },
             {
-              name: "message",
-              type: "textarea",
+              name: 'message',
+              type: 'textarea',
             },
           ],
           initialData: {
-            heading: "Page not found",
+            heading: 'Page not found',
           },
         },
       ],
@@ -294,9 +294,9 @@ export default buildConfig({
     rbacPlugin(devRbacPluginConfig),
   ],
 
-  secret: process.env.PAYLOAD_SECRET || "dev-secret-change-me",
+  secret: process.env.PAYLOAD_SECRET || 'dev-secret-change-me',
   sharp,
   typescript: {
-    outputFile: path.resolve(dirname, "payload-types.ts"),
+    outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
 });

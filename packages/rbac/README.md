@@ -28,8 +28,8 @@ pnpm add @sittari/payload-rbac
 ## Usage
 
 ```ts
-import { rbacPlugin } from '@sittari/payload-rbac'
-import { buildConfig } from 'payload'
+import { rbacPlugin } from '@sittari/payload-rbac';
+import { buildConfig } from 'payload';
 
 export default buildConfig({
   // ...
@@ -40,12 +40,17 @@ export default buildConfig({
       roles: [
         {
           name: 'Editor',
-          permissions: ['posts:create', 'posts:read', 'posts:update', 'posts:delete'],
+          permissions: [
+            'posts:create',
+            'posts:read',
+            'posts:update',
+            'posts:delete',
+          ],
         },
       ],
     }),
   ],
-})
+});
 ```
 
 Then regenerate the import map so the admin panel can resolve the permissions-matrix component:
@@ -162,7 +167,7 @@ Lockout prevention aside, `protected` is also the switch between two ownership m
 - **`protected: true`**: the **code owns the role**. The permissions list is enforced on every restart, so a definition derived from your config stays in sync automatically — in exchange, the role is locked in the admin panel and API.
 
 ```ts
-const contentSlugs = ['pages', 'posts', 'news'] as const
+const contentSlugs = ['pages', 'posts', 'news'] as const;
 
 rbacPlugin({
   adminRole: 'Super Admin',
@@ -177,7 +182,7 @@ rbacPlugin({
       permissions: contentSlugs.map((slug) => `${slug}:*`),
     },
   ],
-})
+});
 ```
 
 Two boundaries to know:
@@ -210,7 +215,7 @@ rbacPlugin({
       protected: true,
     },
   ],
-})
+});
 ```
 
 The client runs the whole site — content, users, roles, future collections — but the developer account stays out of reach:
@@ -273,7 +278,10 @@ rbacPlugin({
   rolesCollection: {
     slug: 'roles', // default
     // Escape hatch: adjust labels, admin group, extra fields, hooks, …
-    override: (collection) => ({ ...collection, admin: { ...collection.admin, group: 'Admin' } }),
+    override: (collection) => ({
+      ...collection,
+      admin: { ...collection.admin, group: 'Admin' },
+    }),
   },
 
   // The roles field added to user collections. Changing it requires the
@@ -286,7 +294,7 @@ rbacPlugin({
 
   // Disable the plugin entirely (useful per-environment). Default: true.
   enabled: true,
-})
+});
 ```
 
 ## Behaviour notes

@@ -1,12 +1,12 @@
-import type { Payload } from 'payload'
+import type { Payload } from 'payload';
 
-import { fullAccessPermissions } from '../permissions.js'
+import { fullAccessPermissions } from '../permissions.js';
 
 export type RoleHolderQueryArgs = {
-  rolesFieldName: string
+  rolesFieldName: string;
   /** Every collection carrying the roles field — holders are counted across all of them. */
-  userCollections: string[]
-}
+  userCollections: string[];
+};
 
 /**
  * IDs of every role that grants full access — `'*'`, or the equivalent
@@ -20,19 +20,23 @@ export const findFullAccessRoleIds = async (
     collection: rolesCollectionSlug,
     depth: 0,
     pagination: false,
-  })
+  });
   return docs
     .filter((doc) => {
-      const permissions = (doc as { permissions?: unknown }).permissions
+      const permissions = (doc as { permissions?: unknown }).permissions;
       return (
         Array.isArray(permissions) &&
         fullAccessPermissions(
-          new Set(permissions.filter((entry): entry is string => typeof entry === 'string')),
+          new Set(
+            permissions.filter(
+              (entry): entry is string => typeof entry === 'string',
+            ),
+          ),
         )
-      )
+      );
     })
-    .map((doc) => (doc as { id: number | string }).id)
-}
+    .map((doc) => (doc as { id: number | string }).id);
+};
 
 /** Whether any user across the user collections holds one of the given roles. */
 export const anyUserHoldsRole = async (
@@ -41,24 +45,24 @@ export const anyUserHoldsRole = async (
   { rolesFieldName, userCollections }: RoleHolderQueryArgs,
 ): Promise<boolean> => {
   if (roleIds.length === 0) {
-    return false
+    return false;
   }
   for (const slug of userCollections) {
     const { totalDocs } = await payload.count({
       collection: slug,
       where: { [rolesFieldName]: { in: roleIds } },
-    })
+    });
     if (totalDocs > 0) {
-      return true
+      return true;
     }
   }
-  return false
-}
+  return false;
+};
 
 export type WarnIfAdminRoleUnheldArgs = {
-  adminRoleName: string
-  rolesCollectionSlug: string
-} & RoleHolderQueryArgs
+  adminRoleName: string;
+  rolesCollectionSlug: string;
+} & RoleHolderQueryArgs;
 
 /**
  * Init-time check, run after seeding: logs how to recover when no user holds the
@@ -82,40 +86,43 @@ export const warnIfAdminRoleUnheld = async (
     depth: 0,
     limit: 1,
     where: { name: { equals: adminRoleName } },
-  })
-  const adminRoleId = (docs[0] as { id?: number | string } | undefined)?.id
+  });
+  const adminRoleId = (docs[0] as { id?: number | string } | undefined)?.id;
   if (adminRoleId === undefined) {
-    return
+    return;
   }
 
-  const holderArgs = { rolesFieldName, userCollections }
+  const holderArgs = { rolesFieldName, userCollections };
   if (await anyUserHoldsRole(payload, [adminRoleId], holderArgs)) {
-    return
+    return;
   }
 
-  let usersExist = false
+  let usersExist = false;
   for (const slug of userCollections) {
-    const { totalDocs } = await payload.count({ collection: slug })
+    const { totalDocs } = await payload.count({ collection: slug });
     if (totalDocs > 0) {
-      usersExist = true
-      break
+      usersExist = true;
+      break;
     }
   }
   if (!usersExist) {
-    return
+    return;
   }
 
-  const fullAccessRoleIds = await findFullAccessRoleIds(payload, rolesCollectionSlug)
+  const fullAccessRoleIds = await findFullAccessRoleIds(
+    payload,
+    rolesCollectionSlug,
+  );
   const otherFullAccessRoleIds = fullAccessRoleIds.filter(
     (id) => String(id) !== String(adminRoleId),
-  )
+  );
   if (await anyUserHoldsRole(payload, otherFullAccessRoleIds, holderArgs)) {
     payload.logger.warn(
       `[payload-rbac] No user holds the "${adminRoleName}" role. A user with full access through another role can assign it in the admin panel.`,
-    )
-    return
+    );
+    return;
   }
   payload.logger.warn(
     `[payload-rbac] No user holds the "${adminRoleName}" role and no user has full access. Any signed-in user may assign "${adminRoleName}" to themselves from their account page — the escalation guard permits this while no administrator exists.`,
-  )
-}
+  );
+};

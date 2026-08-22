@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 export const RestoreAsDraftStyles = () => (
   <style>{`
@@ -6,4 +6,4 @@ export const RestoreAsDraftStyles = () => (
       display: none;
     }
   `}</style>
-)
+);

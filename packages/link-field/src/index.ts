@@ -1,6 +1,6 @@
-export { linkField } from './linkField.js'
-export { linkFieldPlugin } from './plugin.js'
-export { LinkFieldFeature } from './lexical/feature.server.js'
+export { linkField } from './linkField.js';
+export { linkFieldPlugin } from './plugin.js';
+export { LinkFieldFeature } from './lexical/feature.server.js';
 export {
   $createLinkFieldAutoLinkNode,
   $createLinkFieldNode,
@@ -8,7 +8,7 @@ export {
   $isLinkFieldNode,
   LinkFieldAutoLinkNode,
   LinkFieldNode,
-} from './lexical/nodes.js'
+} from './lexical/nodes.js';
 export type {
   LinkFieldAppearance,
   LinkFieldConfig,
@@ -21,6 +21,6 @@ export type {
   SerializedLinkFieldNode,
   ResolveDocumentUrl,
   ResolveDocumentUrlArgs,
-} from './types.js'
+} from './types.js';
 
-export { linkFieldPlugin as default } from './plugin.js'
+export { linkFieldPlugin as default } from './plugin.js';

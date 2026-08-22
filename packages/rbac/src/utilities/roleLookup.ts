@@ -1,4 +1,4 @@
-import type { PayloadRequest } from 'payload'
+import type { PayloadRequest } from 'payload';
 
 /**
  * Resolves a role's ID from its unique name, scoped to the current request so the
@@ -17,7 +17,7 @@ export const findRoleIdByName = async (
     overrideAccess: true,
     req,
     where: { name: { equals: name } },
-  })
-  const id = (docs[0] as { id?: unknown } | undefined)?.id
-  return typeof id === 'number' || typeof id === 'string' ? id : undefined
-}
+  });
+  const id = (docs[0] as { id?: unknown } | undefined)?.id;
+  return typeof id === 'number' || typeof id === 'string' ? id : undefined;
+};

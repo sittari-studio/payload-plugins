@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
-import { existsSync } from 'node:fs'
-import { mkdir, writeFile } from 'node:fs/promises'
-import path from 'node:path'
+import { existsSync } from 'node:fs';
+import { mkdir, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 
-const rawName = process.argv[2]
+const rawName = process.argv[2];
 
 if (!rawName) {
-  console.error('Usage: pnpm create:plugin <name>')
-  process.exit(1)
+  console.error('Usage: pnpm create:plugin <name>');
+  process.exit(1);
 }
 
 const name = rawName
@@ -17,34 +17,34 @@ const name = rawName
   .replace(/^plugin-/, '')
   .toLowerCase()
   .replace(/[^a-z0-9-]/g, '-')
-  .replace(/^-+|-+$/g, '')
+  .replace(/^-+|-+$/g, '');
 
 if (!name) {
-  console.error('Plugin name must contain at least one letter or number.')
-  process.exit(1)
+  console.error('Plugin name must contain at least one letter or number.');
+  process.exit(1);
 }
 
 const pascalName = name
   .split('-')
   .filter(Boolean)
   .map((part) => part[0].toUpperCase() + part.slice(1))
-  .join('')
+  .join('');
 
-const camelName = pascalName[0].toLowerCase() + pascalName.slice(1)
-const exportName = `${camelName}Plugin`
-const pluginConfigName = `${pascalName}PluginConfig`
+const camelName = pascalName[0].toLowerCase() + pascalName.slice(1);
+const exportName = `${camelName}Plugin`;
+const pluginConfigName = `${pascalName}PluginConfig`;
 
-const packageName = `@sittari/payload-${name}`
-const packageDir = path.join(process.cwd(), 'packages', name)
+const packageName = `@sittari/payload-${name}`;
+const packageDir = path.join(process.cwd(), 'packages', name);
 
 if (existsSync(packageDir)) {
-  console.error(`Package already exists: packages/${name}`)
-  process.exit(1)
+  console.error(`Package already exists: packages/${name}`);
+  process.exit(1);
 }
 
-await mkdir(path.join(packageDir, 'src'), { recursive: true })
-await mkdir(path.join(packageDir, 'src', 'exports'), { recursive: true })
-await mkdir(path.join(packageDir, 'test'), { recursive: true })
+await mkdir(path.join(packageDir, 'src'), { recursive: true });
+await mkdir(path.join(packageDir, 'src', 'exports'), { recursive: true });
+await mkdir(path.join(packageDir, 'test'), { recursive: true });
 
 await writeFile(
   path.join(packageDir, 'package.json'),
@@ -72,7 +72,8 @@ await writeFile(
       sideEffects: false,
       scripts: {
         build: 'pnpm run clean && pnpm run build:types && pnpm run build:js',
-        'build:js': 'tsc -p tsconfig.build.json --declaration false --declarationMap false',
+        'build:js':
+          'tsc -p tsconfig.build.json --declaration false --declarationMap false',
         'build:types': 'tsc -p tsconfig.build.json --emitDeclarationOnly',
         typecheck: 'tsc --noEmit',
         test: 'pnpm run test:int',
@@ -97,7 +98,7 @@ await writeFile(
     null,
     2,
   )}\n`,
-)
+);
 
 await writeFile(
   path.join(packageDir, 'tsconfig.json'),
@@ -107,7 +108,7 @@ await writeFile(
   "exclude": ["dist", "node_modules"]
 }
 `,
-)
+);
 
 await writeFile(
   path.join(packageDir, 'tsconfig.build.json'),
@@ -125,7 +126,7 @@ await writeFile(
   "exclude": ["dist", "node_modules", "test"]
 }
 `,
-)
+);
 
 await writeFile(
   path.join(packageDir, 'src/types.ts'),
@@ -133,7 +134,7 @@ await writeFile(
   enabled?: boolean
 }
 `,
-)
+);
 
 await writeFile(
   path.join(packageDir, 'src/plugin.ts'),
@@ -157,7 +158,7 @@ export const ${exportName} =
 
 export default ${exportName}
 `,
-)
+);
 
 await writeFile(
   path.join(packageDir, 'src/index.ts'),
@@ -166,13 +167,13 @@ export type { ${pluginConfigName} } from './types.js'
 
 export { ${exportName} as default } from './plugin.js'
 `,
-)
+);
 
 await writeFile(
   path.join(packageDir, 'src/exports/types.ts'),
   `export type { ${pluginConfigName} } from '../types.js'
 `,
-)
+);
 
 await writeFile(
   path.join(packageDir, `test/${name}.test.ts`),
@@ -203,7 +204,7 @@ describe('${exportName}', () => {
   })
 })
 `,
-)
+);
 
 await writeFile(
   path.join(packageDir, 'README.md'),
@@ -229,6 +230,6 @@ export default buildConfig({
 })
 \`\`\`
 `,
-)
+);
 
-console.log(`Created packages/${name}`)
+console.log(`Created packages/${name}`);

@@ -5,28 +5,28 @@ import {
   type CollectionBeforeChangeHook,
   type CollectionBeforeOperationHook,
   type PayloadRequest,
-} from 'payload'
+} from 'payload';
 
-import { HOME_SLUG } from './permalink.js'
-import { joinPathSegments, validateDocumentPath } from './path.js'
+import { HOME_SLUG } from './permalink.js';
+import { joinPathSegments, validateDocumentPath } from './path.js';
 import {
   deletePathRoutes,
   findPathRouteByPath,
   upsertPathRoute,
-} from './routes.js'
-import { formatPermalinkSlug } from './slug.js'
-import { translatePathValidationMessage } from './translations.js'
-import type { LocalePrefixMode, PathCollectionOptions } from './types.js'
+} from './routes.js';
+import { formatPermalinkSlug } from './slug.js';
+import { translatePathValidationMessage } from './translations.js';
+import type { LocalePrefixMode, PathCollectionOptions } from './types.js';
 import {
   PATH_ALLOW_UNRESOLVED_CONTEXT_KEY,
   PATH_REBUILD_CONTEXT_KEY,
   PATH_REMOVE_ALL_ROUTES_CONTEXT_KEY,
-} from './types.js'
+} from './types.js';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  value !== null && typeof value === 'object' && !Array.isArray(value)
+  value !== null && typeof value === 'object' && !Array.isArray(value);
 
-const isTrue = (value: unknown): boolean => value === true || value === 'true'
+const isTrue = (value: unknown): boolean => value === true || value === 'true';
 
 const valueForLocale = (
   value: unknown,
@@ -34,13 +34,13 @@ const valueForLocale = (
   locales: Set<string>,
 ): unknown => {
   if (Array.isArray(value)) {
-    return value.map((entry) => valueForLocale(entry, locale, locales))
+    return value.map((entry) => valueForLocale(entry, locale, locales));
   }
-  if (!isRecord(value)) return value
+  if (!isRecord(value)) return value;
 
-  const keys = Object.keys(value)
+  const keys = Object.keys(value);
   if (keys.length > 0 && keys.every((key) => locales.has(key))) {
-    return valueForLocale(value[locale], locale, locales)
+    return valueForLocale(value[locale], locale, locales);
   }
 
   return Object.fromEntries(
@@ -48,28 +48,28 @@ const valueForLocale = (
       key,
       valueForLocale(entry, locale, locales),
     ]),
-  )
-}
+  );
+};
 
 const getRelationshipID = (value: unknown): number | string | undefined => {
-  if (typeof value === 'number' || typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'string') return value;
   if (
     isRecord(value) &&
     (typeof value.id === 'number' || typeof value.id === 'string')
   ) {
-    return value.id
+    return value.id;
   }
-  return undefined
-}
+  return undefined;
+};
 
 const permalinkValidationError = ({
   collection,
   message,
   req,
 }: {
-  collection: string
-  message: string
-  req: PayloadRequest
+  collection: string;
+  message: string;
+  req: PayloadRequest;
 }) =>
   new ValidationError(
     {
@@ -83,7 +83,7 @@ const permalinkValidationError = ({
       req,
     },
     req.t,
-  )
+  );
 
 const unresolvedPath = ({
   allowUnresolved,
@@ -91,33 +91,33 @@ const unresolvedPath = ({
   message,
   req,
 }: {
-  allowUnresolved: boolean
-  collection: string
-  message: string
-  req: PayloadRequest
+  allowUnresolved: boolean;
+  collection: string;
+  message: string;
+  req: PayloadRequest;
 }): null => {
-  if (allowUnresolved) return null
-  throw permalinkValidationError({ collection, message, req })
-}
+  if (allowUnresolved) return null;
+  throw permalinkValidationError({ collection, message, req });
+};
 
 const assertGeneratedPath = ({
   collection,
   path,
   req,
 }: {
-  collection: string
-  path: string
-  req: PayloadRequest
+  collection: string;
+  path: string;
+  req: PayloadRequest;
 }): string => {
-  const validationResult = validateDocumentPath(path)
-  if (validationResult === true) return path
+  const validationResult = validateDocumentPath(path);
+  if (validationResult === true) return path;
 
   throw permalinkValidationError({
     collection,
     message: validationResult,
     req,
-  })
-}
+  });
+};
 
 export const markPathUnresolvedOperation: CollectionBeforeOperationHook = ({
   args,
@@ -126,66 +126,66 @@ export const markPathUnresolvedOperation: CollectionBeforeOperationHook = ({
   const data =
     'data' in args && isRecord(args.data)
       ? (args.data as Record<string, unknown>)
-      : undefined
+      : undefined;
 
   const restoringFromTrash =
     operation === 'update' &&
     'trash' in args &&
     args.trash === true &&
-    data?.deletedAt === null
+    data?.deletedAt === null;
 
   if (restoringFromTrash && data) {
-    data._status = 'draft'
-    ;(args as typeof args & { draft?: boolean }).draft = true
+    data._status = 'draft';
+    (args as typeof args & { draft?: boolean }).draft = true;
   }
 
   const isPublishing =
     data?._status === 'published' ||
     ('publishAllLocales' in args && isTrue(args.publishAllLocales)) ||
-    ('publishSpecificLocale' in args && Boolean(args.publishSpecificLocale))
+    ('publishSpecificLocale' in args && Boolean(args.publishSpecificLocale));
   const isReleasingRoute =
     ('unpublishAllLocales' in args && isTrue(args.unpublishAllLocales)) ||
-    data?.deletedAt != null
+    data?.deletedAt != null;
   const allowsUnresolved =
     (operation === 'create' || operation === 'update') &&
     !isPublishing &&
     !isReleasingRoute &&
     (('autosave' in args && args.autosave === true) ||
-      ('draft' in args && args.draft === true))
-  const context = args.req?.context
+      ('draft' in args && args.draft === true));
+  const context = args.req?.context;
 
   if (context && allowsUnresolved) {
-    context[PATH_ALLOW_UNRESOLVED_CONTEXT_KEY] = true
+    context[PATH_ALLOW_UNRESOLVED_CONTEXT_KEY] = true;
   }
   if (
     context &&
     (('unpublishAllLocales' in args && isTrue(args.unpublishAllLocales)) ||
       data?.deletedAt != null)
   ) {
-    context[PATH_REMOVE_ALL_ROUTES_CONTEXT_KEY] = true
+    context[PATH_REMOVE_ALL_ROUTES_CONTEXT_KEY] = true;
   }
-  return args
-}
+  return args;
+};
 
 const shouldPrefixLocale = ({
   defaultLocale,
   locale,
   localePrefix,
 }: {
-  defaultLocale?: string
-  locale?: string
-  localePrefix: LocalePrefixMode
+  defaultLocale?: string;
+  locale?: string;
+  localePrefix: LocalePrefixMode;
 }): boolean =>
   Boolean(
     locale &&
-      (localePrefix === 'always' ||
-        (defaultLocale !== undefined && locale !== defaultLocale)),
-  )
+    (localePrefix === 'always' ||
+      (defaultLocale !== undefined && locale !== defaultLocale)),
+  );
 
 type ResolvedPermalink = {
-  path: null | string
-  slug: null | string
-}
+  path: null | string;
+  slug: null | string;
+};
 
 const resolveForLocale = async ({
   allowUnresolved,
@@ -200,34 +200,37 @@ const resolveForLocale = async ({
   req,
   useAsSlug,
 }: {
-  allowUnresolved: boolean
-  collection: string
-  data: Record<string, unknown>
-  defaultLocale?: string
-  locale?: string
-  localePrefix: LocalePrefixMode
-  locales: Set<string>
-  options: PathCollectionOptions
-  originalDoc?: Record<string, unknown>
-  req: PayloadRequest
-  useAsSlug: string
+  allowUnresolved: boolean;
+  collection: string;
+  data: Record<string, unknown>;
+  defaultLocale?: string;
+  locale?: string;
+  localePrefix: LocalePrefixMode;
+  locales: Set<string>;
+  options: PathCollectionOptions;
+  originalDoc?: Record<string, unknown>;
+  req: PayloadRequest;
+  useAsSlug: string;
 }): Promise<ResolvedPermalink> => {
   const localizedOriginal = locale
-    ? (valueForLocale(originalDoc ?? {}, locale, locales) as Record<string, unknown>)
-    : (originalDoc ?? {})
+    ? (valueForLocale(originalDoc ?? {}, locale, locales) as Record<
+        string,
+        unknown
+      >)
+    : (originalDoc ?? {});
   const localizedData = locale
     ? (valueForLocale(data, locale, locales) as Record<string, unknown>)
-    : data
-  const effective = { ...localizedOriginal, ...localizedData }
+    : data;
+  const effective = { ...localizedOriginal, ...localizedData };
 
-  const explicitSlug = effective.slug
-  const source = effective[useAsSlug]
+  const explicitSlug = effective.slug;
+  const source = effective[useAsSlug];
   const slug =
     typeof explicitSlug === 'string' && explicitSlug.length > 0
       ? formatPermalinkSlug(explicitSlug, locale)
       : typeof source === 'string' && source.length > 0
         ? formatPermalinkSlug(source, locale)
-        : null
+        : null;
 
   if (!slug) {
     return {
@@ -238,13 +241,13 @@ const resolveForLocale = async ({
         req,
       }),
       slug: null,
-    }
+    };
   }
 
-  const slugSegment = slug === HOME_SLUG ? undefined : slug
+  const slugSegment = slug === HOME_SLUG ? undefined : slug;
 
   if (options.parentField) {
-    const parentID = getRelationshipID(effective[options.parentField])
+    const parentID = getRelationshipID(effective[options.parentField]);
     if (parentID !== undefined) {
       const parent = await req.payload.findByID({
         collection: collection as never,
@@ -256,8 +259,8 @@ const resolveForLocale = async ({
         overrideAccess: true,
         req,
         select: { path: true },
-      } as never)
-      const parentPath = (parent as unknown as Record<string, unknown>).path
+      } as never);
+      const parentPath = (parent as unknown as Record<string, unknown>).path;
       if (typeof parentPath !== 'string' || parentPath.length === 0) {
         return {
           path: unresolvedPath({
@@ -268,7 +271,7 @@ const resolveForLocale = async ({
             req,
           }),
           slug,
-        }
+        };
       }
       return {
         path: assertGeneratedPath({
@@ -277,7 +280,7 @@ const resolveForLocale = async ({
           req,
         }),
         slug,
-      }
+      };
     }
   }
 
@@ -294,8 +297,8 @@ const resolveForLocale = async ({
       req,
     }),
     slug,
-  }
-}
+  };
+};
 
 export const createPathBeforeChangeHook = ({
   collection,
@@ -306,32 +309,32 @@ export const createPathBeforeChangeHook = ({
   options,
   useAsSlug,
 }: {
-  collection: string
-  collectionHasDrafts: boolean
-  defaultLocale?: string
-  localeCodes: string[]
-  localePrefix: LocalePrefixMode
-  options: PathCollectionOptions
-  useAsSlug: string
+  collection: string;
+  collectionHasDrafts: boolean;
+  defaultLocale?: string;
+  localeCodes: string[];
+  localePrefix: LocalePrefixMode;
+  options: PathCollectionOptions;
+  useAsSlug: string;
 }): CollectionBeforeChangeHook => {
-  const locales = new Set(localeCodes)
+  const locales = new Set(localeCodes);
 
   return async ({ context, data, originalDoc, req }) => {
     const restoringFromTrash =
       collectionHasDrafts &&
       originalDoc?.deletedAt != null &&
-      data.deletedAt === null
+      data.deletedAt === null;
     const effectiveData = restoringFromTrash
       ? { ...data, _status: 'draft' }
-      : data
-    const requestLocale = (req as PayloadRequest & { locale?: string }).locale
+      : data;
+    const requestLocale = (req as PayloadRequest & { locale?: string }).locale;
     const allowUnresolved =
       context[PATH_ALLOW_UNRESOLVED_CONTEXT_KEY] === true ||
-      context[PATH_REBUILD_CONTEXT_KEY] === true
+      context[PATH_REBUILD_CONTEXT_KEY] === true;
 
     if (requestLocale === 'all') {
-      const paths: Record<string, null | string> = {}
-      const slugs: Record<string, null | string> = {}
+      const paths: Record<string, null | string> = {};
+      const slugs: Record<string, null | string> = {};
       for (const locale of localeCodes) {
         const resolved = await resolveForLocale({
           allowUnresolved,
@@ -345,15 +348,15 @@ export const createPathBeforeChangeHook = ({
           originalDoc,
           req,
           useAsSlug,
-        })
-        paths[locale] = resolved.path
-        slugs[locale] = resolved.slug
+        });
+        paths[locale] = resolved.path;
+        slugs[locale] = resolved.slug;
       }
-      return { ...effectiveData, path: paths, slug: slugs }
+      return { ...effectiveData, path: paths, slug: slugs };
     }
 
     const locale =
-      localeCodes.length > 0 ? (requestLocale ?? defaultLocale) : undefined
+      localeCodes.length > 0 ? (requestLocale ?? defaultLocale) : undefined;
     const resolved = await resolveForLocale({
       allowUnresolved,
       collection,
@@ -366,15 +369,15 @@ export const createPathBeforeChangeHook = ({
       originalDoc,
       req,
       useAsSlug,
-    })
-    return { ...effectiveData, path: resolved.path, slug: resolved.slug }
-  }
-}
+    });
+    return { ...effectiveData, path: resolved.path, slug: resolved.slug };
+  };
+};
 
 const getLocalizedValue = (value: unknown, locale?: string): unknown => {
-  if (!locale || !isRecord(value)) return value
-  return locale in value ? value[locale] : value
-}
+  if (!locale || !isRecord(value)) return value;
+  return locale in value ? value[locale] : value;
+};
 
 const getChangeLocales = ({
   defaultLocale,
@@ -382,33 +385,33 @@ const getChangeLocales = ({
   localeCodes,
   req,
 }: {
-  defaultLocale?: string
-  doc: Record<string, unknown>
-  localeCodes: string[]
-  req: PayloadRequest
+  defaultLocale?: string;
+  doc: Record<string, unknown>;
+  localeCodes: string[];
+  req: PayloadRequest;
 }): Array<string | undefined> => {
-  if (localeCodes.length === 0) return [undefined]
+  if (localeCodes.length === 0) return [undefined];
 
-  const requestLocale = (req as PayloadRequest & { locale?: string }).locale
+  const requestLocale = (req as PayloadRequest & { locale?: string }).locale;
   if (requestLocale === 'all' || (!requestLocale && isRecord(doc.path))) {
-    return localeCodes
+    return localeCodes;
   }
-  return [requestLocale ?? defaultLocale ?? localeCodes[0]]
-}
+  return [requestLocale ?? defaultLocale ?? localeCodes[0]];
+};
 
 const isPublishedDocument = ({
   collectionHasDrafts,
   document,
   locale,
 }: {
-  collectionHasDrafts: boolean
-  document: Record<string, unknown>
-  locale?: string
+  collectionHasDrafts: boolean;
+  document: Record<string, unknown>;
+  locale?: string;
 }): boolean => {
-  if (document.deletedAt != null) return false
-  if (!collectionHasDrafts) return true
-  return getLocalizedValue(document._status, locale) === 'published'
-}
+  if (document.deletedAt != null) return false;
+  if (!collectionHasDrafts) return true;
+  return getLocalizedValue(document._status, locale) === 'published';
+};
 
 const routeBelongsToAnotherDocument = ({
   collection,
@@ -416,17 +419,17 @@ const routeBelongsToAnotherDocument = ({
   locale,
   route,
 }: {
-  collection: string
-  documentID: string
-  locale?: string
-  route: Awaited<ReturnType<typeof findPathRouteByPath>>
+  collection: string;
+  documentID: string;
+  locale?: string;
+  route: Awaited<ReturnType<typeof findPathRouteByPath>>;
 }): boolean =>
   Boolean(
     route &&
-      (route.collection !== collection ||
-        route.documentID !== documentID ||
-        route.locale !== locale),
-  )
+    (route.collection !== collection ||
+      route.documentID !== documentID ||
+      route.locale !== locale),
+  );
 
 const updateLocalizedResult = ({
   document,
@@ -434,21 +437,21 @@ const updateLocalizedResult = ({
   path,
   slug,
 }: {
-  document: Record<string, unknown>
-  locale?: string
-  path: unknown
-  slug: unknown
+  document: Record<string, unknown>;
+  locale?: string;
+  path: unknown;
+  slug: unknown;
 }): Record<string, unknown> => {
   if (!locale || !isRecord(document.path) || !isRecord(document.slug)) {
-    return { ...document, path, slug }
+    return { ...document, path, slug };
   }
 
   return {
     ...document,
     path: { ...document.path, [locale]: path },
     slug: { ...document.slug, [locale]: slug },
-  }
-}
+  };
+};
 
 export const createPathAfterChangeHook =
   ({
@@ -457,28 +460,28 @@ export const createPathAfterChangeHook =
     defaultLocale,
     localeCodes,
   }: {
-    collection: string
-    collectionHasDrafts: boolean
-    defaultLocale?: string
-    localeCodes: string[]
+    collection: string;
+    collectionHasDrafts: boolean;
+    defaultLocale?: string;
+    localeCodes: string[];
   }): CollectionAfterChangeHook =>
   async ({ context, doc, previousDoc, req }) => {
     const clearContext = () => {
-      delete context[PATH_ALLOW_UNRESOLVED_CONTEXT_KEY]
-      delete context[PATH_REMOVE_ALL_ROUTES_CONTEXT_KEY]
-    }
+      delete context[PATH_ALLOW_UNRESOLVED_CONTEXT_KEY];
+      delete context[PATH_REMOVE_ALL_ROUTES_CONTEXT_KEY];
+    };
 
     if (
       collectionHasDrafts &&
       context[PATH_ALLOW_UNRESOLVED_CONTEXT_KEY] === true
     ) {
-      clearContext()
-      return doc
+      clearContext();
+      return doc;
     }
 
-    let document = doc as unknown as Record<string, unknown>
-    const id = document.id ?? previousDoc.id
-    const documentID = String(id)
+    let document = doc as unknown as Record<string, unknown>;
+    const id = document.id ?? previousDoc.id;
+    const documentID = String(id);
 
     try {
       if (context[PATH_REMOVE_ALL_ROUTES_CONTEXT_KEY] === true) {
@@ -487,8 +490,8 @@ export const createPathAfterChangeHook =
           documentID,
           payload: req.payload,
           req,
-        })
-        return doc
+        });
+        return doc;
       }
 
       if (
@@ -511,11 +514,11 @@ export const createPathAfterChangeHook =
             slug: true,
             ...(collectionHasDrafts ? { _status: true } : {}),
           },
-        } as never)
+        } as never);
         document = {
           ...document,
           ...(hydrated as unknown as Record<string, unknown>),
-        }
+        };
       }
 
       for (const locale of getChangeLocales({
@@ -524,19 +527,19 @@ export const createPathAfterChangeHook =
         localeCodes,
         req,
       })) {
-        const path = getLocalizedValue(document.path, locale)
+        const path = getLocalizedValue(document.path, locale);
         const published = isPublishedDocument({
           collectionHasDrafts,
           document,
           locale,
-        })
+        });
 
         if (published && typeof path === 'string') {
           const conflictingRoute = await findPathRouteByPath({
             path,
             payload: req.payload,
             req,
-          })
+          });
 
           if (
             routeBelongsToAnotherDocument({
@@ -546,8 +549,8 @@ export const createPathAfterChangeHook =
               route: conflictingRoute,
             })
           ) {
-            const currentSlug = getLocalizedValue(document.slug, locale)
-            const suffix = `-${documentID}`
+            const currentSlug = getLocalizedValue(document.slug, locale);
+            const suffix = `-${documentID}`;
 
             if (
               typeof currentSlug !== 'string' ||
@@ -558,14 +561,14 @@ export const createPathAfterChangeHook =
                 collection,
                 message: 'This permalink is already in use.',
                 req,
-              })
+              });
             }
 
             const suffixedSlug = formatPermalinkSlug(
               `${currentSlug}${suffix}`,
               locale,
-            )
-            const status = getLocalizedValue(document._status, locale)
+            );
+            const status = getLocalizedValue(document._status, locale);
             const updated = (await req.payload.update({
               collection: collection as never,
               data: {
@@ -579,15 +582,15 @@ export const createPathAfterChangeHook =
               ...(locale ? { locale: locale as never } : {}),
               overrideAccess: true,
               req,
-            } as never)) as unknown as Record<string, unknown>
+            } as never)) as unknown as Record<string, unknown>;
 
             document = updateLocalizedResult({
               document,
               locale,
               path: updated.path,
               slug: updated.slug,
-            })
-            continue
+            });
+            continue;
           }
         }
 
@@ -598,8 +601,8 @@ export const createPathAfterChangeHook =
             locale,
             payload: req.payload,
             req,
-          })
-          continue
+          });
+          continue;
         }
 
         await upsertPathRoute({
@@ -609,14 +612,14 @@ export const createPathAfterChangeHook =
           path,
           payload: req.payload,
           req,
-        })
+        });
       }
     } finally {
-      clearContext()
+      clearContext();
     }
 
-    return document as never
-  }
+    return document as never;
+  };
 
 export const createPathAfterDeleteHook =
   ({ collection }: { collection: string }): CollectionAfterDeleteHook =>
@@ -626,5 +629,5 @@ export const createPathAfterDeleteHook =
       documentID: String(id),
       payload: req.payload,
       req,
-    })
-  }
+    });
+  };

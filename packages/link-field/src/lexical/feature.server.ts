@@ -2,8 +2,8 @@ import {
   convertLexicalNodesToHTML,
   createNode,
   createServerFeature,
-} from '@payloadcms/richtext-lexical'
-import { fieldSchemasToFormState } from '@payloadcms/ui/forms/fieldSchemasToFormState'
+} from '@payloadcms/richtext-lexical';
+import { fieldSchemasToFormState } from '@payloadcms/ui/forms/fieldSchemasToFormState';
 import {
   sanitizeFields,
   type CollectionSlug,
@@ -11,10 +11,10 @@ import {
   type RelationshipField,
   type SanitizedConfig,
   type TextField,
-} from 'payload'
+} from 'payload';
 
-import { createResolveUrlHook } from '../hooks/resolveUrl.js'
-import { createLinkFields, discardPayloadCollections } from '../linkFields.js'
+import { createResolveUrlHook } from '../hooks/resolveUrl.js';
+import { createLinkFields, discardPayloadCollections } from '../linkFields.js';
 import {
   LINK_FIELD_FEATURE_CLIENT,
   LINK_FIELD_RUNTIME_CONFIG_KEY,
@@ -22,45 +22,46 @@ import {
   type LinkFieldNodeFields,
   type LinkFieldRuntimeConfig,
   type SerializedLinkFieldNode,
-} from '../types.js'
-import { getReferenceIdentity } from '../utils/getReferenceIdentity.js'
-import { LinkFieldMarkdownTransformer } from './markdown.js'
-import { LinkFieldAutoLinkNode, LinkFieldNode } from './nodes.js'
-import { normalizeSerializedLinkNode } from './normalize.js'
+} from '../types.js';
+import { getReferenceIdentity } from '../utils/getReferenceIdentity.js';
+import { LinkFieldMarkdownTransformer } from './markdown.js';
+import { LinkFieldAutoLinkNode, LinkFieldNode } from './nodes.js';
+import { normalizeSerializedLinkNode } from './normalize.js';
 
 type LinkFieldFeatureClientProps = Required<
   Pick<LinkFieldFeatureConfig, 'defaultType' | 'showLabel' | 'showNewTab'>
-> & Pick<LinkFieldFeatureConfig, 'relationTo'>
+> &
+  Pick<LinkFieldFeatureConfig, 'relationTo'>;
 
 const isNamedField = (field: Field, name: string): boolean =>
-  'name' in field && field.name === name
+  'name' in field && field.name === name;
 
 const escapeAttribute = (value: string): string =>
   value
     .replaceAll('&', '&amp;')
     .replaceAll('"', '&quot;')
     .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
+    .replaceAll('>', '&gt;');
 
 const getRuntime = (config: SanitizedConfig): LinkFieldRuntimeConfig => {
   const runtime = config.custom?.[LINK_FIELD_RUNTIME_CONFIG_KEY] as
     | LinkFieldRuntimeConfig
-    | undefined
+    | undefined;
   if (!runtime?.resolveDocumentUrl) {
     throw new Error(
       '@sittari/payload-link-field: LinkFieldFeature() requires linkFieldPlugin() to be configured.',
-    )
+    );
   }
-  return runtime
-}
+  return runtime;
+};
 
 const attachUrlResolver = (
   fields: Field[],
   runtime: LinkFieldRuntimeConfig,
 ): Field[] =>
   fields.map((field) => {
-    if (!isNamedField(field, 'url') || field.type !== 'text') return field
-    const urlField = field as TextField
+    if (!isNamedField(field, 'url') || field.type !== 'text') return field;
+    const urlField = field as TextField;
     return {
       ...urlField,
       hooks: {
@@ -71,19 +72,20 @@ const attachUrlResolver = (
         ],
       },
       virtual: true,
-    }
-  })
+    };
+  });
 
 const getRelationshipField = (fields: Field[]): RelationshipField | undefined =>
   fields.find(
     (field): field is RelationshipField =>
       isNamedField(field, 'reference') && field.type === 'relationship',
-  )
+  );
 
-const createNodeValidation = (fields: Field[]) =>
+const createNodeValidation =
+  (fields: Field[]) =>
   async ({ node, validation }: any): Promise<string | true> => {
-    normalizeSerializedLinkNode(node)
-    const options = validation.options
+    normalizeSerializedLinkNode(node);
+    const options = validation.options;
     const result = await fieldSchemasToFormState({
       collectionSlug: options.collectionSlug,
       data: node.fields,
@@ -101,43 +103,45 @@ const createNodeValidation = (fields: Field[]) =>
       renderAllFields: false,
       req: options.req,
       schemaPath: '',
-    })
-    const errorPaths = new Set<string>()
+    });
+    const errorPaths = new Set<string>();
     for (const fieldState of Object.values(result)) {
-      for (const path of fieldState?.errorPaths ?? []) errorPaths.add(path)
+      for (const path of fieldState?.errorPaths ?? []) errorPaths.add(path);
     }
-    return errorPaths.size ? `The following fields are invalid: ${[...errorPaths].join(', ')}` : true
-  }
+    return errorPaths.size
+      ? `The following fields are invalid: ${[...errorPaths].join(', ')}`
+      : true;
+  };
 
 const createGraphQLPopulationPromise = ({
   fields,
   runtime,
 }: {
-  fields: Field[]
-  runtime: LinkFieldRuntimeConfig
+  fields: Field[];
+  runtime: LinkFieldRuntimeConfig;
 }) => {
-  const relationship = getRelationshipField(fields)
+  const relationship = getRelationshipField(fields);
   return (args: any): void => {
-    normalizeSerializedLinkNode(args.node)
-    const node = args.node as SerializedLinkFieldNode
-    const fieldsData = node.fields
+    normalizeSerializedLinkNode(args.node);
+    const node = args.node as SerializedLinkFieldNode;
+    const fieldsData = node.fields;
 
     if (fieldsData.type === 'custom') {
-      fieldsData.url = fieldsData.customUrl ?? null
-      return
+      fieldsData.url = fieldsData.customUrl ?? null;
+      return;
     }
 
     const identity = getReferenceIdentity({
       reference: fieldsData.reference,
       relationTo: relationship?.relationTo,
-    })
+    });
     if (!identity) {
-      fieldsData.url = null
-      return
+      fieldsData.url = null;
+      return;
     }
 
     const promise = (async () => {
-      const remainingDepth = Math.max(0, args.depth - args.currentDepth - 1)
+      const remainingDepth = Math.max(0, args.depth - args.currentDepth - 1);
       const document =
         identity.document ??
         (await args.req.payload.findByID({
@@ -152,17 +156,17 @@ const createGraphQLPopulationPromise = ({
           overrideAccess: args.overrideAccess,
           req: args.req,
           showHiddenFields: args.showHiddenFields,
-        } as never))
+        } as never));
 
       if (!document) {
-        fieldsData.url = null
-        return
+        fieldsData.url = null;
+        return;
       }
 
       if (args.currentDepth < args.depth) {
         fieldsData.reference = Array.isArray(relationship?.relationTo)
           ? { relationTo: identity.collectionSlug, value: document }
-          : document
+          : document;
       }
       fieldsData.url = await runtime.resolveDocumentUrl({
         collectionSlug: identity.collectionSlug,
@@ -174,21 +178,23 @@ const createGraphQLPopulationPromise = ({
         payload: args.req.payload,
         req: args.req,
         siblingData: fieldsData,
-      })
+      });
     })().catch((error) => {
       args.req.payload.logger?.error?.({
         err: error,
         msg: 'Failed to populate Lexical link field',
-      })
-      fieldsData.url = null
-    })
-    args.populationPromises.push(promise)
-  }
-}
+      });
+      fieldsData.url = null;
+    });
+    args.populationPromises.push(promise);
+  };
+};
 
 const createHTMLConverter = () => ({
   converter: async (args: any): Promise<string> => {
-    const node = normalizeSerializedLinkNode(args.node) as SerializedLinkFieldNode
+    const node = normalizeSerializedLinkNode(
+      args.node,
+    ) as SerializedLinkFieldNode;
     const children = await convertLexicalNodesToHTML({
       converters: args.converters,
       currentDepth: args.currentDepth,
@@ -199,15 +205,17 @@ const createHTMLConverter = () => ({
       parent: { ...node, parent: args.parent },
       req: args.req,
       showHiddenFields: args.showHiddenFields,
-    })
-    const href = node.fields.url ??
-      (node.fields.type === 'custom' ? node.fields.customUrl : undefined) ?? ''
+    });
+    const href =
+      node.fields.url ??
+      (node.fields.type === 'custom' ? node.fields.customUrl : undefined) ??
+      '';
     return `<a href="${escapeAttribute(href)}"${
       node.fields.newTab ? ' rel="noopener noreferrer" target="_blank"' : ''
-    }>${children}</a>`
+    }>${children}</a>`;
   },
   nodeTypes: ['link', 'autolink'],
-})
+});
 
 export const LinkFieldFeature = createServerFeature<
   LinkFieldFeatureConfig,
@@ -216,10 +224,10 @@ export const LinkFieldFeature = createServerFeature<
 >({
   key: 'link',
   feature: async ({ config, isRoot, parentIsLocalized, props = {} }) => {
-    const runtime = getRuntime(config)
+    const runtime = getRuntime(config);
     const relationTo = discardPayloadCollections(
       props.relationTo ?? config.collections.map(({ slug }) => slug),
-    )
+    );
     const rawFields = attachUrlResolver(
       createLinkFields({
         defaultType: props.defaultType,
@@ -229,28 +237,28 @@ export const LinkFieldFeature = createServerFeature<
         showNewTab: props.showNewTab,
       }),
       runtime,
-    )
+    );
     const sanitizedFields = await sanitizeFields({
       config: config as never,
       fields: rawFields,
       parentIsLocalized,
       requireFieldLevelRichTextEditor: isRoot,
       validRelationships: config.collections.map(({ slug }) => slug),
-    })
+    });
 
     const clientProps: LinkFieldFeatureClientProps = {
       defaultType: props.defaultType ?? 'custom',
       relationTo,
       showLabel: props.showLabel ?? true,
       showNewTab: props.showNewTab ?? true,
-    }
-    const html = createHTMLConverter()
-    const validation = createNodeValidation(sanitizedFields)
+    };
+    const html = createHTMLConverter();
+    const validation = createNodeValidation(sanitizedFields);
     const graphQLPopulation = createGraphQLPopulationPromise({
       fields: sanitizedFields,
       runtime,
-    })
-    const normalizeHook = ({ node }: any) => normalizeSerializedLinkNode(node)
+    });
+    const normalizeHook = ({ node }: any) => normalizeSerializedLinkNode(node);
 
     const commonNode = {
       converters: { html },
@@ -263,15 +271,15 @@ export const LinkFieldFeature = createServerFeature<
         beforeValidate: [normalizeHook],
       },
       validations: [validation],
-    }
+    };
 
     return {
       ClientFeature: LINK_FIELD_FEATURE_CLIENT,
       clientFeatureProps: clientProps,
       generateSchemaMap: () => {
-        const map = new Map()
-        map.set('fields', { fields: sanitizedFields })
-        return map
+        const map = new Map();
+        map.set('fields', { fields: sanitizedFields });
+        return map;
       },
       markdownTransformers: [LinkFieldMarkdownTransformer],
       nodes: [
@@ -282,6 +290,6 @@ export const LinkFieldFeature = createServerFeature<
         ...props,
         relationTo: relationTo as CollectionSlug | CollectionSlug[],
       },
-    }
+    };
   },
-})
+});

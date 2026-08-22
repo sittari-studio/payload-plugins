@@ -1,13 +1,13 @@
-import type { RelationshipField } from 'payload'
+import type { RelationshipField } from 'payload';
 
-import { localizedText } from '../translations/index.js'
+import { localizedText } from '../translations/index.js';
 
 export type CreateRolesFieldArgs = {
-  access?: RelationshipField['access']
-  name: string
-  override?: (field: RelationshipField) => RelationshipField
-  rolesCollectionSlug: string
-}
+  access?: RelationshipField['access'];
+  name: string;
+  override?: (field: RelationshipField) => RelationshipField;
+  rolesCollectionSlug: string;
+};
 
 /**
  * Builds the roles field added to each user collection. `saveToJWT` keeps the role
@@ -33,7 +33,7 @@ export const createRolesField = ({
     label: localizedText('roles'),
     relationTo: rolesCollectionSlug,
     saveToJWT: true,
-  }
+  };
 
-  return override ? override(field) : field
-}
+  return override ? override(field) : field;
+};

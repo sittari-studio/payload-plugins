@@ -95,9 +95,15 @@ export interface Config {
     templates: TemplatesSelect<false> | TemplatesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
-    'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
-    'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
-    'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
+    'payload-locked-documents':
+      | PayloadLockedDocumentsSelect<false>
+      | PayloadLockedDocumentsSelect<true>;
+    'payload-preferences':
+      | PayloadPreferencesSelect<false>
+      | PayloadPreferencesSelect<true>;
+    'payload-migrations':
+      | PayloadMigrationsSelect<false>
+      | PayloadMigrationsSelect<true>;
   };
   db: {
     defaultIDType: number;
@@ -382,7 +388,13 @@ export interface Page {
       url?: string | null;
     };
     robots: {
-      mode: 'inherit' | 'index-follow' | 'noindex-follow' | 'index-nofollow' | 'noindex-nofollow' | 'custom';
+      mode:
+        | 'inherit'
+        | 'index-follow'
+        | 'noindex-follow'
+        | 'index-nofollow'
+        | 'noindex-nofollow'
+        | 'custom';
       directives?: string | null;
     };
     openGraph?: {
@@ -1017,7 +1029,12 @@ export interface SeoSetting {
   defaultTwitterCreator?: string | null;
   defaultLocale?: string | null;
   defaultRobots: {
-    mode: 'index-follow' | 'noindex-follow' | 'index-nofollow' | 'noindex-nofollow' | 'custom';
+    mode:
+      | 'index-follow'
+      | 'noindex-follow'
+      | 'index-nofollow'
+      | 'noindex-nofollow'
+      | 'custom';
     directives?: string | null;
   };
   globalSchemas?:
@@ -1221,7 +1238,6 @@ export interface TaskSchedulePublish {
 export interface Auth {
   [k: string]: unknown;
 }
-
 
 declare module 'payload' {
   export interface GeneratedTypes extends Config {}

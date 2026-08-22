@@ -13,23 +13,23 @@ pnpm add @sittari/payload-seo
 ## Usage
 
 ```ts
-import { buildConfig } from "payload";
-import { seoPlugin } from "@sittari/payload-seo";
+import { buildConfig } from 'payload';
+import { seoPlugin } from '@sittari/payload-seo';
 
 export default buildConfig({
   plugins: [
     seoPlugin({
-      siteUrl: "https://example.com",
+      siteUrl: 'https://example.com',
       collections: {
-        pages: { sitemap: { fields: ["slug"] } },
+        pages: { sitemap: { fields: ['slug'] } },
       },
       media: {
-        collection: "media",
+        collection: 'media',
         resolveMediaUrl: ({ media }) =>
-          typeof media.url === "string" ? media.url : null,
+          typeof media.url === 'string' ? media.url : null,
       },
       resolveUrl: ({ document }) =>
-        typeof document.slug === "string" ? `/${document.slug}` : null,
+        typeof document.slug === 'string' ? `/${document.slug}` : null,
       resolveChunkUrl: ({ collection, locale, page }) =>
         `https://example.com/sitemaps/${collection}/${locale}/${page}.xml`,
     }),

@@ -1,26 +1,29 @@
-import type { CollectionConfig, Option } from 'payload'
+import type { CollectionConfig, Option } from 'payload';
 
-import type { MatrixRow } from '../shared.js'
+import type { MatrixRow } from '../shared.js';
 
-import { FULL_ACCESS, permissionFor } from '../permissions.js'
-import { collectionActions, permissionsMatrixFieldPath } from '../shared.js'
-import type { RbacLanguage, RbacTranslationKey } from '../translations/index.js'
+import { FULL_ACCESS, permissionFor } from '../permissions.js';
+import { collectionActions, permissionsMatrixFieldPath } from '../shared.js';
+import type {
+  RbacLanguage,
+  RbacTranslationKey,
+} from '../translations/index.js';
 import {
   localizedText,
   resolveLocalizedText,
   translate,
   translations,
-} from '../translations/index.js'
+} from '../translations/index.js';
 
 export type CreateRolesCollectionArgs = {
-  access: CollectionConfig['access']
-  hooks?: CollectionConfig['hooks']
-  matrixRows: MatrixRow[]
-  override?: (collection: CollectionConfig) => CollectionConfig
+  access: CollectionConfig['access'];
+  hooks?: CollectionConfig['hooks'];
+  matrixRows: MatrixRow[];
+  override?: (collection: CollectionConfig) => CollectionConfig;
   /** Names of code-locked roles; the matrix renders read-only for them. */
-  protectedRoleNames?: string[]
-  slug: string
-}
+  protectedRoleNames?: string[];
+  slug: string;
+};
 
 /**
  * Builds the roles collection. Permissions are stored as an array of
@@ -46,7 +49,7 @@ export const createRolesCollection = ({
         language,
         `${resolveLocalizedText(label, language)}: ${translate(key, language)}`,
       ]),
-    ) as Record<RbacLanguage, string>
+    ) as Record<RbacLanguage, string>;
 
   const options: Option[] = [
     { label: localizedText('fullAccess'), value: FULL_ACCESS },
@@ -55,13 +58,16 @@ export const createRolesCollection = ({
       value: `*:${action}`,
     })),
     ...matrixRows.flatMap((row) => [
-      { label: localizedPermissionLabel(row.label, 'allActions'), value: `${row.slug}:*` },
+      {
+        label: localizedPermissionLabel(row.label, 'allActions'),
+        value: `${row.slug}:*`,
+      },
       ...row.actions.map((action) => ({
         label: localizedPermissionLabel(row.label, action),
         value: permissionFor(row.slug, action),
       })),
     ]),
-  ]
+  ];
 
   const collection: CollectionConfig = {
     slug,
@@ -106,7 +112,7 @@ export const createRolesCollection = ({
       plural: localizedText('roles'),
       singular: localizedText('role'),
     },
-  }
+  };
 
-  return override ? override(collection) : collection
-}
+  return override ? override(collection) : collection;
+};

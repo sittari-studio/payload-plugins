@@ -2,24 +2,22 @@ export const pathLabel = {
   en: 'Path',
   ru: 'Путь',
   uk: 'Шлях',
-}
+};
 
-type SupportedLanguage = 'en' | 'ru' | 'uk'
+type SupportedLanguage = 'en' | 'ru' | 'uk';
 
-const validationMessages: Record<
-  string,
-  Record<SupportedLanguage, string>
-> = {
+const validationMessages: Record<string, Record<SupportedLanguage, string>> = {
   'A slug is required to build the permalink.': {
     en: 'A slug is required to build the permalink.',
     ru: 'Для создания постоянной ссылки требуется slug.',
     uk: 'Для створення постійного посилання потрібен slug.',
   },
-  'The parent document must have a permalink before this document can be routed.': {
-    en: 'The parent document must have a permalink before this document can be routed.',
-    ru: 'У родительского документа должна быть постоянная ссылка, прежде чем можно будет создать адрес этого документа.',
-    uk: 'Батьківський документ повинен мати постійне посилання, перш ніж можна буде створити адресу цього документа.',
-  },
+  'The parent document must have a permalink before this document can be routed.':
+    {
+      en: 'The parent document must have a permalink before this document can be routed.',
+      ru: 'У родительского документа должна быть постоянная ссылка, прежде чем можно будет создать адрес этого документа.',
+      uk: 'Батьківський документ повинен мати постійне посилання, перш ніж можна буде створити адресу цього документа.',
+    },
   'This permalink is already in use.': {
     en: 'This permalink is already in use.',
     ru: 'Эта постоянная ссылка уже используется.',
@@ -60,14 +58,15 @@ const validationMessages: Record<
     ru: 'Путь не может содержать схему URI.',
     uk: 'Шлях не може містити схему URI.',
   },
-}
+};
 
 const resolveLanguage = (language?: string): SupportedLanguage => {
-  const code = language?.split('-')[0]
-  return code === 'ru' || code === 'uk' ? code : 'en'
-}
+  const code = language?.split('-')[0];
+  return code === 'ru' || code === 'uk' ? code : 'en';
+};
 
 export const translatePathValidationMessage = (
   message: string,
   language?: string,
-): string => validationMessages[message]?.[resolveLanguage(language)] ?? message
+): string =>
+  validationMessages[message]?.[resolveLanguage(language)] ?? message;

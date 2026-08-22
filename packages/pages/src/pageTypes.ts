@@ -1,11 +1,11 @@
-import type { PageTypeConfig } from './types.js'
-import { localizedText } from './translations/index.js'
+import type { PageTypeConfig } from './types.js';
+import { localizedText } from './translations/index.js';
 
-export type StandardContentPageTypeOptions = Partial<PageTypeConfig>
+export type StandardContentPageTypeOptions = Partial<PageTypeConfig>;
 
 export type FlexiblePageTypeOptions = Partial<PageTypeConfig> & {
-  blockSlugs?: string[]
-}
+  blockSlugs?: string[];
+};
 
 export const createStandardContentPageType = (
   options: StandardContentPageTypeOptions = {},
@@ -20,12 +20,12 @@ export const createStandardContentPageType = (
     },
   ],
   ...options,
-})
+});
 
 export const createFlexiblePageType = (
   options: FlexiblePageTypeOptions = {},
 ): PageTypeConfig => {
-  const { blockSlugs = [], ...overrides } = options
+  const { blockSlugs = [], ...overrides } = options;
 
   return {
     label: localizedText('flexible'),
@@ -43,5 +43,5 @@ export const createFlexiblePageType = (
       },
     ],
     ...overrides,
-  }
-}
+  };
+};

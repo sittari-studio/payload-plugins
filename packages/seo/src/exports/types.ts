@@ -24,6 +24,16 @@ export type {
   ResolvedEffectiveSeo,
   SeoPreview,
   ResolvedSeoMetadata,
-} from '../types.js'
-export type { JsonObject, JsonValue, SeoCollectionSchemaTemplates, SeoDocumentSchema, SeoGlobalSchemaOverride, SeoJsonPatchOperation, SeoSchemaInstance, SeoSchemaTemplate, SeoSchemaVariable } from '../schema/types.js'
-export type { SeoRedirect } from '../helpers/redirects.js'
+} from '../types.js';
+export type {
+  JsonObject,
+  JsonValue,
+  SeoCollectionSchemaTemplates,
+  SeoDocumentSchema,
+  SeoGlobalSchemaOverride,
+  SeoJsonPatchOperation,
+  SeoSchemaInstance,
+  SeoSchemaTemplate,
+  SeoSchemaVariable,
+} from '../schema/types.js';
+export type { SeoRedirect } from '../helpers/redirects.js';

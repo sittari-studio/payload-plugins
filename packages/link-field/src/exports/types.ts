@@ -10,4 +10,4 @@ export type {
   SerializedLinkFieldNode,
   ResolveDocumentUrl,
   ResolveDocumentUrlArgs,
-} from '../types.js'
+} from '../types.js';

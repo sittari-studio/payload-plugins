@@ -1,17 +1,14 @@
-export { createPathHelpers } from './helpers.js'
-export type { CreatePathHelpersArgs } from './helpers.js'
-export {
-  buildPaginatedPath,
-  parsePaginatedPath,
-} from './pagination.js'
-export type { ParsedPaginatedPath } from './pagination.js'
+export { createPathHelpers } from './helpers.js';
+export type { CreatePathHelpersArgs } from './helpers.js';
+export { buildPaginatedPath, parsePaginatedPath } from './pagination.js';
+export type { ParsedPaginatedPath } from './pagination.js';
 export {
   assertValidDocumentPath,
   cleanPathSegment,
   isValidDocumentPath,
   joinPathSegments,
   validateDocumentPath,
-} from './path.js'
+} from './path.js';
 export {
   HOME_SLUG,
   joinUrl,
@@ -19,14 +16,14 @@ export {
   normalizeSiteUrl,
   permalinkDisplayPath,
   permalinkPrefix,
-} from './permalink.js'
+} from './permalink.js';
 export {
   permalinkPlugin,
   PERMALINK_FIELD_COMPONENT,
   PERMALINK_FIELD_NAME,
-} from './plugin.js'
-export { rebuildDocumentPathsWithPayload } from './rebuild.js'
-export { PATH_FIELD_RUNTIME_CONFIG_KEY } from './types.js'
+} from './plugin.js';
+export { rebuildDocumentPathsWithPayload } from './rebuild.js';
+export { PATH_FIELD_RUNTIME_CONFIG_KEY } from './types.js';
 export type {
   FindDocumentByPathArgs,
   FoundDocumentByPath,
@@ -37,6 +34,6 @@ export type {
   PermalinkPluginConfig,
   RebuildDocumentPathsArgs,
   RebuildDocumentPathsResult,
-} from './types.js'
+} from './types.js';
 
-export { permalinkPlugin as default } from './plugin.js'
+export { permalinkPlugin as default } from './plugin.js';

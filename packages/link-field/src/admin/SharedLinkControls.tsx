@@ -1,7 +1,12 @@
-'use client'
+'use client';
 
-import { Button, DrawerContentContainer, EditIcon, XIcon } from '@payloadcms/ui'
-import type { ReactNode } from 'react'
+import {
+  Button,
+  DrawerContentContainer,
+  EditIcon,
+  XIcon,
+} from '@payloadcms/ui';
+import type { ReactNode } from 'react';
 
 export const LinkActionButtons = ({
   editLabel,
@@ -10,11 +15,11 @@ export const LinkActionButtons = ({
   readOnly,
   removeLabel,
 }: {
-  editLabel: string
-  onEdit: () => void
-  onRemove?: () => void
-  readOnly?: boolean
-  removeLabel: string
+  editLabel: string;
+  onEdit: () => void;
+  onRemove?: () => void;
+  readOnly?: boolean;
+  removeLabel: string;
 }) => (
   <div className="link-field__actions">
     <Button
@@ -38,19 +43,21 @@ export const LinkActionButtons = ({
       />
     ) : null}
   </div>
-)
+);
 
 export const LinkDrawerBody = ({
   children,
   doneLabel,
   onDone,
 }: {
-  children: ReactNode
-  doneLabel: string
-  onDone: () => void
+  children: ReactNode;
+  doneLabel: string;
+  onDone: () => void;
 }) => (
   <DrawerContentContainer>
     {children}
-    <Button buttonStyle="primary" onClick={onDone}>{doneLabel}</Button>
+    <Button buttonStyle="primary" onClick={onDone}>
+      {doneLabel}
+    </Button>
   </DrawerContentContainer>
-)
+);

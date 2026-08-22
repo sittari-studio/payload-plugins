@@ -10,19 +10,19 @@ Use the `next` subpath in `generateMetadata`. The helper accepts the already
 loaded document, so the page query can be shared with page rendering.
 
 ```ts
-import type { Metadata } from 'next'
-import { getPayload } from 'payload'
-import { resolveNextMetadata } from '@sittari/payload-seo/next'
+import type { Metadata } from 'next';
+import { getPayload } from 'payload';
+import { resolveNextMetadata } from '@sittari/payload-seo/next';
 
-import config from '@payload-config'
+import config from '@payload-config';
 
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ locale: string; slug: string }>
+  params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
-  const { locale, slug } = await params
-  const payload = await getPayload({ config })
+  const { locale, slug } = await params;
+  const payload = await getPayload({ config });
   const result = await payload.find({
     collection: 'pages',
     locale,
@@ -31,17 +31,17 @@ export async function generateMetadata({
     depth: 1,
     limit: 1,
     where: { slug: { equals: slug } },
-  })
-  const page = result.docs[0]
+  });
+  const page = result.docs[0];
 
-  if (!page) return {}
+  if (!page) return {};
 
-  return await resolveNextMetadata({
+  return (await resolveNextMetadata({
     payload,
     collection: 'pages',
     document: page,
     locale,
-  }) as Metadata
+  })) as Metadata;
 }
 ```
 
@@ -56,18 +56,18 @@ a single-locale site, use a fixed locale. For a localized site, route to an
 explicit locale or define a deliberate default.
 
 ```ts
-import { getPayload } from 'payload'
-import { renderRobotsTxt } from '@sittari/payload-seo'
+import { getPayload } from 'payload';
+import { renderRobotsTxt } from '@sittari/payload-seo';
 
-import config from '@payload-config'
+import config from '@payload-config';
 
 export async function GET() {
-  const payload = await getPayload({ config })
-  const body = await renderRobotsTxt({ payload, locale: 'en' })
+  const payload = await getPayload({ config });
+  const body = await renderRobotsTxt({ payload, locale: 'en' });
 
   return new Response(body, {
     headers: { 'content-type': 'text/plain; charset=utf-8' },
-  })
+  });
 }
 ```
 
@@ -79,18 +79,18 @@ The plugin produces sitemap text; your routes return it. First add an index
 route:
 
 ```ts
-import { getPayload } from 'payload'
-import { renderSitemapIndexXml } from '@sittari/payload-seo'
+import { getPayload } from 'payload';
+import { renderSitemapIndexXml } from '@sittari/payload-seo';
 
-import config from '@payload-config'
+import config from '@payload-config';
 
 export async function GET() {
-  const payload = await getPayload({ config })
-  const body = await renderSitemapIndexXml({ payload })
+  const payload = await getPayload({ config });
+  const body = await renderSitemapIndexXml({ payload });
 
   return new Response(body, {
     headers: { 'content-type': 'application/xml; charset=utf-8' },
-  })
+  });
 }
 ```
 
@@ -98,30 +98,32 @@ Then implement routes that match the URLs returned by `resolveChunkUrl`. A
 chunk handler calls `renderSitemapXml` with validated route parameters:
 
 ```ts
-import { getPayload } from 'payload'
-import { renderSitemapXml } from '@sittari/payload-seo'
+import { getPayload } from 'payload';
+import { renderSitemapXml } from '@sittari/payload-seo';
 
-import config from '@payload-config'
+import config from '@payload-config';
 
-const collections = new Set(['pages', 'posts'])
+const collections = new Set(['pages', 'posts']);
 
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ collection: string; locale: string; page: string }> },
+  {
+    params,
+  }: { params: Promise<{ collection: string; locale: string; page: string }> },
 ) {
-  const { collection, locale, page: pageParam } = await params
-  const page = Number(pageParam)
+  const { collection, locale, page: pageParam } = await params;
+  const page = Number(pageParam);
 
   if (!collections.has(collection) || !Number.isInteger(page) || page < 1) {
-    return new Response('Not found', { status: 404 })
+    return new Response('Not found', { status: 404 });
   }
 
-  const payload = await getPayload({ config })
-  const body = await renderSitemapXml({ payload, collection, locale, page })
+  const payload = await getPayload({ config });
+  const body = await renderSitemapXml({ payload, collection, locale, page });
 
   return new Response(body, {
     headers: { 'content-type': 'application/xml; charset=utf-8' },
-  })
+  });
 }
 ```
 
@@ -136,20 +138,23 @@ have a Payload instance. Do not assume an Edge middleware can initialize your
 Payload database adapter.
 
 ```ts
-import { NextResponse } from 'next/server'
-import { getPayload } from 'payload'
-import { findSeoRedirect } from '@sittari/payload-seo'
+import { NextResponse } from 'next/server';
+import { getPayload } from 'payload';
+import { findSeoRedirect } from '@sittari/payload-seo';
 
-import config from '@payload-config'
+import config from '@payload-config';
 
 export async function redirectIfConfigured(request: Request) {
-  const payload = await getPayload({ config })
-  const sourcePath = new URL(request.url).pathname
-  const redirect = await findSeoRedirect({ payload, sourcePath })
+  const payload = await getPayload({ config });
+  const sourcePath = new URL(request.url).pathname;
+  const redirect = await findSeoRedirect({ payload, sourcePath });
 
   return redirect
-    ? NextResponse.redirect(new URL(redirect.destination, request.url), redirect.statusCode)
-    : null
+    ? NextResponse.redirect(
+        new URL(redirect.destination, request.url),
+        redirect.statusCode,
+      )
+    : null;
 }
 ```
 

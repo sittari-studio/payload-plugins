@@ -1,23 +1,23 @@
-import type { Payload, SanitizedConfig } from 'payload'
+import type { Payload, SanitizedConfig } from 'payload';
 
-import { getPayload } from 'payload'
+import { getPayload } from 'payload';
 
-import { devAdminRoleName } from './rbac.js'
+import { devAdminRoleName } from './rbac.js';
 
 export const devUser = {
   email: 'dev@example.com',
   password: 'password',
-}
+};
 
 const getDocumentID = (doc: unknown): number | string | undefined => {
   if (!doc || typeof doc !== 'object' || !('id' in doc)) {
-    return undefined
+    return undefined;
   }
 
-  const { id } = doc
+  const { id } = doc;
 
-  return typeof id === 'number' || typeof id === 'string' ? id : undefined
-}
+  return typeof id === 'number' || typeof id === 'string' ? id : undefined;
+};
 
 const ensureDevUser = async (payload: Payload): Promise<void> => {
   const adminRoles = await payload.find({
@@ -29,8 +29,8 @@ const ensureDevUser = async (payload: Payload): Promise<void> => {
         equals: devAdminRoleName,
       },
     },
-  })
-  const adminRoleID = getDocumentID(adminRoles.docs[0])
+  });
+  const adminRoleID = getDocumentID(adminRoles.docs[0]);
   const existing = await payload.find({
     collection: 'users',
     depth: 0,
@@ -40,35 +40,38 @@ const ensureDevUser = async (payload: Payload): Promise<void> => {
         equals: devUser.email,
       },
     },
-  })
+  });
 
-  const existingUser = existing.docs[0]
-  const existingUserID = getDocumentID(existingUser)
+  const existingUser = existing.docs[0];
+  const existingUserID = getDocumentID(existingUser);
 
   if (!existingUserID) {
     await payload.create({
       collection: 'users',
       data: devUser,
-    })
-    return
+    });
+    return;
   }
 
   const existingRoleIDs = Array.isArray(existingUser.roles)
     ? existingUser.roles
         .map((role) => getDocumentID(role) ?? role)
         .filter((role): role is number => typeof role === 'number')
-    : []
+    : [];
 
-  if (typeof adminRoleID === 'number' && !existingRoleIDs.includes(adminRoleID)) {
+  if (
+    typeof adminRoleID === 'number' &&
+    !existingRoleIDs.includes(adminRoleID)
+  ) {
     await payload.update({
       collection: 'users',
       id: existingUserID,
       data: {
         roles: [...existingRoleIDs, adminRoleID],
       },
-    })
+    });
   }
-}
+};
 
 const ensureSamplePage = async (payload: Payload): Promise<void> => {
   const existing = await payload.find({
@@ -80,17 +83,17 @@ const ensureSamplePage = async (payload: Payload): Promise<void> => {
         equals: 'home',
       },
     },
-  })
+  });
 
-  const page = existing.docs[0]
+  const page = existing.docs[0];
   if (page) {
     if ((page as { seo?: unknown }).seo) {
-      return
+      return;
     }
 
-    const id = getDocumentID(page)
+    const id = getDocumentID(page);
     if (!id) {
-      return
+      return;
     }
 
     await payload.update({
@@ -105,8 +108,8 @@ const ensureSamplePage = async (payload: Payload): Promise<void> => {
           schemaInstances: [{ templateId: 'web-page' }],
         },
       },
-    })
-    return
+    });
+    return;
   }
 
   await payload.create({
@@ -123,8 +126,8 @@ const ensureSamplePage = async (payload: Payload): Promise<void> => {
         robots: { mode: 'index-follow' },
       },
     },
-  })
-}
+  });
+};
 
 const ensureSampleCategories = async (payload: Payload): Promise<void> => {
   const roots = await payload.find({
@@ -136,7 +139,7 @@ const ensureSampleCategories = async (payload: Payload): Promise<void> => {
         equals: 'apparel',
       },
     },
-  })
+  });
 
   const root =
     roots.docs[0] ??
@@ -146,9 +149,9 @@ const ensureSampleCategories = async (payload: Payload): Promise<void> => {
         slug: 'apparel',
         title: 'Apparel',
       },
-    }))
-  const rootID = getDocumentID(root)
-  if (typeof rootID !== 'number') return
+    }));
+  const rootID = getDocumentID(root);
+  if (typeof rootID !== 'number') return;
 
   const children = await payload.find({
     collection: 'categories',
@@ -159,9 +162,9 @@ const ensureSampleCategories = async (payload: Payload): Promise<void> => {
         equals: 'shoes',
       },
     },
-  })
+  });
 
-  if (children.docs[0]) return
+  if (children.docs[0]) return;
   await payload.create({
     collection: 'categories',
     data: {
@@ -169,16 +172,16 @@ const ensureSampleCategories = async (payload: Payload): Promise<void> => {
       slug: 'shoes',
       title: 'Shoes',
     },
-  })
-}
+  });
+};
 
 const ensureSeoSettings = async (payload: Payload): Promise<void> => {
   const settings = await payload.findGlobal({
     slug: 'seo-settings',
-  })
+  });
 
   if (typeof settings.siteName === 'string' && settings.siteName) {
-    return
+    return;
   }
 
   await payload.updateGlobal({
@@ -188,35 +191,54 @@ const ensureSeoSettings = async (payload: Payload): Promise<void> => {
       titleTemplate: '%s | Sittari development',
       defaultDescription: 'Development content for the Payload SEO plugin.',
       defaultRobots: { mode: 'index-follow' },
-      collectionSchemas: [{
-        collection: 'pages',
-        templates: [{ templateId: 'web-page', name: 'WebPage', schema: { '@type': 'WebPage', name: '$title', description: '$excerpt' }, isDefault: true }],
-      }],
-      globalSchemas: [{ templateId: 'website', name: 'WebSite', schema: { '@type': 'WebSite', name: 'Sittari development' } }],
+      collectionSchemas: [
+        {
+          collection: 'pages',
+          templates: [
+            {
+              templateId: 'web-page',
+              name: 'WebPage',
+              schema: {
+                '@type': 'WebPage',
+                name: '$title',
+                description: '$excerpt',
+              },
+              isDefault: true,
+            },
+          ],
+        },
+      ],
+      globalSchemas: [
+        {
+          templateId: 'website',
+          name: 'WebSite',
+          schema: { '@type': 'WebSite', name: 'Sittari development' },
+        },
+      ],
       robots: {
         mode: 'generated',
         groups: [{ userAgent: '*', disallow: [{ path: '/admin' }] }],
       },
     },
-  })
-}
+  });
+};
 
 export const seed = async (payload: Payload): Promise<void> => {
-  await ensureDevUser(payload)
-  await ensureSeoSettings(payload)
-  await ensureSamplePage(payload)
-  await ensureSampleCategories(payload)
-}
+  await ensureDevUser(payload);
+  await ensureSeoSettings(payload);
+  await ensureSamplePage(payload);
+  await ensureSampleCategories(payload);
+};
 
 export const script = async (config: SanitizedConfig): Promise<void> => {
   const payload = await getPayload({
     config,
     disableOnInit: true,
-  })
+  });
 
   try {
-    await seed(payload)
+    await seed(payload);
   } finally {
-    await payload.destroy()
+    await payload.destroy();
   }
-}
+};

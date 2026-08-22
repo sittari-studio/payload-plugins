@@ -2,49 +2,52 @@ export {
   createRbacAccess,
   type CreateRbacAccessArgs,
   requirePermission,
-} from './access/rbacAccess.js'
+} from './access/rbacAccess.js';
 export {
   createRolesFieldAccess,
   type CreateRolesFieldAccessArgs,
-} from './access/rolesFieldAccess.js'
+} from './access/rolesFieldAccess.js';
 export {
   createRolesCollection,
   type CreateRolesCollectionArgs,
-} from './collections/createRolesCollection.js'
-export { createRolesField, type CreateRolesFieldArgs } from './fields/createRolesField.js'
+} from './collections/createRolesCollection.js';
+export {
+  createRolesField,
+  type CreateRolesFieldArgs,
+} from './fields/createRolesField.js';
 export {
   type AssignFirstUserRoleArgs,
   createAssignFirstUserRoleHook,
-} from './hooks/assignFirstUserRole.js'
+} from './hooks/assignFirstUserRole.js';
 export {
   createProtectAdminUsersChangeHook,
   createProtectAdminUsersDeleteHook,
   type ProtectAdminUsersArgs,
-} from './hooks/protectAdminUsers.js'
+} from './hooks/protectAdminUsers.js';
 export {
   createProtectCredentialsHook,
   type ProtectCredentialsArgs,
-} from './hooks/protectCredentials.js'
+} from './hooks/protectCredentials.js';
 export {
   createProtectedRolesChangeHook,
   createProtectedRolesDeleteHook,
   type ProtectedRolesChangeArgs,
   type ProtectedRolesDeleteArgs,
-} from './hooks/protectedRoles.js'
+} from './hooks/protectedRoles.js';
 export {
   createProtectLastAdminChangeHook,
   createProtectLastAdminDeleteHook,
   type ProtectLastAdminArgs,
-} from './hooks/protectLastAdmin.js'
+} from './hooks/protectLastAdmin.js';
 export {
   createProtectRolesCollectionHook,
   type ProtectRolesCollectionArgs,
-} from './hooks/protectRolesCollection.js'
+} from './hooks/protectRolesCollection.js';
 export {
   createProtectRolesFieldHook,
   normalizeRoleIds,
   type ProtectRolesFieldArgs,
-} from './hooks/protectRolesField.js'
+} from './hooks/protectRolesField.js';
 export {
   FULL_ACCESS,
   fullAccessPermissions,
@@ -53,9 +56,9 @@ export {
   permissionFor,
   permissionsGrant,
   samePermissions,
-} from './permissions.js'
-export { rbacPlugin } from './plugin.js'
-export { seedPredefinedRoles, type SeedPredefinedRolesArgs } from './seed.js'
+} from './permissions.js';
+export { rbacPlugin } from './plugin.js';
+export { seedPredefinedRoles, type SeedPredefinedRolesArgs } from './seed.js';
 export {
   collectionActions,
   getRbacCustomConfig,
@@ -65,13 +68,13 @@ export {
   pluginKey,
   type RbacAction,
   type RbacCustomConfig,
-} from './shared.js'
+} from './shared.js';
 export type {
   PredefinedRole,
   RbacEntitySelection,
   RbacPermission,
   RbacPluginConfig,
-} from './types.js'
+} from './types.js';
 export {
   localizedText,
   resolveLanguage,
@@ -80,20 +83,23 @@ export {
   translations,
   type RbacLanguage,
   type RbacTranslationKey,
-} from './translations/index.js'
-export { entityLabel, type EntityLabel } from './utilities/entityLabel.js'
+} from './translations/index.js';
+export { entityLabel, type EntityLabel } from './utilities/entityLabel.js';
 export {
   anyUserHoldsRole,
   findFullAccessRoleIds,
   type RoleHolderQueryArgs,
   warnIfAdminRoleUnheld,
   type WarnIfAdminRoleUnheldArgs,
-} from './utilities/fullAccessHolders.js'
-export { getUserPermissions, hasPermission } from './utilities/getUserPermissions.js'
+} from './utilities/fullAccessHolders.js';
+export {
+  getUserPermissions,
+  hasPermission,
+} from './utilities/getUserPermissions.js';
 export {
   isTransientMongoError,
   isWriteConflict,
   retryOnWriteConflict,
   type RetryOnWriteConflictOptions,
-} from './utilities/retryOnWriteConflict.js'
-export { findRoleIdByName } from './utilities/roleLookup.js'
+} from './utilities/retryOnWriteConflict.js';
+export { findRoleIdByName } from './utilities/roleLookup.js';

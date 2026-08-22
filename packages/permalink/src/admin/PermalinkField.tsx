@@ -1,4 +1,4 @@
-'use client'
+'use client';
 
 import {
   Button,
@@ -6,24 +6,24 @@ import {
   useForm,
   useLocale,
   useTranslation,
-} from '@payloadcms/ui'
-import { useState, type KeyboardEvent } from 'react'
+} from '@payloadcms/ui';
+import { useState, type KeyboardEvent } from 'react';
 
 import {
   joinUrl,
   normalizePath,
   permalinkDisplayPath,
   permalinkPrefix,
-} from '../permalink.js'
-import { formatPermalinkSlug } from '../slug.js'
+} from '../permalink.js';
+import { formatPermalinkSlug } from '../slug.js';
 
 type PermalinkFieldProps = {
-  pathFieldName: string
-  prefix: string
-  siteUrl: string
-  slugFieldName: string
-  slugSourceFieldName: string
-}
+  pathFieldName: string;
+  prefix: string;
+  siteUrl: string;
+  slugFieldName: string;
+  slugSourceFieldName: string;
+};
 
 const translations = {
   en: { cancel: 'Cancel', edit: 'Edit', label: 'Permalink', ok: 'OK' },
@@ -39,7 +39,7 @@ const translations = {
     label: 'Постійне посилання',
     ok: 'OK',
   },
-} as const
+} as const;
 
 const styles = `
 :where(.sittari-permalink-field) {
@@ -89,7 +89,7 @@ const styles = `
   color: var(--theme-error-500);
   width: 100%;
 }
-`
+`;
 
 export const PermalinkField = ({
   pathFieldName,
@@ -98,58 +98,58 @@ export const PermalinkField = ({
   slugFieldName,
   slugSourceFieldName,
 }: PermalinkFieldProps) => {
-  const { value: pathValue } = useField<string>({ path: pathFieldName })
+  const { value: pathValue } = useField<string>({ path: pathFieldName });
   const {
     disabled,
     errorMessage,
     setValue,
     showError,
     value: slugValue,
-  } = useField<string>({ path: slugFieldName })
-  const { getDataByPath } = useForm()
-  const locale = useLocale()
-  const { i18n } = useTranslation()
-  const language = i18n.language.split('-')[0] as keyof typeof translations
-  const strings = translations[language] ?? translations.en
-  const slug = typeof slugValue === 'string' ? slugValue : ''
-  const path = normalizePath(pathValue)
-  const displayPath = permalinkDisplayPath(path, slug, prefix)
-  const url = joinUrl(siteUrl, displayPath)
-  const [draftSlug, setDraftSlug] = useState(slug)
-  const [editing, setEditing] = useState(false)
+  } = useField<string>({ path: slugFieldName });
+  const { getDataByPath } = useForm();
+  const locale = useLocale();
+  const { i18n } = useTranslation();
+  const language = i18n.language.split('-')[0] as keyof typeof translations;
+  const strings = translations[language] ?? translations.en;
+  const slug = typeof slugValue === 'string' ? slugValue : '';
+  const path = normalizePath(pathValue);
+  const displayPath = permalinkDisplayPath(path, slug, prefix);
+  const url = joinUrl(siteUrl, displayPath);
+  const [draftSlug, setDraftSlug] = useState(slug);
+  const [editing, setEditing] = useState(false);
 
   const beginEditing = () => {
-    setDraftSlug(slug)
-    setEditing(true)
-  }
+    setDraftSlug(slug);
+    setEditing(true);
+  };
 
   const cancelEditing = () => {
-    setDraftSlug(slug)
-    setEditing(false)
-  }
+    setDraftSlug(slug);
+    setEditing(false);
+  };
 
   const applySlug = () => {
     const valueToSlugify =
-      draftSlug.length > 0 ? draftSlug : getDataByPath(slugSourceFieldName)
+      draftSlug.length > 0 ? draftSlug : getDataByPath(slugSourceFieldName);
     const formatted =
       typeof valueToSlugify === 'string' && valueToSlugify.length > 0
         ? formatPermalinkSlug(valueToSlugify, locale.code)
-        : ''
+        : '';
 
-    setValue(formatted)
-    setEditing(false)
-  }
+    setValue(formatted);
+    setEditing(false);
+  };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') {
-      event.preventDefault()
-      applySlug()
+      event.preventDefault();
+      applySlug();
     }
     if (event.key === 'Escape') {
-      event.preventDefault()
-      cancelEditing()
+      event.preventDefault();
+      cancelEditing();
     }
-  }
+  };
 
   const className = [
     'sittari-permalink-field',
@@ -158,7 +158,7 @@ export const PermalinkField = ({
     disabled ? 'sittari-permalink-field--disabled' : null,
   ]
     .filter(Boolean)
-    .join(' ')
+    .join(' ');
 
   return (
     <div className={className}>
@@ -229,5 +229,5 @@ export const PermalinkField = ({
         </span>
       ) : null}
     </div>
-  )
-}
+  );
+};

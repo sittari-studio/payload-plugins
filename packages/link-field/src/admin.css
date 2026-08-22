@@ -66,9 +66,7 @@
 }
 
 .link-field__button--clear {
-
   --color: var(--theme-error-500);
-
 }
 
 .link-field__button:disabled {

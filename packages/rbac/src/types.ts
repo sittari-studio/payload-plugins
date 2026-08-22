@@ -1,6 +1,11 @@
-import type { CollectionConfig, CollectionSlug, GlobalSlug, RelationshipField } from 'payload'
+import type {
+  CollectionConfig,
+  CollectionSlug,
+  GlobalSlug,
+  RelationshipField,
+} from 'payload';
 
-import type { RbacAction } from './shared.js'
+import type { RbacAction } from './shared.js';
 
 /**
  * A single grant. One of:
@@ -12,7 +17,7 @@ import type { RbacAction } from './shared.js'
  *   future, e.g. `'*:read'`. `'*:create'` and `'*:delete'` only ever match collections —
  *   globals have no such actions.
  */
-export type RbacPermission = string
+export type RbacPermission = string;
 
 /**
  * A role defined in code. Seeded into the roles collection on init when no role
@@ -36,14 +41,14 @@ export type PredefinedRole = {
    *
    * @default 'self'
    */
-  credentialChanges?: 'anyone' | 'self'
-  description?: string
+  credentialChanges?: 'anyone' | 'self';
+  description?: string;
   /**
    * Unique role name, used as the seeding key and shown as the document title in
    * the admin panel, so human-friendly names like `'Editor'` are encouraged.
    */
-  name: string
-  permissions: RbacPermission[]
+  name: string;
+  permissions: RbacPermission[];
   /**
    * Locks the role to this code definition. A protected role cannot be renamed,
    * have its permissions changed, or be deleted through the API — the only
@@ -54,8 +59,8 @@ export type PredefinedRole = {
    *
    * @default false
    */
-  protected?: boolean
-}
+  protected?: boolean;
+};
 
 /**
  * Which collections/globals the plugin applies to.
@@ -63,7 +68,10 @@ export type PredefinedRole = {
  * - `string[]` — only these slugs.
  * - `{ exclude }` — every entity except these slugs.
  */
-export type RbacEntitySelection<TSlug extends string> = { exclude: TSlug[] } | true | TSlug[]
+export type RbacEntitySelection<TSlug extends string> =
+  | { exclude: TSlug[] }
+  | true
+  | TSlug[];
 
 export type RbacPluginConfig = {
   /**
@@ -94,7 +102,7 @@ export type RbacPluginConfig = {
    *
    * @default false
    */
-  adminRole?: { description?: string; name: string } | false | string
+  adminRole?: { description?: string; name: string } | false | string;
   /**
    * Which collections are access-controlled and appear in the permissions matrix.
    *
@@ -107,20 +115,20 @@ export type RbacPluginConfig = {
    *
    * @default true
    */
-  collections?: RbacEntitySelection<CollectionSlug>
+  collections?: RbacEntitySelection<CollectionSlug>;
   /**
    * Enables or disables the plugin.
    *
    * @default true
    */
-  enabled?: boolean
+  enabled?: boolean;
   /**
    * Which globals are access-controlled and appear in the permissions matrix
    * (`read`/`update`). Same semantics as `collections`.
    *
    * @default true
    */
-  globals?: RbacEntitySelection<GlobalSlug>
+  globals?: RbacEntitySelection<GlobalSlug>;
   /**
    * Let every user read/update their own user document even without the matching
    * collection permission — the admin account view breaks without self-read. Set to
@@ -130,7 +138,7 @@ export type RbacPluginConfig = {
    *
    * @default ['read', 'update']
    */
-  ownAccountAccess?: Exclude<RbacAction, 'create' | 'delete'>[] | false
+  ownAccountAccess?: Exclude<RbacAction, 'create' | 'delete'>[] | false;
   /**
    * Blocks users from granting what they do not hold themselves: assigning a role
    * whose permissions their own roles don't cover, and adding permissions to a role
@@ -142,13 +150,13 @@ export type RbacPluginConfig = {
    *
    * @default true
    */
-  preventPrivilegeEscalation?: boolean
+  preventPrivilegeEscalation?: boolean;
   /**
    * Roles predefined in code, seeded on init when missing. Roles marked `protected`
    * are additionally locked to their code definition. The `adminRole` is defined
    * separately and must not be repeated here. See {@link PredefinedRole}.
    */
-  roles?: PredefinedRole[]
+  roles?: PredefinedRole[];
   /**
    * The roles collection added by the plugin.
    */
@@ -157,14 +165,14 @@ export type RbacPluginConfig = {
      * Escape hatch to customize the generated roles collection — labels, admin group,
      * extra fields, additional hooks.
      */
-    override?: (collection: CollectionConfig) => CollectionConfig
+    override?: (collection: CollectionConfig) => CollectionConfig;
     /**
      * Slug of the roles collection.
      *
      * @default 'roles'
      */
-    slug?: string
-  }
+    slug?: string;
+  };
   /**
    * The roles field added to each user collection. The generated field carries
    * field-level access requiring the `roles:update` permission to change it, so
@@ -178,16 +186,16 @@ export type RbacPluginConfig = {
      *
      * @default 'roles'
      */
-    name?: string
+    name?: string;
     /**
      * Escape hatch to customize the generated relationship field — including
      * replacing its `access` to lift or change the `roles:update` requirement.
      */
-    override?: (field: RelationshipField) => RelationshipField
-  }
+    override?: (field: RelationshipField) => RelationshipField;
+  };
   /**
    * Auth-enabled collections that receive the roles field. Defaults to every
    * auth-enabled collection in the config, falling back to `admin.user`.
    */
-  userCollections?: CollectionSlug[]
-}
+  userCollections?: CollectionSlug[];
+};

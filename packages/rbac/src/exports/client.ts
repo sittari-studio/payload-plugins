@@ -1,6 +1,6 @@
-'use client'
+'use client';
 
 export {
   PermissionsMatrixField,
   type PermissionsMatrixFieldProps,
-} from '../fields/PermissionsMatrixField.js'
+} from '../fields/PermissionsMatrixField.js';

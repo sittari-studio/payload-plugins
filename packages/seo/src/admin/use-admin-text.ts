@@ -1,11 +1,12 @@
-'use client'
+'use client';
 
-import { useTranslation } from '@payloadcms/ui'
+import { useTranslation } from '@payloadcms/ui';
 
-import { adminText, type AdminTextKey } from './translations.js'
+import { adminText, type AdminTextKey } from './translations.js';
 
 /** Reads plugin copy from Payload's active Admin interface language. */
 export const useAdminText = () => {
-  const { i18n } = useTranslation()
-  return (key: AdminTextKey, variables?: Record<string, string>) => adminText(key, i18n.language, variables)
-}
+  const { i18n } = useTranslation();
+  return (key: AdminTextKey, variables?: Record<string, string>) =>
+    adminText(key, i18n.language, variables);
+};

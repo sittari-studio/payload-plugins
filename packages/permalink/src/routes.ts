@@ -1,19 +1,21 @@
-import type { CollectionConfig, Payload, PayloadRequest, Where } from 'payload'
+import type { CollectionConfig, Payload, PayloadRequest, Where } from 'payload';
 
-import { isValidDocumentPath } from './path.js'
-import { PATH_FIELD_RUNTIME_CONFIG_KEY } from './types.js'
+import { isValidDocumentPath } from './path.js';
+import { PATH_FIELD_RUNTIME_CONFIG_KEY } from './types.js';
 
-export const PATH_ROUTES_COLLECTION = 'path-routes'
+export const PATH_ROUTES_COLLECTION = 'path-routes';
 
 export type PathRouteDocument = {
-  collection: string
-  documentID: string
-  id: number | string
-  locale?: string
-  path: string
-}
+  collection: string;
+  documentID: string;
+  id: number | string;
+  locale?: string;
+  path: string;
+};
 
-export const createPathRoutesCollection = (localized: boolean): CollectionConfig => ({
+export const createPathRoutesCollection = (
+  localized: boolean,
+): CollectionConfig => ({
   access: {
     create: () => false,
     delete: () => false,
@@ -62,25 +64,25 @@ export const createPathRoutesCollection = (localized: boolean): CollectionConfig
   ],
   slug: PATH_ROUTES_COLLECTION,
   timestamps: false,
-})
+});
 
-const routeCollection = PATH_ROUTES_COLLECTION as never
+const routeCollection = PATH_ROUTES_COLLECTION as never;
 
 const routeWhere = ({
   collection,
   documentID,
   locale,
 }: {
-  collection: string
-  documentID: string
-  locale?: string
+  collection: string;
+  documentID: string;
+  locale?: string;
 }): Where => ({
   and: [
     { collection: { equals: collection } },
     { documentID: { equals: documentID } },
     ...(locale === undefined ? [] : [{ locale: { equals: locale } }]),
   ],
-})
+});
 
 const routeFind = async ({
   collection,
@@ -89,11 +91,11 @@ const routeFind = async ({
   payload,
   req,
 }: {
-  collection: string
-  documentID: string
-  locale?: string
-  payload: Payload
-  req?: PayloadRequest
+  collection: string;
+  documentID: string;
+  locale?: string;
+  payload: Payload;
+  req?: PayloadRequest;
 }): Promise<PathRouteDocument | null> => {
   const result = await payload.find({
     collection: routeCollection,
@@ -103,19 +105,19 @@ const routeFind = async ({
     pagination: false,
     ...(req ? { req } : {}),
     where: routeWhere({ collection, documentID, locale }),
-  } as never)
+  } as never);
 
-  return (result.docs[0] as PathRouteDocument | undefined) ?? null
-}
+  return (result.docs[0] as PathRouteDocument | undefined) ?? null;
+};
 
 export const findPathRouteByPath = async ({
   path,
   payload,
   req,
 }: {
-  path: string
-  payload: Payload
-  req?: PayloadRequest
+  path: string;
+  payload: Payload;
+  req?: PayloadRequest;
 }): Promise<PathRouteDocument | null> => {
   const result = await payload.find({
     collection: routeCollection,
@@ -125,10 +127,10 @@ export const findPathRouteByPath = async ({
     pagination: false,
     ...(req ? { req } : {}),
     where: { path: { equals: path } },
-  } as never)
+  } as never);
 
-  return (result.docs[0] as PathRouteDocument | undefined) ?? null
-}
+  return (result.docs[0] as PathRouteDocument | undefined) ?? null;
+};
 
 export const deletePathRoutes = async ({
   collection,
@@ -137,19 +139,19 @@ export const deletePathRoutes = async ({
   payload,
   req,
 }: {
-  collection: string
-  documentID: string
-  locale?: string
-  payload: Payload
-  req?: PayloadRequest
+  collection: string;
+  documentID: string;
+  locale?: string;
+  payload: Payload;
+  req?: PayloadRequest;
 }): Promise<void> => {
   await payload.delete({
     collection: routeCollection,
     overrideAccess: true,
     ...(req ? { req } : {}),
     where: routeWhere({ collection, documentID, locale }),
-  } as never)
-}
+  } as never);
+};
 
 export const upsertPathRoute = async ({
   collection,
@@ -159,12 +161,12 @@ export const upsertPathRoute = async ({
   payload,
   req,
 }: {
-  collection: string
-  documentID: string
-  locale?: string
-  path: string
-  payload: Payload
-  req?: PayloadRequest
+  collection: string;
+  documentID: string;
+  locale?: string;
+  path: string;
+  payload: Payload;
+  req?: PayloadRequest;
 }): Promise<void> => {
   const existing = await routeFind({
     collection,
@@ -172,13 +174,13 @@ export const upsertPathRoute = async ({
     locale,
     payload,
     req,
-  })
+  });
   const data = {
     collection,
     documentID,
     ...(locale === undefined ? {} : { locale }),
     path,
-  }
+  };
 
   if (existing) {
     await payload.update({
@@ -187,8 +189,8 @@ export const upsertPathRoute = async ({
       id: existing.id,
       overrideAccess: true,
       ...(req ? { req } : {}),
-    } as never)
-    return
+    } as never);
+    return;
   }
 
   await payload.create({
@@ -196,8 +198,8 @@ export const upsertPathRoute = async ({
     data,
     overrideAccess: true,
     ...(req ? { req } : {}),
-  } as never)
-}
+  } as never);
+};
 
 export const backfillPublishedPathRoutes = async (
   payload: Payload,
@@ -210,31 +212,31 @@ export const backfillPublishedPathRoutes = async (
       limit: 1,
       overrideAccess: true,
       pagination: false,
-    } as never)
-    if (existing.docs.length > 0) return
+    } as never);
+    if (existing.docs.length > 0) return;
   }
 
   const runtime = payload.config.custom?.[PATH_FIELD_RUNTIME_CONFIG_KEY] as
     | { collections?: Record<string, unknown> }
-    | undefined
-  if (!runtime?.collections) return
+    | undefined;
+  if (!runtime?.collections) return;
 
-  const localization = payload.config.localization
+  const localization = payload.config.localization;
   const locales = localization
     ? localization.locales.map((locale) =>
         typeof locale === 'string' ? locale : locale.code,
       )
-    : [undefined]
+    : [undefined];
 
   for (const collection of Object.keys(runtime.collections)) {
     const collectionConfig = payload.config.collections.find(
       (candidate) => candidate.slug === collection,
-    )
+    );
     const collectionHasDrafts =
       typeof collectionConfig?.versions === 'object' &&
-      Boolean(collectionConfig.versions.drafts)
+      Boolean(collectionConfig.versions.drafts);
     for (const locale of locales) {
-      let page = 1
+      let page = 1;
       while (true) {
         const result = await payload.find({
           collection: collection as never,
@@ -249,17 +251,17 @@ export const backfillPublishedPathRoutes = async (
           ...(collectionHasDrafts
             ? { where: { _status: { equals: 'published' } } }
             : {}),
-        } as never)
+        } as never);
 
         for (const document of result.docs as Array<{
-          id: number | string
-          path?: null | string
+          id: number | string;
+          path?: null | string;
         }>) {
           if (
             typeof document.path !== 'string' ||
             !isValidDocumentPath(document.path)
           ) {
-            continue
+            continue;
           }
           await upsertPathRoute({
             collection,
@@ -267,12 +269,12 @@ export const backfillPublishedPathRoutes = async (
             locale,
             path: document.path,
             payload,
-          })
+          });
         }
 
-        if (!result.hasNextPage) break
-        page += 1
+        if (!result.hasNextPage) break;
+        page += 1;
       }
     }
   }
-}
+};

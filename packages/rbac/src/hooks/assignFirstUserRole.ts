@@ -1,10 +1,10 @@
-import type { CollectionBeforeChangeHook } from 'payload'
+import type { CollectionBeforeChangeHook } from 'payload';
 
 export type AssignFirstUserRoleArgs = {
-  firstUserRole: string
-  rolesCollectionSlug: string
-  rolesFieldName: string
-}
+  firstUserRole: string;
+  rolesCollectionSlug: string;
+  rolesFieldName: string;
+};
 
 /**
  * Bootstrap hook installed on the admin user collection: when the very first user
@@ -19,12 +19,12 @@ export const createAssignFirstUserRoleHook = ({
 }: AssignFirstUserRoleArgs): CollectionBeforeChangeHook => {
   return async ({ collection, data, operation, req }) => {
     if (operation !== 'create' || req.user || !data) {
-      return data
+      return data;
     }
 
-    const existingRoles = data[rolesFieldName]
+    const existingRoles = data[rolesFieldName];
     if (Array.isArray(existingRoles) && existingRoles.length > 0) {
-      return data
+      return data;
     }
 
     // Existence check via `find` with `pagination: false` — deliberately NOT
@@ -43,9 +43,9 @@ export const createAssignFirstUserRoleHook = ({
       overrideAccess: true,
       pagination: false,
       req,
-    })
+    });
     if (existingUsers.length > 0) {
-      return data
+      return data;
     }
 
     const { docs } = await req.payload.find({
@@ -55,15 +55,15 @@ export const createAssignFirstUserRoleHook = ({
       overrideAccess: true,
       req,
       where: { name: { equals: firstUserRole } },
-    })
-    const role = docs[0]
+    });
+    const role = docs[0];
     if (!role) {
       req.payload.logger.warn(
         `[payload-rbac] firstUserRole "${firstUserRole}" not found — first user created without roles`,
-      )
-      return data
+      );
+      return data;
     }
 
-    return { ...data, [rolesFieldName]: [role.id] }
-  }
-}
+    return { ...data, [rolesFieldName]: [role.id] };
+  };
+};

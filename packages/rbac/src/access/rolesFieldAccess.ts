@@ -1,8 +1,11 @@
-import type { FieldAccess } from 'payload'
+import type { FieldAccess } from 'payload';
 
-import { permissionFor } from '../permissions.js'
-import { anyUserHoldsRole, findFullAccessRoleIds } from '../utilities/fullAccessHolders.js'
-import { hasPermission } from '../utilities/getUserPermissions.js'
+import { permissionFor } from '../permissions.js';
+import {
+  anyUserHoldsRole,
+  findFullAccessRoleIds,
+} from '../utilities/fullAccessHolders.js';
+import { hasPermission } from '../utilities/getUserPermissions.js';
 
 export type CreateRolesFieldAccessArgs = {
   /**
@@ -12,11 +15,11 @@ export type CreateRolesFieldAccessArgs = {
    * path to hold open.
    */
   breakGlass?: {
-    userCollections: string[]
-  }
-  rolesCollectionSlug: string
-  rolesFieldName: string
-}
+    userCollections: string[];
+  };
+  rolesCollectionSlug: string;
+  rolesFieldName: string;
+};
 
 /**
  * Field-level access for the roles field on user collections: changing role
@@ -32,24 +35,27 @@ export const createRolesFieldAccess = ({
   rolesCollectionSlug,
   rolesFieldName,
 }: CreateRolesFieldAccessArgs): FieldAccess => {
-  const requiredPermission = permissionFor(rolesCollectionSlug, 'update')
+  const requiredPermission = permissionFor(rolesCollectionSlug, 'update');
   return async ({ req }) => {
     if (!req.user) {
-      return true
+      return true;
     }
     if (await hasPermission(req, requiredPermission)) {
-      return true
+      return true;
     }
     if (!breakGlass) {
-      return false
+      return false;
     }
     // Break-glass: while nobody holds full access the field must stay writable,
     // or the stranded self-claim would be stripped from the write before the
     // escalation guard — which still limits what that write may do — saw it.
-    const fullAccessRoleIds = await findFullAccessRoleIds(req.payload, rolesCollectionSlug)
+    const fullAccessRoleIds = await findFullAccessRoleIds(
+      req.payload,
+      rolesCollectionSlug,
+    );
     return !(await anyUserHoldsRole(req.payload, fullAccessRoleIds, {
       rolesFieldName,
       userCollections: breakGlass.userCollections,
-    }))
-  }
-}
+    }));
+  };
+};

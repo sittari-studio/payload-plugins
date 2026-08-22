@@ -15,10 +15,16 @@
     "version": "changeset version",
     "publish": "changeset publish",
     "release": "turbo build --filter='./packages/*' && changeset publish",
-    "create:plugin": "node scripts/create-plugin.mjs"
+    "create:plugin": "node scripts/create-plugin.mjs",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix"
   },
   "devDependencies": {
     "@changesets/cli": "latest",
+    "oxfmt": "^0.64.0",
+    "oxlint": "^1.79.0",
     "tsdown": "0.22.2",
     "turbo": "latest",
     "typescript": "5.9.3",

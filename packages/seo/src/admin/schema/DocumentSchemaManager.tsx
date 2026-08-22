@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   Banner,
@@ -10,20 +10,20 @@ import {
   useDocumentInfo,
   useLocale,
   useModal,
-} from "@payloadcms/ui";
-import { useDrawerDepth } from "@payloadcms/ui/elements/Drawer";
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { UIFieldClientProps } from "payload";
+} from '@payloadcms/ui';
+import { useDrawerDepth } from '@payloadcms/ui/elements/Drawer';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import type { UIFieldClientProps } from 'payload';
 
-import "../../admin.css";
-import { diffEffectiveSchema } from "../../schema/editor.js";
-import { applyJsonPatch } from "../../schema/json.js";
-import type { JsonObject } from "../../schema/types.js";
-import { useAdminText } from "../use-admin-text.js";
-import { SchemaCard } from "./SchemaCard.js";
-import { SchemaDrawer } from "./SchemaDrawer.js";
-import { SchemaEditorPanel } from "./SchemaEditorPanel.js";
-import { StarterPicker } from "./StarterPicker.js";
+import '../../admin.css';
+import { diffEffectiveSchema } from '../../schema/editor.js';
+import { applyJsonPatch } from '../../schema/json.js';
+import type { JsonObject } from '../../schema/types.js';
+import { useAdminText } from '../use-admin-text.js';
+import { SchemaCard } from './SchemaCard.js';
+import { SchemaDrawer } from './SchemaDrawer.js';
+import { SchemaEditorPanel } from './SchemaEditorPanel.js';
+import { StarterPicker } from './StarterPicker.js';
 import {
   createClientId,
   isLocalizedSchemaLocale,
@@ -35,17 +35,17 @@ import {
   type StoredSchemaInstance,
   type StoredSchemaTemplate,
   type TemplateEndpointResponse,
-} from "./types.js";
-import { usePayloadArray } from "./usePayloadArray.js";
+} from './types.js';
+import { usePayloadArray } from './usePayloadArray.js';
 
 type EditTarget =
-  | { kind: "global"; template: StoredSchemaTemplate }
-  | { index: number; kind: "instance"; template: StoredSchemaTemplate }
-  | { index?: number; kind: "document" };
+  | { kind: 'global'; template: StoredSchemaTemplate }
+  | { index: number; kind: 'instance'; template: StoredSchemaTemplate }
+  | { index?: number; kind: 'document' };
 
 const effective = (
   template: StoredSchemaTemplate,
-  overrides?: StoredSchemaInstance["overrides"],
+  overrides?: StoredSchemaInstance['overrides'],
 ): JsonObject => {
   try {
     const localized = applyJsonPatch(template.schema, template.valueOverrides);
@@ -71,10 +71,10 @@ export const DocumentSchemaManager = ({
   readOnly,
 }: UIFieldClientProps) => {
   const t = useAdminText();
-  const path = incomingPath ?? "schemaManager";
-  const parentPath = path.replace(/\.schemaManager$/, "");
+  const path = incomingPath ?? 'schemaManager';
+  const parentPath = path.replace(/\.schemaManager$/, '');
   const custom = field.admin?.custom?.seo as SchemaManagerCustom | undefined;
-  const collection = custom?.collection ?? "";
+  const collection = custom?.collection ?? '';
   const { config } = useConfig();
   const locale = useLocale();
   const document = useDocumentInfo();
@@ -93,7 +93,9 @@ export const DocumentSchemaManager = ({
   const [templates, setTemplates] = useState<TemplateEndpointResponse>();
   const [loadError, setLoadError] = useState<string>();
   const [loading, setLoading] = useState(true);
-  const [stage, setStage] = useState<"editor" | "picker" | "templates">("templates");
+  const [stage, setStage] = useState<'editor' | 'picker' | 'templates'>(
+    'templates',
+  );
   const [editTarget, setEditTarget] = useState<EditTarget>();
   const [draft, setDraft] = useState<EditorDraft>();
   const [baseDraft, setBaseDraft] = useState<EditorDraft>();
@@ -113,28 +115,28 @@ export const DocumentSchemaManager = ({
     if (!collection) return;
     const controller = new AbortController();
     const params = new URLSearchParams();
-    if (locale.code) params.set("locale", locale.code);
-    if (document.id !== undefined) params.set("id", String(document.id));
+    if (locale.code) params.set('locale', locale.code);
+    if (document.id !== undefined) params.set('id', String(document.id));
     setLoading(true);
     setLoadError(undefined);
     fetch(
-      `${custom?.apiRoute ?? "/api"}/${collection}/seo-schema-templates?${params}`,
-      { credentials: "include", signal: controller.signal },
+      `${custom?.apiRoute ?? '/api'}/${collection}/seo-schema-templates?${params}`,
+      { credentials: 'include', signal: controller.signal },
     )
       .then(async (response) => {
         if (!response.ok)
           throw new Error(
             response.status === 403
-              ? t("schemaAccessDenied")
-              : t("schemaLoadFailed"),
+              ? t('schemaAccessDenied')
+              : t('schemaLoadFailed'),
           );
         return response.json() as Promise<TemplateEndpointResponse>;
       })
       .then((result) => setTemplates(result))
       .catch((error: unknown) => {
-        if (!(error instanceof DOMException && error.name === "AbortError"))
+        if (!(error instanceof DOMException && error.name === 'AbortError'))
           setLoadError(
-            error instanceof Error ? error.message : t("schemaLoadFailed"),
+            error instanceof Error ? error.message : t('schemaLoadFailed'),
           );
       })
       .finally(() => {
@@ -149,38 +151,48 @@ export const DocumentSchemaManager = ({
   };
   const openTemplates = (element: HTMLElement) => {
     returnFocus.current = element;
-    setStage("templates");
+    setStage('templates');
     setEditTarget(undefined);
     setDraft(undefined);
     openModal(drawerSlug);
   };
   const openDocumentPicker = (element: HTMLElement) => {
     returnFocus.current = element;
-    setStage("picker");
-    setEditTarget({ kind: "document" });
+    setStage('picker');
+    setEditTarget({ kind: 'document' });
     setDraft(undefined);
     setBaseDraft(undefined);
     openModal(drawerSlug);
   };
   const openEditor = (target: EditTarget, element: HTMLElement) => {
-    if (target.kind === "document") {
-      const stored = target.index === undefined ? undefined : documentSchemas[target.index];
+    if (target.kind === 'document') {
+      const stored =
+        target.index === undefined ? undefined : documentSchemas[target.index];
       if (!stored) return;
       const base = structuredClone(stored.schema);
       returnFocus.current = element;
       setEditTarget(target);
-      setBaseDraft({ name: stored.name, schema: base, templateId: stored.schemaId });
-      setDraft({
+      setBaseDraft({
         name: stored.name,
-        schema: effective({ templateId: stored.schemaId, name: stored.name, schema: stored.schema, valueOverrides: stored.valueOverrides }),
+        schema: base,
         templateId: stored.schemaId,
       });
-      setStage("editor");
+      setDraft({
+        name: stored.name,
+        schema: effective({
+          templateId: stored.schemaId,
+          name: stored.name,
+          schema: stored.schema,
+          valueOverrides: stored.valueOverrides,
+        }),
+        templateId: stored.schemaId,
+      });
+      setStage('editor');
       openModal(drawerSlug);
       return;
     }
     const overrides =
-      target.kind === "global"
+      target.kind === 'global'
         ? globalOverrides.find(
             (item) => item.schemaId === target.template.templateId,
           )?.overrides
@@ -192,14 +204,18 @@ export const DocumentSchemaManager = ({
     setDraft(
       templateDraft(target.template, effective(target.template, overrides)),
     );
-    setStage("editor");
+    setStage('editor');
     openModal(drawerSlug);
   };
   const chooseStarter = (name: string, schema: JsonObject) => {
     const schemaId = createClientId();
     setDraft({ name, schema, templateId: schemaId });
-    setBaseDraft({ name, schema: structuredClone(schema), templateId: schemaId });
-    setStage("editor");
+    setBaseDraft({
+      name,
+      schema: structuredClone(schema),
+      templateId: schemaId,
+    });
+    setStage('editor');
   };
   const useTemplate = (template: StoredSchemaTemplate) => {
     instancesArray.add({
@@ -210,20 +226,28 @@ export const DocumentSchemaManager = ({
   };
   const save = () => {
     if (!editTarget || !draft || !baseDraft) return;
-    if (editTarget.kind === "document") {
+    if (editTarget.kind === 'document') {
       if (!draft.name.trim()) return;
-      const existing = editTarget.index === undefined ? undefined : documentSchemas[editTarget.index];
-      const stored: StoredDocumentSchema = localized && existing
-        ? {
-            ...existing,
-            valueOverrides: diffEffectiveSchema(existing.schema, draft.schema, { scalarValuesOnly: true }),
-          }
-        : {
-            ...(existing ?? {}),
-            schemaId: draft.templateId,
-            name: draft.name.trim(),
-            schema: structuredClone(draft.schema),
-          };
+      const existing =
+        editTarget.index === undefined
+          ? undefined
+          : documentSchemas[editTarget.index];
+      const stored: StoredDocumentSchema =
+        localized && existing
+          ? {
+              ...existing,
+              valueOverrides: diffEffectiveSchema(
+                existing.schema,
+                draft.schema,
+                { scalarValuesOnly: true },
+              ),
+            }
+          : {
+              ...(existing ?? {}),
+              schemaId: draft.templateId,
+              name: draft.name.trim(),
+              schema: structuredClone(draft.schema),
+            };
       if (editTarget.index === undefined) documentSchemasArray.add(stored);
       else documentSchemasArray.replace(editTarget.index, stored);
       close();
@@ -232,7 +256,7 @@ export const DocumentSchemaManager = ({
     const overrides = diffEffectiveSchema(baseDraft.schema, draft.schema, {
       scalarValuesOnly: true,
     });
-    if (editTarget.kind === "instance") {
+    if (editTarget.kind === 'instance') {
       instancesArray.replace(editTarget.index, {
         ...instances[editTarget.index],
         overrides: overrides.length ? overrides : undefined,
@@ -274,15 +298,19 @@ export const DocumentSchemaManager = ({
   };
   const duplicateDocumentSchema = (index: number) => {
     const source = documentSchemas[index];
-    documentSchemasArray.add({
-      ...structuredClone(source),
-      id: createClientId(),
-      schemaId: createClientId(),
-      name: `${source.name} ${t("copySuffix")}`,
-    }, index + 1);
+    documentSchemasArray.add(
+      {
+        ...structuredClone(source),
+        id: createClientId(),
+        schemaId: createClientId(),
+        name: `${source.name} ${t('copySuffix')}`,
+      },
+      index + 1,
+    );
   };
   const removeDocumentSchema = (index: number) => {
-    if (globalThis.confirm(t("confirmDeleteSchema"))) documentSchemasArray.remove(index);
+    if (globalThis.confirm(t('confirmDeleteSchema')))
+      documentSchemasArray.remove(index);
   };
   const collectionTemplates = templates?.collectionTemplates ?? [];
   const localized = isLocalizedSchemaLocale({
@@ -295,13 +323,13 @@ export const DocumentSchemaManager = ({
   );
 
   return (
-    <section className="st-mb-base-150 st-grid st-gap-base [&_.field-type]:st-mb-0 [&_h3]:st-m-0 [&_h4]:st-m-0 [&_p]:st-mt-[.35rem] [&_p]:st-mb-0 [&_p]:st-text-elevation-600">
-      {loading ? <p>{t("loadingSchemas")}</p> : null}
+    <section className="st-mb-base-150 st-grid st-gap-base [&_.field-type]:st-mb-0 [&_h3]:st-m-0 [&_h4]:st-m-0 [&_p]:st-mb-0 [&_p]:st-mt-[.35rem] [&_p]:st-text-elevation-600">
+      {loading ? <p>{t('loadingSchemas')}</p> : null}
       {loadError ? <Banner type="error">{loadError}</Banner> : null}
       {templates?.globalSchemas.length ? (
         <div className="st-grid st-gap-base-70">
-          <h3>{t("appliedGlobally")}</h3>
-          <p>{t("appliedGloballyDescription")}</p>
+          <h3>{t('appliedGlobally')}</h3>
+          <p>{t('appliedGloballyDescription')}</p>
           <div className="st-grid st-gap-base-45">
             {templates.globalSchemas.map((template) => {
               const customized = globalOverrides.some(
@@ -319,13 +347,13 @@ export const DocumentSchemaManager = ({
                         margin={false}
                         onClick={(event) =>
                           openEditor(
-                            { kind: "global", template },
+                            { kind: 'global', template },
                             event.currentTarget as HTMLElement,
                           )
                         }
                         type="button"
                       >
-                        {t("editValues")}
+                        {t('editValues')}
                       </Button>
                       {customized ? (
                         <Button
@@ -335,13 +363,10 @@ export const DocumentSchemaManager = ({
                           onClick={() => resetGlobal(template.templateId)}
                           type="button"
                         >
-                          {t("resetOverrides")}
+                          {t('resetOverrides')}
                         </Button>
                       ) : null}
-                      <span
-                        className="st-px-1.5"
-                        title={t("globalLocked")}
-                      >
+                      <span className="st-px-1.5" title={t('globalLocked')}>
                         🔒
                       </span>
                     </>
@@ -352,11 +377,11 @@ export const DocumentSchemaManager = ({
                         {schemaTypeLabel(effective(template))}
                       </Pill>
                       <Pill pillStyle="light-gray" size="small">
-                        {t("appliedGlobally")}
+                        {t('appliedGlobally')}
                       </Pill>
                       {customized ? (
                         <Pill pillStyle="light" size="small">
-                          {t("customized")}
+                          {t('customized')}
                         </Pill>
                       ) : null}
                     </>
@@ -372,8 +397,8 @@ export const DocumentSchemaManager = ({
       <div className="st-grid st-gap-base-70">
         <div className="st-flex st-items-center st-justify-between st-gap-base max-[600px]:st-flex-col max-[600px]:st-items-stretch">
           <div>
-            <h3>{t("schemaInUse")}</h3>
-            <p>{t("schemaInUseDescription")}</p>
+            <h3>{t('schemaInUse')}</h3>
+            <p>{t('schemaInUseDescription')}</p>
           </div>
           <Button
             buttonStyle="primary"
@@ -384,7 +409,7 @@ export const DocumentSchemaManager = ({
             size="small"
             type="button"
           >
-            + {t("addSchema")}
+            + {t('addSchema')}
           </Button>
         </div>
         <div className="st-grid st-gap-base-45">
@@ -403,13 +428,13 @@ export const DocumentSchemaManager = ({
                           margin={false}
                           onClick={(event) =>
                             openEditor(
-                              { index, kind: "instance", template },
+                              { index, kind: 'instance', template },
                               event.currentTarget as HTMLElement,
                             )
                           }
                           type="button"
                         >
-                          {t("editValues")}
+                          {t('editValues')}
                         </Button>
                       ) : null}
                       <Button
@@ -419,7 +444,7 @@ export const DocumentSchemaManager = ({
                         onClick={() => duplicateInstance(index)}
                         type="button"
                       >
-                        {t("duplicate")}
+                        {t('duplicate')}
                       </Button>
                       <Button
                         buttonStyle="transparent"
@@ -447,7 +472,7 @@ export const DocumentSchemaManager = ({
                           onClick={() => resetInstance(index)}
                           type="button"
                         >
-                          {t("resetOverrides")}
+                          {t('resetOverrides')}
                         </Button>
                       ) : null}
                       <Button
@@ -458,7 +483,7 @@ export const DocumentSchemaManager = ({
                         onClick={() => removeInstance(index)}
                         type="button"
                       >
-                        {t("remove")}
+                        {t('remove')}
                       </Button>
                     </>
                   }
@@ -467,79 +492,165 @@ export const DocumentSchemaManager = ({
                       <Pill pillStyle="success" size="small">
                         {template
                           ? schemaTypeLabel(effective(template))
-                          : t("missingTemplate")}
+                          : t('missingTemplate')}
                       </Pill>
                       {template?.isDefault ? (
                         <Pill pillStyle="warning" size="small">
-                          {t("default")}
+                          {t('default')}
                         </Pill>
                       ) : null}
                       {customized ? (
                         <Pill pillStyle="light" size="small">
-                          {t("customized")}
+                          {t('customized')}
                         </Pill>
                       ) : null}
                     </>
                   }
                   key={instance.id ?? `${instance.templateId}:${index}`}
-                  name={template?.name ?? t("missingTemplate")}
+                  name={template?.name ?? t('missingTemplate')}
                   subtitle={
-                    template ? undefined : t("missingTemplateDescription")
+                    template ? undefined : t('missingTemplateDescription')
                   }
                 />
               );
             })
           ) : (
-            <Banner>{t("noSchemasInUse")}</Banner>
+            <Banner>{t('noSchemasInUse')}</Banner>
           )}
         </div>
       </div>
       <div className="st-grid st-gap-base-70">
         <div className="st-flex st-items-center st-justify-between st-gap-base max-[600px]:st-flex-col max-[600px]:st-items-stretch">
           <div>
-            <h3>{t("documentSchemas")}</h3>
-            <p>{t("documentSchemasDescription")}</p>
+            <h3>{t('documentSchemas')}</h3>
+            <p>{t('documentSchemasDescription')}</p>
           </div>
           <Button
             buttonStyle="primary"
             disabled={readOnly || localized}
-            onClick={(event) => openDocumentPicker(event.currentTarget as HTMLElement)}
+            onClick={(event) =>
+              openDocumentPicker(event.currentTarget as HTMLElement)
+            }
             size="small"
             type="button"
           >
-            + {t("createDocumentSchema")}
+            + {t('createDocumentSchema')}
           </Button>
         </div>
         <div className="st-grid st-gap-base-45">
-          {documentSchemas.length ? documentSchemas.map((item, index) => (
-            <SchemaCard
-              actions={<>
-                <Button buttonStyle="transparent" disabled={readOnly} margin={false} onClick={(event) => openEditor({ index, kind: "document" }, event.currentTarget as HTMLElement)} type="button">{t("edit")}</Button>
-                <Button buttonStyle="transparent" disabled={readOnly || localized} margin={false} onClick={() => duplicateDocumentSchema(index)} type="button">{t("duplicate")}</Button>
-                <Button buttonStyle="transparent" disabled={readOnly || localized || index === 0} margin={false} onClick={() => documentSchemasArray.move(index, index - 1)} type="button">↑</Button>
-                <Button buttonStyle="transparent" disabled={readOnly || localized || index === documentSchemas.length - 1} margin={false} onClick={() => documentSchemasArray.move(index, index + 1)} type="button">↓</Button>
-                <Button buttonStyle="transparent" className="!st-text-error-500 hover:!st-bg-error-100 hover:!st-text-error-700" disabled={readOnly || localized} margin={false} onClick={() => removeDocumentSchema(index)} type="button">{t("delete")}</Button>
-              </>}
-              badges={<><Pill pillStyle="success" size="small">{schemaTypeLabel(effective({ templateId: item.schemaId, name: item.name, schema: item.schema, valueOverrides: item.valueOverrides }))}</Pill><Pill pillStyle="light-gray" size="small">{t("documentScope")}</Pill></>}
-              key={item.id ?? item.schemaId}
-              name={item.name}
-            />
-          )) : <Banner>{t("noDocumentSchemas")}</Banner>}
+          {documentSchemas.length ? (
+            documentSchemas.map((item, index) => (
+              <SchemaCard
+                actions={
+                  <>
+                    <Button
+                      buttonStyle="transparent"
+                      disabled={readOnly}
+                      margin={false}
+                      onClick={(event) =>
+                        openEditor(
+                          { index, kind: 'document' },
+                          event.currentTarget as HTMLElement,
+                        )
+                      }
+                      type="button"
+                    >
+                      {t('edit')}
+                    </Button>
+                    <Button
+                      buttonStyle="transparent"
+                      disabled={readOnly || localized}
+                      margin={false}
+                      onClick={() => duplicateDocumentSchema(index)}
+                      type="button"
+                    >
+                      {t('duplicate')}
+                    </Button>
+                    <Button
+                      buttonStyle="transparent"
+                      disabled={readOnly || localized || index === 0}
+                      margin={false}
+                      onClick={() =>
+                        documentSchemasArray.move(index, index - 1)
+                      }
+                      type="button"
+                    >
+                      ↑
+                    </Button>
+                    <Button
+                      buttonStyle="transparent"
+                      disabled={
+                        readOnly ||
+                        localized ||
+                        index === documentSchemas.length - 1
+                      }
+                      margin={false}
+                      onClick={() =>
+                        documentSchemasArray.move(index, index + 1)
+                      }
+                      type="button"
+                    >
+                      ↓
+                    </Button>
+                    <Button
+                      buttonStyle="transparent"
+                      className="!st-text-error-500 hover:!st-bg-error-100 hover:!st-text-error-700"
+                      disabled={readOnly || localized}
+                      margin={false}
+                      onClick={() => removeDocumentSchema(index)}
+                      type="button"
+                    >
+                      {t('delete')}
+                    </Button>
+                  </>
+                }
+                badges={
+                  <>
+                    <Pill pillStyle="success" size="small">
+                      {schemaTypeLabel(
+                        effective({
+                          templateId: item.schemaId,
+                          name: item.name,
+                          schema: item.schema,
+                          valueOverrides: item.valueOverrides,
+                        }),
+                      )}
+                    </Pill>
+                    <Pill pillStyle="light-gray" size="small">
+                      {t('documentScope')}
+                    </Pill>
+                  </>
+                }
+                key={item.id ?? item.schemaId}
+                name={item.name}
+              />
+            ))
+          ) : (
+            <Banner>{t('noDocumentSchemas')}</Banner>
+          )}
         </div>
       </div>
       <SchemaDrawer
         onCancel={close}
-        onSave={stage === "editor" ? save : undefined}
+        onSave={stage === 'editor' ? save : undefined}
         saveDisabled={readOnly || !draft?.name.trim()}
         slug={drawerSlug}
-        title={stage === "templates" ? t("chooseSchema") : stage === "picker" ? t("chooseStarter") : editTarget?.kind === "document" ? t("editSchema") : t("editValues")}
+        title={
+          stage === 'templates'
+            ? t('chooseSchema')
+            : stage === 'picker'
+              ? t('chooseStarter')
+              : editTarget?.kind === 'document'
+                ? t('editSchema')
+                : t('editValues')
+        }
       >
-        {stage === "templates" ? (
+        {stage === 'templates' ? (
           <div>
             <div className="st-flex st-items-center st-justify-between st-gap-base max-[600px]:st-flex-col max-[600px]:st-items-stretch">
               <div>
-                <h3>{t("availableSchemas")}</h3>
-                <p>{t("availableSchemasDescription")}</p>
+                <h3>{t('availableSchemas')}</h3>
+                <p>{t('availableSchemasDescription')}</p>
               </div>
             </div>
             <div className="st-mt-base st-grid st-grid-cols-2 st-gap-base max-[850px]:st-grid-cols-1">
@@ -549,16 +660,25 @@ export const DocumentSchemaManager = ({
                 ).length;
                 return (
                   <Card
-                    actions={<Button buttonStyle="secondary" onClick={() => useTemplate(template)} size="small" type="button">{count ? t("useAgain") : t("use")}</Button>}
+                    actions={
+                      <Button
+                        buttonStyle="secondary"
+                        onClick={() => useTemplate(template)}
+                        size="small"
+                        type="button"
+                      >
+                        {count ? t('useAgain') : t('use')}
+                      </Button>
+                    }
                     key={template.templateId}
-                    title={`${template.name} · ${schemaTypeLabel(effective(template))}${template.isDefault ? ` · ${t("default")}` : ""}`}
+                    title={`${template.name} · ${schemaTypeLabel(effective(template))}${template.isDefault ? ` · ${t('default')}` : ''}`}
                     titleAs="h4"
                   />
                 );
               })}
             </div>
           </div>
-        ) : stage === "picker" ? (
+        ) : stage === 'picker' ? (
           <StarterPicker onChoose={chooseStarter} />
         ) : draft ? (
           <SchemaEditorPanel
@@ -567,7 +687,7 @@ export const DocumentSchemaManager = ({
             onChange={setDraft}
             readOnly={readOnly}
             showLocalizedNotice={localized}
-            structuralLocked={editTarget?.kind !== "document" || localized}
+            structuralLocked={editTarget?.kind !== 'document' || localized}
             variables={custom?.collectionVariables?.[collection] ?? []}
           />
         ) : null}

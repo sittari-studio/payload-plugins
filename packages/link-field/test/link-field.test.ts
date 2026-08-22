@@ -1,79 +1,95 @@
-import type { Config, Field, GroupField, RelationshipField, TextField } from 'payload'
-import { createHeadlessEditor } from '@payloadcms/richtext-lexical/lexical/headless'
-import { describe, expect, it, vi } from 'vitest'
+import type {
+  Config,
+  Field,
+  GroupField,
+  RelationshipField,
+  TextField,
+} from 'payload';
+import { createHeadlessEditor } from '@payloadcms/richtext-lexical/lexical/headless';
+import { describe, expect, it, vi } from 'vitest';
 
-import { createResolveUrlHook } from '../src/hooks/resolveUrl.js'
+import { createResolveUrlHook } from '../src/hooks/resolveUrl.js';
 import {
   LinkFieldAutoLinkNode,
   LinkFieldNode,
   linkField,
   linkFieldPlugin,
-} from '../src/index.js'
-import { LINK_FIELD_MARKER, LINK_FIELD_RUNTIME_CONFIG_KEY } from '../src/types.js'
-import { getReferenceDocumentUrl } from '../src/utils/getReferenceDocumentUrl.js'
-import { getReferenceIdentity } from '../src/utils/getReferenceIdentity.js'
+} from '../src/index.js';
+import {
+  LINK_FIELD_MARKER,
+  LINK_FIELD_RUNTIME_CONFIG_KEY,
+} from '../src/types.js';
+import { getReferenceDocumentUrl } from '../src/utils/getReferenceDocumentUrl.js';
+import { getReferenceIdentity } from '../src/utils/getReferenceIdentity.js';
 import {
   getReferenceSummary,
   hasReferenceTitle,
-} from '../src/utils/getReferenceSummary.js'
-import { validateUrl } from '../src/utils/validateUrl.js'
+} from '../src/utils/getReferenceSummary.js';
+import { validateUrl } from '../src/utils/validateUrl.js';
 
-const getChildField = <TField extends Field>(field: GroupField, name: string): TField => {
-  const childField = field.fields.find((candidate) => 'name' in candidate && candidate.name === name)
+const getChildField = <TField extends Field>(
+  field: GroupField,
+  name: string,
+): TField => {
+  const childField = field.fields.find(
+    (candidate) => 'name' in candidate && candidate.name === name,
+  );
 
   if (!childField) {
-    throw new Error(`Missing child field ${name}`)
+    throw new Error(`Missing child field ${name}`);
   }
 
-  return childField as TField
-}
+  return childField as TField;
+};
 
 const applyPlugin = (config: Config, resolver = vi.fn(() => '/resolved')) =>
   linkFieldPlugin({
     resolveDocumentUrl: resolver,
-  })(config) as Config
+  })(config) as Config;
 
 describe('linkField', () => {
   it('builds the default group field shape', () => {
     const field = linkField({
       name: 'link',
-    })
+    });
 
-    expect(field.type).toBe('group')
-    expect((field as { name: string }).name).toBe('link')
-    expect(field.admin?.components?.Field).toBe('@sittari/payload-link-field/client#LinkField')
+    expect(field.type).toBe('group');
+    expect((field as { name: string }).name).toBe('link');
+    expect(field.admin?.components?.Field).toBe(
+      '@sittari/payload-link-field/client#LinkField',
+    );
     expect(field.admin?.custom?.linkField).toMatchObject({
       appearance: 'drawer',
       marker: LINK_FIELD_MARKER,
       showLabel: true,
       showNewTab: true,
-    })
+    });
     expect(getChildField(field, 'type')).toMatchObject({
       defaultValue: 'custom',
       type: 'radio',
-    })
+    });
     expect(getChildField(field, 'label')).toMatchObject({
       type: 'text',
-    })
+    });
     expect(getChildField(field, 'newTab')).toMatchObject({
       type: 'checkbox',
-    })
+    });
     expect(getChildField<RelationshipField>(field, 'reference')).toMatchObject({
       admin: {
         components: {
           Field: '@sittari/payload-link-field/client#ReadableRelationshipField',
         },
       },
-    })
+    });
     expect(getChildField<TextField>(field, 'url')).toMatchObject({
       admin: {
         hidden: true,
       },
       type: 'text',
       virtual: true,
-    })
-    expect(getChildField<TextField>(field, 'url').hidden).toBeUndefined()
-  })
+    });
+    expect(getChildField<TextField>(field, 'url').hidden).toBeUndefined();
+  });
 
   it('honors explicit field options', () => {
     const field = linkField({
@@ -83,82 +99,99 @@ describe('linkField', () => {
       relationTo: ['pages', 'posts'],
       showLabel: false,
       showNewTab: false,
-    })
+    });
 
     expect(field.admin?.custom?.linkField).toMatchObject({
       appearance: 'inline',
       showLabel: false,
       showNewTab: false,
-    })
+    });
     expect(getChildField(field, 'type')).toMatchObject({
       defaultValue: 'reference',
-    })
-    expect(field.fields.some((child) => 'name' in child && child.name === 'label')).toBe(false)
-    expect(field.fields.some((child) => 'name' in child && child.name === 'newTab')).toBe(false)
-    expect(getChildField<RelationshipField>(field, 'reference').relationTo).toEqual([
-      'pages',
-      'posts',
-    ])
-  })
+    });
+    expect(
+      field.fields.some((child) => 'name' in child && child.name === 'label'),
+    ).toBe(false);
+    expect(
+      field.fields.some((child) => 'name' in child && child.name === 'newTab'),
+    ).toBe(false);
+    expect(
+      getChildField<RelationshipField>(field, 'reference').relationTo,
+    ).toEqual(['pages', 'posts']);
+  });
 
   it('validates only the active required field', () => {
     const field = linkField({
       name: 'link',
       required: true,
-    })
-    const customUrl = getChildField<TextField>(field, 'customUrl')
-    const reference = getChildField<RelationshipField>(field, 'reference')
+    });
+    const customUrl = getChildField<TextField>(field, 'customUrl');
+    const reference = getChildField<RelationshipField>(field, 'reference');
 
-    expect((customUrl.validate as any)?.('', { siblingData: { type: 'custom' } })).toBe(
-      'URL is required.',
-    )
-    expect((customUrl.validate as any)?.('', { siblingData: { type: 'reference' } })).toBe(true)
-    expect((reference.validate as any)?.('', { siblingData: { type: 'reference' } })).toBe(
-      'Document reference is required.',
-    )
-    expect((reference.validate as any)?.('', { siblingData: { type: 'custom' } })).toBe(true)
-  })
+    expect(
+      (customUrl.validate as any)?.('', { siblingData: { type: 'custom' } }),
+    ).toBe('URL is required.');
+    expect(
+      (customUrl.validate as any)?.('', { siblingData: { type: 'reference' } }),
+    ).toBe(true);
+    expect(
+      (reference.validate as any)?.('', { siblingData: { type: 'reference' } }),
+    ).toBe('Document reference is required.');
+    expect(
+      (reference.validate as any)?.('', { siblingData: { type: 'custom' } }),
+    ).toBe(true);
+  });
 
   it('rejects references to the current document', () => {
     const singleRelationField = linkField({
       name: 'singleLink',
       relationTo: 'pages',
-    })
+    });
     const polymorphicField = linkField({
       name: 'polymorphicLink',
       relationTo: ['pages', 'posts'],
-    })
-    const singleReference = getChildField<RelationshipField>(singleRelationField, 'reference')
-    const polymorphicReference = getChildField<RelationshipField>(polymorphicField, 'reference')
+    });
+    const singleReference = getChildField<RelationshipField>(
+      singleRelationField,
+      'reference',
+    );
+    const polymorphicReference = getChildField<RelationshipField>(
+      polymorphicField,
+      'reference',
+    );
     const options = {
       collectionSlug: 'pages',
       id: 5,
       siblingData: { type: 'reference' },
-    }
+    };
 
     expect((singleReference.validate as any)?.(5, options)).toBe(
       'A link cannot reference the current document.',
-    )
+    );
     expect(
       (polymorphicReference.validate as any)?.(
         { relationTo: 'pages', value: { id: '5' } },
         options,
       ),
-    ).toBe('A link cannot reference the current document.')
+    ).toBe('A link cannot reference the current document.');
     expect(
       (polymorphicReference.validate as any)?.(
         { relationTo: 'posts', value: 5 },
         options,
       ),
-    ).toBe(true)
-    expect((singleReference.validate as any)?.(5, { ...options, siblingData: { type: 'custom' } }))
-      .toBe(true)
-  })
-})
+    ).toBe(true);
+    expect(
+      (singleReference.validate as any)?.(5, {
+        ...options,
+        siblingData: { type: 'custom' },
+      }),
+    ).toBe(true);
+  });
+});
 
 describe('linkFieldPlugin', () => {
   it('resolves empty relationTo to non-Payload collection slugs and attaches the url hook', () => {
-    const field = linkField({ name: 'link' })
+    const field = linkField({ name: 'link' });
     const outputConfig = applyPlugin({
       collections: [
         {
@@ -174,13 +207,12 @@ describe('linkFieldPlugin', () => {
           fields: [],
         },
       ],
-    } as Config)
-    const link = outputConfig.collections?.[0]?.fields[0] as GroupField
+    } as Config);
+    const link = outputConfig.collections?.[0]?.fields[0] as GroupField;
 
-    expect(getChildField<RelationshipField>(link, 'reference').relationTo).toEqual([
-      'pages',
-      'posts',
-    ])
+    expect(
+      getChildField<RelationshipField>(link, 'reference').relationTo,
+    ).toEqual(['pages', 'posts']);
     expect(link.admin?.custom?.linkField).toMatchObject({
       apiRoute: '/api',
       collections: {
@@ -191,12 +223,14 @@ describe('linkFieldPlugin', () => {
           label: 'posts',
         },
       },
-    })
-    expect(getChildField<TextField>(link, 'url').hooks?.afterRead).toHaveLength(1)
+    });
+    expect(getChildField<TextField>(link, 'url').hooks?.afterRead).toHaveLength(
+      1,
+    );
     expect(outputConfig.custom?.[LINK_FIELD_RUNTIME_CONFIG_KEY]).toMatchObject({
       resolveDocumentUrl: expect.any(Function),
-    })
-  })
+    });
+  });
 
   it('filters the current document from same-collection reference options', async () => {
     const outputConfig = applyPlugin({
@@ -210,9 +244,9 @@ describe('linkFieldPlugin', () => {
           fields: [],
         },
       ],
-    } as Config)
-    const link = outputConfig.collections?.[0]?.fields[0] as GroupField
-    const reference = getChildField<RelationshipField>(link, 'reference')
+    } as Config);
+    const link = outputConfig.collections?.[0]?.fields[0] as GroupField;
+    const reference = getChildField<RelationshipField>(link, 'reference');
 
     await expect(
       (reference.filterOptions as any)?.({
@@ -223,14 +257,14 @@ describe('linkFieldPlugin', () => {
       id: {
         not_equals: 5,
       },
-    })
+    });
     await expect(
       (reference.filterOptions as any)?.({
         id: 5,
         relationTo: 'posts',
       }),
-    ).resolves.toBe(true)
-  })
+    ).resolves.toBe(true);
+  });
 
   it('passes collection labels and title fields to the admin component', () => {
     const outputConfig = applyPlugin({
@@ -259,8 +293,8 @@ describe('linkFieldPlugin', () => {
       routes: {
         api: '/payload-api',
       },
-    } as Config)
-    const link = outputConfig.collections?.[0]?.fields[0] as GroupField
+    } as Config);
+    const link = outputConfig.collections?.[0]?.fields[0] as GroupField;
 
     expect(link.admin?.custom?.linkField).toMatchObject({
       apiRoute: '/payload-api',
@@ -274,8 +308,8 @@ describe('linkFieldPlugin', () => {
           useAsTitle: 'slug',
         },
       },
-    })
-  })
+    });
+  });
 
   it('preserves localized singular labels for the reference summary', () => {
     const outputConfig = applyPlugin({
@@ -298,8 +332,8 @@ describe('linkFieldPlugin', () => {
           },
         },
       ],
-    } as unknown as Config)
-    const link = outputConfig.collections?.[0]?.fields[0] as GroupField
+    } as unknown as Config);
+    const link = outputConfig.collections?.[0]?.fields[0] as GroupField;
 
     expect(link.admin?.custom?.linkField).toMatchObject({
       collections: {
@@ -311,23 +345,23 @@ describe('linkFieldPlugin', () => {
           useAsTitle: 'title',
         },
       },
-    })
-  })
+    });
+  });
 
   it('preserves explicit relationTo, field options, and user hooks', () => {
-    const existingHook = vi.fn()
+    const existingHook = vi.fn();
     const field = linkField({
       name: 'link',
       relationTo: ['pages', 'payload-jobs'],
-    })
-    const url = getChildField<TextField>(field, 'url')
+    });
+    const url = getChildField<TextField>(field, 'url');
     url.hooks = {
       afterRead: [existingHook],
-    }
+    };
     field.admin = {
       ...field.admin,
       description: 'Pick a link',
-    }
+    };
 
     const outputConfig = applyPlugin({
       collections: [
@@ -344,14 +378,20 @@ describe('linkFieldPlugin', () => {
           fields: [],
         },
       ],
-    } as Config)
-    const link = outputConfig.collections?.[0]?.fields[0] as GroupField
+    } as Config);
+    const link = outputConfig.collections?.[0]?.fields[0] as GroupField;
 
-    expect(link.admin?.description).toBe('Pick a link')
-    expect(getChildField<RelationshipField>(link, 'reference').relationTo).toEqual(['pages'])
-    expect(getChildField<TextField>(link, 'url').hooks?.afterRead?.[0]).toBe(existingHook)
-    expect(getChildField<TextField>(link, 'url').hooks?.afterRead).toHaveLength(2)
-  })
+    expect(link.admin?.description).toBe('Pick a link');
+    expect(
+      getChildField<RelationshipField>(link, 'reference').relationTo,
+    ).toEqual(['pages']);
+    expect(getChildField<TextField>(link, 'url').hooks?.afterRead?.[0]).toBe(
+      existingHook,
+    );
+    expect(getChildField<TextField>(link, 'url').hooks?.afterRead).toHaveLength(
+      2,
+    );
+  });
 
   it('discards a user-provided Payload collection relation', () => {
     const outputConfig = applyPlugin({
@@ -365,11 +405,13 @@ describe('linkFieldPlugin', () => {
           fields: [],
         },
       ],
-    } as Config)
-    const link = outputConfig.collections?.[0]?.fields[0] as GroupField
+    } as Config);
+    const link = outputConfig.collections?.[0]?.fields[0] as GroupField;
 
-    expect(getChildField<RelationshipField>(link, 'reference').relationTo).toEqual([])
-  })
+    expect(
+      getChildField<RelationshipField>(link, 'reference').relationTo,
+    ).toEqual([]);
+  });
 
   it('walks collections, globals, arrays, blocks, groups, and tabs', () => {
     const outputConfig = applyPlugin({
@@ -416,30 +458,39 @@ describe('linkFieldPlugin', () => {
           ],
         },
       ],
-    } as Config)
-    const arrayField = outputConfig.collections?.[0]?.fields[0] as Field & { fields: Field[] }
+    } as Config);
+    const arrayField = outputConfig.collections?.[0]?.fields[0] as Field & {
+      fields: Field[];
+    };
     const blockField = outputConfig.collections?.[0]?.fields[1] as Field & {
-      blocks: Array<{ fields: Field[] }>
-    }
+      blocks: Array<{ fields: Field[] }>;
+    };
     const tabsField = outputConfig.collections?.[0]?.fields[2] as Field & {
-      tabs: Array<{ fields: Field[] }>
-    }
-    const groupField = outputConfig.globals?.[0]?.fields[0] as Field & { fields: Field[] }
+      tabs: Array<{ fields: Field[] }>;
+    };
+    const groupField = outputConfig.globals?.[0]?.fields[0] as Field & {
+      fields: Field[];
+    };
 
-    expect(getChildField<TextField>(arrayField.fields[0] as GroupField, 'url').hooks?.afterRead).toHaveLength(
-      1,
-    )
     expect(
-      getChildField<TextField>(blockField.blocks[0].fields[0] as GroupField, 'url').hooks
+      getChildField<TextField>(arrayField.fields[0] as GroupField, 'url').hooks
         ?.afterRead,
-    ).toHaveLength(1)
+    ).toHaveLength(1);
     expect(
-      getChildField<TextField>(tabsField.tabs[0].fields[0] as GroupField, 'url').hooks?.afterRead,
-    ).toHaveLength(1)
+      getChildField<TextField>(
+        blockField.blocks[0].fields[0] as GroupField,
+        'url',
+      ).hooks?.afterRead,
+    ).toHaveLength(1);
     expect(
-      getChildField<TextField>(groupField.fields[0] as GroupField, 'url').hooks?.afterRead,
-    ).toHaveLength(1)
-  })
+      getChildField<TextField>(tabsField.tabs[0].fields[0] as GroupField, 'url')
+        .hooks?.afterRead,
+    ).toHaveLength(1);
+    expect(
+      getChildField<TextField>(groupField.fields[0] as GroupField, 'url').hooks
+        ?.afterRead,
+    ).toHaveLength(1);
+  });
 
   it('transforms reusable top-level blocks once without assigning collection ownership', () => {
     const reusableBlock = {
@@ -451,11 +502,11 @@ describe('linkFieldPlugin', () => {
         preserved: true,
       },
       fields: [linkField({ name: 'reusableLink' })],
-    } as const
+    } as const;
     const inlineBlock = {
       slug: 'inlineLink',
       fields: [linkField({ name: 'inlineLink' })],
-    } as const
+    } as const;
     const inputConfig = {
       blocks: [reusableBlock],
       collections: [
@@ -476,12 +527,12 @@ describe('linkFieldPlugin', () => {
           ],
         },
       ],
-    } as unknown as Config
+    } as unknown as Config;
 
-    const outputConfig = applyPlugin(inputConfig)
-    const outputReusableBlock = outputConfig.blocks?.[0]
-    const referencedLayout = outputConfig.collections?.[0]?.fields[0]
-    const inlineLayout = outputConfig.collections?.[0]?.fields[1]
+    const outputConfig = applyPlugin(inputConfig);
+    const outputReusableBlock = outputConfig.blocks?.[0];
+    const referencedLayout = outputConfig.collections?.[0]?.fields[0];
+    const inlineLayout = outputConfig.collections?.[0]?.fields[1];
 
     if (
       !outputReusableBlock ||
@@ -490,12 +541,15 @@ describe('linkFieldPlugin', () => {
       !inlineLayout ||
       inlineLayout.type !== 'blocks'
     ) {
-      throw new Error('Expected reusable and inline blocks')
+      throw new Error('Expected reusable and inline blocks');
     }
 
-    const reusableLink = outputReusableBlock.fields[0] as GroupField
-    const inlineLink = inlineLayout.blocks[0].fields[0] as GroupField
-    const reusableReference = getChildField<RelationshipField>(reusableLink, 'reference')
+    const reusableLink = outputReusableBlock.fields[0] as GroupField;
+    const inlineLink = inlineLayout.blocks[0].fields[0] as GroupField;
+    const reusableReference = getChildField<RelationshipField>(
+      reusableLink,
+      'reference',
+    );
 
     expect(outputReusableBlock).toMatchObject({
       admin: {
@@ -505,121 +559,143 @@ describe('linkFieldPlugin', () => {
         preserved: true,
       },
       slug: 'reusableLink',
-    })
-    expect(referencedLayout.blockReferences).toEqual(['reusableLink'])
-    expect(getChildField<TextField>(reusableLink, 'url').hooks?.afterRead).toHaveLength(1)
-    expect(getChildField<TextField>(inlineLink, 'url').hooks?.afterRead).toHaveLength(1)
-    expect(reusableReference.filterOptions).toBeUndefined()
+    });
+    expect(referencedLayout.blockReferences).toEqual(['reusableLink']);
+    expect(
+      getChildField<TextField>(reusableLink, 'url').hooks?.afterRead,
+    ).toHaveLength(1);
+    expect(
+      getChildField<TextField>(inlineLink, 'url').hooks?.afterRead,
+    ).toHaveLength(1);
+    expect(reusableReference.filterOptions).toBeUndefined();
 
-    expect(inputConfig.blocks?.[0]).toBe(reusableBlock)
-    expect(inputConfig.blocks?.[0]?.fields[0]).toBe(reusableBlock.fields[0])
+    expect(inputConfig.blocks?.[0]).toBe(reusableBlock);
+    expect(inputConfig.blocks?.[0]?.fields[0]).toBe(reusableBlock.fields[0]);
     expect(
       getChildField<TextField>(reusableBlock.fields[0], 'url').hooks?.afterRead,
-    ).toBeUndefined()
-  })
-})
+    ).toBeUndefined();
+  });
+});
 
 describe('Lexical link nodes', () => {
   it('imports Payload-native custom nodes and exports only the plugin-owned shape', () => {
-    const editor = createHeadlessEditor({ nodes: [LinkFieldNode, LinkFieldAutoLinkNode] })
+    const editor = createHeadlessEditor({
+      nodes: [LinkFieldNode, LinkFieldAutoLinkNode],
+    });
     const state = editor.parseEditorState({
       root: {
-        children: [{
-          children: [{
-            detail: 0,
-            format: 0,
-            mode: 'normal',
-            style: '',
-            text: 'Read more',
-            type: 'text',
-            version: 1,
-          }],
-          direction: null,
-          fields: {
-            linkType: 'custom',
-            newTab: true,
-            url: '/about',
+        children: [
+          {
+            children: [
+              {
+                detail: 0,
+                format: 0,
+                mode: 'normal',
+                style: '',
+                text: 'Read more',
+                type: 'text',
+                version: 1,
+              },
+            ],
+            direction: null,
+            fields: {
+              linkType: 'custom',
+              newTab: true,
+              url: '/about',
+            },
+            format: '',
+            indent: 0,
+            type: 'link',
+            version: 3,
           },
-          format: '',
-          indent: 0,
-          type: 'link',
-          version: 3,
-        }],
+        ],
         direction: null,
         format: '',
         indent: 0,
         type: 'root',
         version: 1,
       },
-    } as never)
+    } as never);
 
-    const node = (state.toJSON().root.children[0] as any)
+    const node = state.toJSON().root.children[0] as any;
     expect(node.fields).toEqual({
       customUrl: '/about',
       label: 'Read more',
       newTab: true,
       type: 'custom',
       url: '/about',
-    })
-    expect(node.version).toBe(1)
-  })
+    });
+    expect(node.version).toBe(1);
+  });
 
   it('imports Payload-native internal nodes as references', () => {
-    const editor = createHeadlessEditor({ nodes: [LinkFieldNode, LinkFieldAutoLinkNode] })
+    const editor = createHeadlessEditor({
+      nodes: [LinkFieldNode, LinkFieldAutoLinkNode],
+    });
     const state = editor.parseEditorState({
       root: {
-        children: [{
-          children: [{
-            detail: 0,
-            format: 0,
-            mode: 'normal',
-            style: '',
-            text: 'Post',
-            type: 'text',
-            version: 1,
-          }],
-          direction: null,
-          fields: {
-            doc: { relationTo: 'posts', value: 'post-1' },
-            linkType: 'internal',
+        children: [
+          {
+            children: [
+              {
+                detail: 0,
+                format: 0,
+                mode: 'normal',
+                style: '',
+                text: 'Post',
+                type: 'text',
+                version: 1,
+              },
+            ],
+            direction: null,
+            fields: {
+              doc: { relationTo: 'posts', value: 'post-1' },
+              linkType: 'internal',
+            },
+            format: '',
+            indent: 0,
+            type: 'link',
+            version: 3,
           },
-          format: '',
-          indent: 0,
-          type: 'link',
-          version: 3,
-        }],
+        ],
         direction: null,
         format: '',
         indent: 0,
         type: 'root',
         version: 1,
       },
-    } as never)
+    } as never);
 
     expect((state.toJSON().root.children[0] as any).fields).toMatchObject({
       label: 'Post',
       reference: { relationTo: 'posts', value: 'post-1' },
       type: 'reference',
-    })
-  })
-})
+    });
+  });
+});
 
 describe('validateUrl', () => {
   it('allows safe custom URL forms', () => {
-    expect(validateUrl('/about')).toBe(true)
-    expect(validateUrl('../about')).toBe(true)
-    expect(validateUrl('#section')).toBe(true)
-    expect(validateUrl('?modal=true')).toBe(true)
-    expect(validateUrl('https://example.com')).toBe(true)
-    expect(validateUrl('http://example.com')).toBe(true)
-  })
+    expect(validateUrl('/about')).toBe(true);
+    expect(validateUrl('../about')).toBe(true);
+    expect(validateUrl('#section')).toBe(true);
+    expect(validateUrl('?modal=true')).toBe(true);
+    expect(validateUrl('https://example.com')).toBe(true);
+    expect(validateUrl('http://example.com')).toBe(true);
+  });
 
   it('rejects unsafe protocols', () => {
-    expect(validateUrl('javascript:alert(1)')).toBe('Only http and https URLs are allowed.')
-    expect(validateUrl('data:text/html,hello')).toBe('Only http and https URLs are allowed.')
-    expect(validateUrl('//example.com')).toBe('Protocol-relative URLs are not allowed.')
-  })
-})
+    expect(validateUrl('javascript:alert(1)')).toBe(
+      'Only http and https URLs are allowed.',
+    );
+    expect(validateUrl('data:text/html,hello')).toBe(
+      'Only http and https URLs are allowed.',
+    );
+    expect(validateUrl('//example.com')).toBe(
+      'Protocol-relative URLs are not allowed.',
+    );
+  });
+});
 
 describe('getReferenceIdentity', () => {
   it('supports single relationship IDs and documents', () => {
@@ -632,7 +708,7 @@ describe('getReferenceIdentity', () => {
       collectionSlug: 'pages',
       document: null,
       documentId: '123',
-    })
+    });
     expect(
       getReferenceIdentity({
         reference: { id: 123, title: 'Home' },
@@ -642,8 +718,8 @@ describe('getReferenceIdentity', () => {
       collectionSlug: 'pages',
       document: { id: 123, title: 'Home' },
       documentId: 123,
-    })
-  })
+    });
+  });
 
   it('supports polymorphic relationship IDs and documents', () => {
     expect(
@@ -657,7 +733,7 @@ describe('getReferenceIdentity', () => {
       collectionSlug: 'posts',
       document: null,
       documentId: '456',
-    })
+    });
     expect(
       getReferenceIdentity({
         reference: {
@@ -669,9 +745,9 @@ describe('getReferenceIdentity', () => {
       collectionSlug: 'posts',
       document: { id: '456', title: 'Post' },
       documentId: '456',
-    })
-  })
-})
+    });
+  });
+});
 
 describe('getReferenceSummary', () => {
   it('formats populated references with collection label and configured title field', () => {
@@ -690,8 +766,8 @@ describe('getReferenceSummary', () => {
         },
         relationTo: 'pages',
       }),
-    ).toBe('Page: Homepage')
-  })
+    ).toBe('Page: Homepage');
+  });
 
   it('formats polymorphic ID references with collection label until the document is loaded', () => {
     expect(
@@ -707,8 +783,8 @@ describe('getReferenceSummary', () => {
           value: 'post-1',
         },
       }),
-    ).toBe('Post: post-1')
-  })
+    ).toBe('Post: post-1');
+  });
 
   it('uses the resolved document title for ID-only references', () => {
     expect(
@@ -728,8 +804,8 @@ describe('getReferenceSummary', () => {
           slug: 'hello-world',
         },
       }),
-    ).toBe('Post: hello-world')
-  })
+    ).toBe('Post: hello-world');
+  });
 
   it('localizes the singular collection label', () => {
     expect(
@@ -750,15 +826,17 @@ describe('getReferenceSummary', () => {
         },
         relationTo: 'pages',
       }),
-    ).toBe('Сторінка: Детальніше про клініку')
-  })
+    ).toBe('Сторінка: Детальніше про клініку');
+  });
 
   it('detects when an ID-only relationship needs its configured title loaded', () => {
-    expect(hasReferenceTitle({ id: 18 }, 'title')).toBe(false)
-    expect(hasReferenceTitle({ id: 18, title: 'About the clinic' }, 'title')).toBe(true)
-    expect(hasReferenceTitle({ id: 18 }, undefined)).toBe(true)
-  })
-})
+    expect(hasReferenceTitle({ id: 18 }, 'title')).toBe(false);
+    expect(
+      hasReferenceTitle({ id: 18, title: 'About the clinic' }, 'title'),
+    ).toBe(true);
+    expect(hasReferenceTitle({ id: 18 }, undefined)).toBe(true);
+  });
+});
 
 describe('getReferenceDocumentUrl', () => {
   it('requests the selected document in the active content locale', () => {
@@ -769,8 +847,8 @@ describe('getReferenceDocumentUrl', () => {
         documentId: 18,
         locale: 'uk',
       }),
-    ).toBe('/api/pages/18?depth=0&locale=uk')
-  })
+    ).toBe('/api/pages/18?depth=0&locale=uk');
+  });
 
   it('normalizes and encodes URL segments', () => {
     expect(
@@ -779,14 +857,14 @@ describe('getReferenceDocumentUrl', () => {
         collectionSlug: 'landing pages',
         documentId: 'page/1',
       }),
-    ).toBe('/payload-api/landing%20pages/page%2F1?depth=0')
-  })
-})
+    ).toBe('/payload-api/landing%20pages/page%2F1?depth=0');
+  });
+});
 
 describe('resolveUrl hook', () => {
   it('resolves custom URLs', async () => {
-    const resolver = vi.fn()
-    const hook = createResolveUrlHook(resolver)
+    const resolver = vi.fn();
+    const hook = createResolveUrlHook(resolver);
 
     await expect(
       hook({
@@ -795,23 +873,23 @@ describe('resolveUrl hook', () => {
           type: 'custom',
         },
       } as never),
-    ).resolves.toBe('/about')
-    expect(resolver).not.toHaveBeenCalled()
-  })
+    ).resolves.toBe('/about');
+    expect(resolver).not.toHaveBeenCalled();
+  });
 
   it('uses the plugin resolver for reference URLs', async () => {
-    const resolver = vi.fn(() => '/posts/hello')
-    const hook = createResolveUrlHook(resolver)
+    const resolver = vi.fn(() => '/posts/hello');
+    const hook = createResolveUrlHook(resolver);
     const payload = {
       logger: {
         error: vi.fn(),
       },
-    }
+    };
     const req = {
       fallbackLocale: 'en',
       locale: 'uk',
       payload,
-    }
+    };
 
     await expect(
       hook({
@@ -834,7 +912,7 @@ describe('resolveUrl hook', () => {
           },
         ],
       } as never),
-    ).resolves.toBe('/posts/hello')
+    ).resolves.toBe('/posts/hello');
     expect(resolver).toHaveBeenCalledWith(
       expect.objectContaining({
         collectionSlug: 'posts',
@@ -847,16 +925,16 @@ describe('resolveUrl hook', () => {
         payload,
         req,
       }),
-    )
-  })
+    );
+  });
 
   it('fetches unpopulated references and returns null on resolver errors', async () => {
     const resolver = vi.fn(() => {
-      throw new Error('resolver failed')
-    })
-    const hook = createResolveUrlHook(resolver)
-    const error = vi.fn()
-    const findByID = vi.fn(() => ({ id: 'post-1', slug: 'hello' }))
+      throw new Error('resolver failed');
+    });
+    const hook = createResolveUrlHook(resolver);
+    const error = vi.fn();
+    const findByID = vi.fn(() => ({ id: 'post-1', slug: 'hello' }));
 
     await expect(
       hook({
@@ -884,7 +962,7 @@ describe('resolveUrl hook', () => {
           },
         ],
       } as never),
-    ).resolves.toBeNull()
+    ).resolves.toBeNull();
     expect(findByID).toHaveBeenCalledWith(
       expect.objectContaining({
         collection: 'posts',
@@ -892,7 +970,7 @@ describe('resolveUrl hook', () => {
         disableErrors: true,
         id: 'post-1',
       }),
-    )
-    expect(error).toHaveBeenCalled()
-  })
-})
+    );
+    expect(error).toHaveBeenCalled();
+  });
+});

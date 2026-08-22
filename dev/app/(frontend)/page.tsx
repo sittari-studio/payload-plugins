@@ -1,8 +1,8 @@
-import type { SerializedEditorState } from "@payloadcms/richtext-lexical/lexical";
+import type { SerializedEditorState } from '@payloadcms/richtext-lexical/lexical';
 
-import { RichText } from "./components/RichText.js";
-import { getPayload } from "payload";
-import configPromise from "@payload-config";
+import { RichText } from './components/RichText.js';
+import { getPayload } from 'payload';
+import configPromise from '@payload-config';
 
 const content = {
   root: {
@@ -12,30 +12,30 @@ const content = {
           {
             detail: 0,
             format: 0,
-            mode: "normal",
-            style: "",
-            text: "Payload link-field React converter",
-            type: "text",
+            mode: 'normal',
+            style: '',
+            text: 'Payload link-field React converter',
+            type: 'text',
             version: 1,
           },
         ],
         direction: null,
         fields: {
-          customUrl: "/docs",
-          type: "custom",
-          url: "/docs",
+          customUrl: '/docs',
+          type: 'custom',
+          url: '/docs',
         },
-        format: "",
-        id: "react-converter-link",
+        format: '',
+        id: 'react-converter-link',
         indent: 0,
-        type: "autolink",
+        type: 'autolink',
         version: 1,
       },
     ],
     direction: null,
-    format: "",
+    format: '',
     indent: 0,
-    type: "root",
+    type: 'root',
     version: 1,
   },
 } as unknown as SerializedEditorState;
@@ -43,7 +43,7 @@ const content = {
 const Page = async () => {
   const payload = await getPayload({ config: configPromise });
   const page = await payload.find({
-    collection: "pages",
+    collection: 'pages',
     where: {
       id: {
         equals: 1,

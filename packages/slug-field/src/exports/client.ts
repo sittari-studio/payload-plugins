@@ -1,3 +1,3 @@
-'use client'
+'use client';
 
-export { SlugInstruction } from '../admin/SlugInstruction.js'
+export { SlugInstruction } from '../admin/SlugInstruction.js';

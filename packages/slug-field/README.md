@@ -11,7 +11,7 @@ pnpm add @sittari/payload-slug-field
 ## Usage
 
 ```ts
-import { createSlugField } from '@sittari/payload-slug-field'
+import { createSlugField } from '@sittari/payload-slug-field';
 
 export const Posts = {
   slug: 'posts',
@@ -24,7 +24,7 @@ export const Posts = {
       },
     }),
   ],
-}
+};
 ```
 
 `createSlugField()` returns Payload's slug row. It is required, localized, uses `title` as its source, and appears in the sidebar by default. It adds no instruction text unless `instruction` is provided.
@@ -39,5 +39,5 @@ createSlugField({
     ...defaultSlugField,
     admin: { ...defaultSlugField.admin, position: 'sidebar' },
   }),
-})
+});
 ```

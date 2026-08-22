@@ -9,8 +9,8 @@ export const en = {
   pageType: 'Page Type',
   standardContent: 'Standard Content',
   title: 'Title',
-} as const
+} as const;
 
 export type PagesTranslation = {
-  [Key in keyof typeof en]: string
-}
+  [Key in keyof typeof en]: string;
+};

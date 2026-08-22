@@ -5,7 +5,7 @@ canonical path, published route registry, permalink editor, lookup, pagination,
 and path rebuilding for selected collections.
 
 ```ts
-import { permalinkPlugin } from '@sittari/payload-permalink'
+import { permalinkPlugin } from '@sittari/payload-permalink';
 
 permalinkPlugin({
   siteUrl: 'https://example.com',
@@ -18,7 +18,7 @@ permalinkPlugin({
       parentField: 'parent',
     },
   },
-})
+});
 ```
 
 A collection prefix works like a WordPress custom post type rewrite prefix:
@@ -59,24 +59,37 @@ default styles, so client app CSS can override them directly:
   /* container */
 }
 
-.sittari-permalink-field__label {}
-.sittari-permalink-field__prefix {}
-.sittari-permalink-field__link {}
-.sittari-permalink-field__placeholder {}
-.sittari-permalink-field__input {}
-.sittari-permalink-field__error {}
-.sittari-permalink-field__button {}
-.sittari-permalink-field__button--edit {}
-.sittari-permalink-field__button--ok {}
-.sittari-permalink-field__button--cancel {}
+.sittari-permalink-field__label {
+}
+.sittari-permalink-field__prefix {
+}
+.sittari-permalink-field__link {
+}
+.sittari-permalink-field__placeholder {
+}
+.sittari-permalink-field__input {
+}
+.sittari-permalink-field__error {
+}
+.sittari-permalink-field__button {
+}
+.sittari-permalink-field__button--edit {
+}
+.sittari-permalink-field__button--ok {
+}
+.sittari-permalink-field__button--cancel {
+}
 ```
 
 State classes are applied to the root element as needed:
 
 ```css
-.sittari-permalink-field--editing {}
-.sittari-permalink-field--error {}
-.sittari-permalink-field--disabled {}
+.sittari-permalink-field--editing {
+}
+.sittari-permalink-field--error {
+}
+.sittari-permalink-field--disabled {
+}
 ```
 
 ## Localization
@@ -113,20 +126,20 @@ internal route registry.
 Create bound helpers in server-only code:
 
 ```ts
-import { createPathHelpers } from '@sittari/payload-permalink'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { createPathHelpers } from '@sittari/payload-permalink';
+import { getPayload } from 'payload';
+import config from '@payload-config';
 
 export const paths = createPathHelpers({
   getPayload: () => getPayload({ config }),
-})
+});
 ```
 
 ```ts
 const result = await paths.findDocumentByPath({
   path: '/blog/hello-world',
   overrideAccess: false,
-})
+});
 ```
 
 Lookup resolves the internal route first and then loads the target document.

@@ -1,4 +1,4 @@
-import type { ClientField } from 'payload'
+import type { ClientField } from 'payload';
 
 const PLACEHOLDER_FIELD_TYPES = new Set([
   'code',
@@ -8,18 +8,18 @@ const PLACEHOLDER_FIELD_TYPES = new Set([
   'select',
   'text',
   'textarea',
-])
+]);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
-  Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
 const getPlaceholder = (value: unknown): string | undefined => {
   if (typeof value === 'string') {
-    return value || undefined
+    return value || undefined;
   }
 
   if (typeof value === 'number' && Number.isFinite(value)) {
-    return String(value)
+    return String(value);
   }
 
   if (
@@ -27,11 +27,11 @@ const getPlaceholder = (value: unknown): string | undefined => {
     value.length > 0 &&
     value.every((item) => typeof item === 'string' || typeof item === 'number')
   ) {
-    return value.join(', ')
+    return value.join(', ');
   }
 
-  return undefined
-}
+  return undefined;
+};
 
 const getFieldValue = (
   field: ClientField,
@@ -39,19 +39,19 @@ const getFieldValue = (
 ): unknown =>
   'name' in field && typeof field.name === 'string'
     ? templateData[field.name]
-    : templateData
+    : templateData;
 
 const applyFieldPlaceholder = (
   field: ClientField,
   templateData: Record<string, unknown>,
 ): ClientField => {
-  const fieldValue = getFieldValue(field, templateData)
+  const fieldValue = getFieldValue(field, templateData);
 
   if (field.type === 'row' || field.type === 'collapsible') {
     return {
       ...field,
       fields: applyTemplatePlaceholders(field.fields, templateData),
-    }
+    };
   }
 
   if (field.type === 'tabs') {
@@ -61,7 +61,7 @@ const applyFieldPlaceholder = (
         const tabValue =
           'name' in tab && typeof tab.name === 'string'
             ? templateData[tab.name]
-            : templateData
+            : templateData;
 
         return {
           ...tab,
@@ -69,9 +69,9 @@ const applyFieldPlaceholder = (
             tab.fields,
             isRecord(tabValue) ? tabValue : {},
           ),
-        }
+        };
       }),
-    }
+    };
   }
 
   if (field.type === 'group') {
@@ -81,16 +81,16 @@ const applyFieldPlaceholder = (
         field.fields,
         isRecord(fieldValue) ? fieldValue : {},
       ),
-    }
+    };
   }
 
   if (!PLACEHOLDER_FIELD_TYPES.has(field.type)) {
-    return field
+    return field;
   }
 
-  const placeholder = getPlaceholder(fieldValue)
+  const placeholder = getPlaceholder(fieldValue);
   if (placeholder === undefined) {
-    return field
+    return field;
   }
 
   return {
@@ -99,11 +99,11 @@ const applyFieldPlaceholder = (
       ...field.admin,
       placeholder,
     },
-  } as ClientField
-}
+  } as ClientField;
+};
 
 export const applyTemplatePlaceholders = (
   fields: ClientField[],
   templateData: Record<string, unknown>,
 ): ClientField[] =>
-  fields.map((field) => applyFieldPlaceholder(field, templateData))
+  fields.map((field) => applyFieldPlaceholder(field, templateData));

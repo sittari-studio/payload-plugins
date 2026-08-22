@@ -81,21 +81,21 @@ the English/Russian/Ukrainian Admin language matrix.
 
 Maintain fixtures for these cases:
 
-| Case | Expected result |
-| --- | --- |
-| SEO title absent, mapped title present | Use mapped title in active locale. |
+| Case                                                | Expected result                                             |
+| --------------------------------------------------- | ----------------------------------------------------------- |
+| SEO title absent, mapped title present              | Use mapped title in active locale.                          |
 | Active-locale values absent, other locale populated | Omit or use allowed global default; never use other locale. |
-| Auto canonical resolver returns null | Omit canonical. |
-| Manual canonical is external HTTPS | Return manual canonical. |
-| Canonical mode none | Omit canonical despite resolver result. |
-| OG fields absent | Use resolved standard metadata. |
-| Twitter fields absent | Use resolved OG metadata. |
-| Valid raw schema exists | Return only parsed raw schema. |
-| Invalid legacy raw schema exists | Omit schema and log; do not throw. |
-| Generated robots | Preserve group order, then append configured Sitemap lines. |
-| Robots override | Return only override text. |
-| Redirect A to B and B to A | Reject the second enabled redirect. |
-| Missing localized URL | Omit canonical, hreflang entry, and sitemap entry. |
+| Auto canonical resolver returns null                | Omit canonical.                                             |
+| Manual canonical is external HTTPS                  | Return manual canonical.                                    |
+| Canonical mode none                                 | Omit canonical despite resolver result.                     |
+| OG fields absent                                    | Use resolved standard metadata.                             |
+| Twitter fields absent                               | Use resolved OG metadata.                                   |
+| Valid raw schema exists                             | Return only parsed raw schema.                              |
+| Invalid legacy raw schema exists                    | Omit schema and log; do not throw.                          |
+| Generated robots                                    | Preserve group order, then append configured Sitemap lines. |
+| Robots override                                     | Return only override text.                                  |
+| Redirect A to B and B to A                          | Reject the second enabled redirect.                         |
+| Missing localized URL                               | Omit canonical, hreflang entry, and sitemap entry.          |
 
 ## Release gates
 

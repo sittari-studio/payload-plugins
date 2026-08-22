@@ -19,12 +19,12 @@ plugin usable with Next.js and other Payload frontends.
 
 ## Guides
 
-| Guide | Use it for |
-| --- | --- |
+| Guide                                         | Use it for                                                                 |
+| --------------------------------------------- | -------------------------------------------------------------------------- |
 | [Payload integration](PAYLOAD_INTEGRATION.md) | Installation, plugin configuration, generated content, and access control. |
-| [Public API](PUBLIC_API.md) | Plugin options, resolver contracts, helper behavior, and public types. |
-| [Next.js App Router](NEXTJS.md) | `generateMetadata`, robots.txt, sitemap, and redirect route examples. |
-| [Admin translations](ADMIN_TRANSLATIONS.md) | Supported Admin interface languages and stable stored values. |
+| [Public API](PUBLIC_API.md)                   | Plugin options, resolver contracts, helper behavior, and public types.     |
+| [Next.js App Router](NEXTJS.md)               | `generateMetadata`, robots.txt, sitemap, and redirect route examples.      |
+| [Admin translations](ADMIN_TRANSLATIONS.md)   | Supported Admin interface languages and stable stored values.              |
 
 ## Important defaults
 

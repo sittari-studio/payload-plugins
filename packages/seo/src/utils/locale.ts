@@ -1,4 +1,4 @@
-import type { SeoDocument, SeoLocalApiOptions, SeoPayload } from '../types.js'
+import type { SeoDocument, SeoLocalApiOptions, SeoPayload } from '../types.js';
 
 /** Reads one document in exactly the requested locale, never Payload's fallback locale. */
 export const loadDocumentWithoutFallback = async ({
@@ -8,13 +8,20 @@ export const loadDocumentWithoutFallback = async ({
   locale,
   access,
 }: {
-  payload: SeoPayload
-  collection: string
-  id: string | number
-  locale: string
-  access?: SeoLocalApiOptions
+  payload: SeoPayload;
+  collection: string;
+  id: string | number;
+  locale: string;
+  access?: SeoLocalApiOptions;
 }): Promise<SeoDocument> =>
-  payload.findByID({ collection, id, locale, fallbackLocale: false, draft: false, ...access })
+  payload.findByID({
+    collection,
+    id,
+    locale,
+    fallbackLocale: false,
+    draft: false,
+    ...access,
+  });
 
 /** Reads localized settings in exactly the requested locale. */
 export const loadSettingsWithoutFallback = async ({
@@ -23,9 +30,15 @@ export const loadSettingsWithoutFallback = async ({
   locale,
   access,
 }: {
-  payload: SeoPayload
-  slug: string
-  locale: string
-  access?: SeoLocalApiOptions
+  payload: SeoPayload;
+  slug: string;
+  locale: string;
+  access?: SeoLocalApiOptions;
 }): Promise<SeoDocument> =>
-  payload.findGlobal({ slug, locale, fallbackLocale: false, draft: false, ...access })
+  payload.findGlobal({
+    slug,
+    locale,
+    fallbackLocale: false,
+    draft: false,
+    ...access,
+  });

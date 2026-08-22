@@ -8,11 +8,11 @@ SEO-specific override. The override must be additive only in the sense that it
 cannot grant access to a document the user cannot read or update through the
 parent collection.
 
-| Resource | Default | Override |
-| --- | --- | --- |
-| Generated document SEO fields | Parent collection access | Per-collection SEO field read/update access. |
-| SEO settings Global | Deny management. | Global read/update access. |
-| Redirects collection | Deny management. | create, read, update, delete, and admin access. |
+| Resource                      | Default                  | Override                                        |
+| ----------------------------- | ------------------------ | ----------------------------------------------- |
+| Generated document SEO fields | Parent collection access | Per-collection SEO field read/update access.    |
+| SEO settings Global           | Deny management.         | Global read/update access.                      |
+| Redirects collection          | Deny management.         | create, read, update, delete, and admin access. |
 
 Settings and redirects deny management until the integrator supplies access
 functions. This prevents a package from accidentally opening SEO configuration.
@@ -28,21 +28,21 @@ permissions must pass overrideAccess false to every Local API call.
 
 ## Validation
 
-| Input | Required validation | Invalid result |
-| --- | --- | --- |
-| Plugin `siteUrl` | Absolute HTTP/HTTPS origin. | Reject plugin initialization. |
-| Manual canonical URL | Absolute HTTP/HTTPS URL in manual mode. | Reject save. |
-| Generated canonical path | Valid site-relative path from resolver. | Omit output. |
-| SEO image | Valid Payload upload relation from allowed collection. | Reject invalid relation or omit unresolved output. |
-| Raw schema JSON | Valid JSON syntax when non-empty. | Reject save. |
-| Schema type | Configured type or approved per-document override value. | Reject save. |
-| Redirect source | Exact internal path after required normalization; unique. | Reject save and enforce unique index. |
-| Internal redirect destination | Valid internal path after required normalization. | Reject save. |
-| External redirect destination | Absolute HTTP/HTTPS URL. | Reject save. |
-| Redirect status | Exactly 301 or 302. | Reject save. |
-| Redirect graph | No direct or transitive loop across enabled internal redirects. | Reject save. |
-| Sitemap page | Positive one-based integer. | Reject caller input or return empty XML by documented API policy. |
-| Sitemap lastmod | Valid date from updatedAt or resolver. | Omit lastmod. |
+| Input                         | Required validation                                             | Invalid result                                                    |
+| ----------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Plugin `siteUrl`              | Absolute HTTP/HTTPS origin.                                     | Reject plugin initialization.                                     |
+| Manual canonical URL          | Absolute HTTP/HTTPS URL in manual mode.                         | Reject save.                                                      |
+| Generated canonical path      | Valid site-relative path from resolver.                         | Omit output.                                                      |
+| SEO image                     | Valid Payload upload relation from allowed collection.          | Reject invalid relation or omit unresolved output.                |
+| Raw schema JSON               | Valid JSON syntax when non-empty.                               | Reject save.                                                      |
+| Schema type                   | Configured type or approved per-document override value.        | Reject save.                                                      |
+| Redirect source               | Exact internal path after required normalization; unique.       | Reject save and enforce unique index.                             |
+| Internal redirect destination | Valid internal path after required normalization.               | Reject save.                                                      |
+| External redirect destination | Absolute HTTP/HTTPS URL.                                        | Reject save.                                                      |
+| Redirect status               | Exactly 301 or 302.                                             | Reject save.                                                      |
+| Redirect graph                | No direct or transitive loop across enabled internal redirects. | Reject save.                                                      |
+| Sitemap page                  | Positive one-based integer.                                     | Reject caller input or return empty XML by documented API policy. |
+| Sitemap lastmod               | Valid date from updatedAt or resolver.                          | Omit lastmod.                                                     |
 
 For URL validation, trim whitespace, reject protocol-relative URLs, reject
 unsafe schemes, and validate with the platform URL parser. Do not downgrade an

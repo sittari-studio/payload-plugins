@@ -12,20 +12,23 @@
  * on the error itself and on its `cause`.
  */
 export const isUniqueViolation = (error: unknown): boolean => {
-  for (const candidate of [error, (error as { cause?: unknown } | null)?.cause]) {
+  for (const candidate of [
+    error,
+    (error as { cause?: unknown } | null)?.cause,
+  ]) {
     if (typeof candidate !== 'object' || candidate === null) {
-      continue
+      continue;
     }
-    const code = (candidate as { code?: unknown }).code
+    const code = (candidate as { code?: unknown }).code;
     if (code === 11000) {
-      return true
+      return true;
     }
     if (code === '23505') {
-      return true
+      return true;
     }
     if (typeof code === 'string' && code.includes('SQLITE_CONSTRAINT')) {
-      return true
+      return true;
     }
   }
-  return false
-}
+  return false;
+};

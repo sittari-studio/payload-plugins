@@ -1,1 +1,1 @@
-export type { CreateSlugFieldOptions, SlugInstruction } from '../types.js'
+export type { CreateSlugFieldOptions, SlugInstruction } from '../types.js';

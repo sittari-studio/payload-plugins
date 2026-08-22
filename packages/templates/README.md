@@ -11,8 +11,8 @@ pnpm add @sittari/payload-templates
 ## Usage
 
 ```ts
-import { templateField, templatesPlugin } from '@sittari/payload-templates'
-import { buildConfig } from 'payload'
+import { templateField, templatesPlugin } from '@sittari/payload-templates';
+import { buildConfig } from 'payload';
 
 export default buildConfig({
   collections: [
@@ -43,7 +43,7 @@ export default buildConfig({
       ],
     }),
   ],
-})
+});
 ```
 
 The generated document stores editable fields under `data_<name>`—for example, `data_404.heading`. The `title` and `templateType` fields are managed by the plugin and hidden from the admin form.
@@ -61,8 +61,8 @@ template registered with `templatesPlugin()`. It can be used anywhere Payload
 accepts fields, including collections, globals, tabs, arrays, and blocks.
 
 ```ts
-import { templateField } from '@sittari/payload-templates'
-import type { CollectionConfig } from 'payload'
+import { templateField } from '@sittari/payload-templates';
+import type { CollectionConfig } from 'payload';
 
 export const Pages: CollectionConfig = {
   slug: 'pages',
@@ -79,15 +79,15 @@ export const Pages: CollectionConfig = {
       },
     }),
   ],
-}
+};
 ```
 
-| Option | Type | Required | Description |
-| --- | --- | --- | --- |
-| `name` | `string` | Yes | Field name used in the consuming document. Its stored overrides live at this property. |
-| `template` | `string` | Yes | `name` of a template registered with `templatesPlugin()`. Unknown names throw during configuration. |
-| `label` | `GroupField['label']` | No | Payload group label. Static strings, localized label maps, and label functions are supported. |
-| `admin` | `GroupField['admin']` | No | Payload Admin settings for the generated group. The plugin preserves these settings and installs its template field renderer. |
+| Option     | Type                  | Required | Description                                                                                                                   |
+| ---------- | --------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `name`     | `string`              | Yes      | Field name used in the consuming document. Its stored overrides live at this property.                                        |
+| `template` | `string`              | Yes      | `name` of a template registered with `templatesPlugin()`. Unknown names throw during configuration.                           |
+| `label`    | `GroupField['label']` | No       | Payload group label. Static strings, localized label maps, and label functions are supported.                                 |
+| `admin`    | `GroupField['admin']` | No       | Payload Admin settings for the generated group. The plugin preserves these settings and installs its template field renderer. |
 
 The function initially returns a marked group definition. During plugin
 configuration, `templatesPlugin()` replaces its empty field list with an
@@ -138,7 +138,7 @@ await payload.findByID({
   context: {
     templateFields: 'raw', // or 'resolved'
   },
-})
+});
 ```
 
 An explicit context mode takes precedence over automatic Admin request
@@ -147,10 +147,10 @@ definition.
 
 ## Configuration
 
-| Option | Type | Default | Description |
-| --- | --- | --- | --- |
-| `templates` | `TemplateConfig[]` | Required | Complete set of managed template definitions. |
-| `enabled` | `boolean` | `true` | Set to `false` to leave the Payload config unchanged. |
+| Option      | Type               | Default  | Description                                           |
+| ----------- | ------------------ | -------- | ----------------------------------------------------- |
+| `templates` | `TemplateConfig[]` | Required | Complete set of managed template definitions.         |
+| `enabled`   | `boolean`          | `true`   | Set to `false` to leave the Payload config unchanged. |
 
 Each template has:
 
@@ -174,15 +174,17 @@ The package exports `TemplateConfig`, `TemplateFieldConfig`, and
 Create a lookup helper with the generated `Template` type from your project:
 
 ```ts
-import config from '@payload-config'
-import { createTemplateGetter } from '@sittari/payload-templates'
-import { getPayload } from 'payload'
+import config from '@payload-config';
+import { createTemplateGetter } from '@sittari/payload-templates';
+import { getPayload } from 'payload';
 
-import type { Template } from './payload-types'
+import type { Template } from './payload-types';
 
-export const getTemplate = createTemplateGetter<Template>(() => getPayload({ config }))
+export const getTemplate = createTemplateGetter<Template>(() =>
+  getPayload({ config }),
+);
 
-const notFound = await getTemplate('404')
+const notFound = await getTemplate('404');
 // Typed as: { id: string | number; data_404?: Template['data_404'] } | null
 ```
 

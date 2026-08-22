@@ -13,18 +13,18 @@ pnpm add @sittari/payload-link-field
 Import the admin stylesheet from your Payload admin CSS file:
 
 ```css
-@import "@sittari/payload-link-field/admin.css";
+@import '@sittari/payload-link-field/admin.css';
 ```
 
 ```ts
-import { buildConfig } from "payload";
-import { linkField, linkFieldPlugin } from "@sittari/payload-link-field";
+import { buildConfig } from 'payload';
+import { linkField, linkFieldPlugin } from '@sittari/payload-link-field';
 
 export default buildConfig({
   plugins: [
     linkFieldPlugin({
       resolveDocumentUrl: ({ collectionSlug, document }) => {
-        if (collectionSlug === "pages" && typeof document?.slug === "string") {
+        if (collectionSlug === 'pages' && typeof document?.slug === 'string') {
           return `/${document.slug}`;
         }
 
@@ -34,17 +34,17 @@ export default buildConfig({
   ],
   collections: [
     {
-      slug: "pages",
+      slug: 'pages',
       fields: [
         {
-          name: "title",
-          type: "text",
+          name: 'title',
+          type: 'text',
         },
         linkField({
-          name: "link",
-          label: "Link",
-          appearance: "drawer",
-          relationTo: ["pages", "posts"],
+          name: 'link',
+          label: 'Link',
+          appearance: 'drawer',
+          relationTo: ['pages', 'posts'],
           localizeLabel: true,
         }),
       ],
@@ -65,8 +65,8 @@ replace Payload's native feature (both features use the `link` key), and
 and serialization.
 
 ```ts
-import { lexicalEditor } from '@payloadcms/richtext-lexical'
-import { LinkFieldFeature } from '@sittari/payload-link-field'
+import { lexicalEditor } from '@payloadcms/richtext-lexical';
+import { LinkFieldFeature } from '@sittari/payload-link-field';
 
 const editor = lexicalEditor({
   features: ({ defaultFeatures }) => [
@@ -75,7 +75,7 @@ const editor = lexicalEditor({
       relationTo: ['pages', 'posts'],
     }),
   ],
-})
+});
 ```
 
 The feature accepts `defaultType`, `relationTo`, `showLabel`, and `showNewTab`.
@@ -92,8 +92,8 @@ The React export provides JSX converters for Payload's `RichText` component and 
 import from React Server Components. Spread the plugin converters after Payload's defaults:
 
 ```tsx
-import { RichText } from '@payloadcms/richtext-lexical/react'
-import { LinkFieldJSXConverter } from '@sittari/payload-link-field/react'
+import { RichText } from '@payloadcms/richtext-lexical/react';
+import { LinkFieldJSXConverter } from '@sittari/payload-link-field/react';
 
 export const Content = ({ data }) => (
   <RichText
@@ -103,7 +103,7 @@ export const Content = ({ data }) => (
     })}
     data={data}
   />
-)
+);
 ```
 
 The spread order intentionally replaces Payload's default `link` and `autolink` converters.
@@ -115,8 +115,8 @@ receives normalized `fields`, rendered `children`, `url`, `newTab`, and the unto
 serialized `node`:
 
 ```tsx
-import Link from 'next/link'
-import { LinkFieldJSXConverter } from '@sittari/payload-link-field/react'
+import Link from 'next/link';
+import { LinkFieldJSXConverter } from '@sittari/payload-link-field/react';
 
 const converters = LinkFieldJSXConverter({
   renderer: ({ children, newTab, url }) => (
@@ -128,5 +128,5 @@ const converters = LinkFieldJSXConverter({
       {children}
     </Link>
   ),
-})
+});
 ```

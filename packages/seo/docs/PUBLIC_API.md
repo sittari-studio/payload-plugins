@@ -23,11 +23,15 @@ seoPlugin({
     },
   },
   schemaVariableExclusions: ['createdBy'],
-  media: { collection: 'media', resolveMediaUrl: ({ media }) => media.url ?? null },
-  resolveUrl: ({ document }) => typeof document.slug === 'string' ? `/${document.slug}` : null,
+  media: {
+    collection: 'media',
+    resolveMediaUrl: ({ media }) => media.url ?? null,
+  },
+  resolveUrl: ({ document }) =>
+    typeof document.slug === 'string' ? `/${document.slug}` : null,
   resolveChunkUrl: ({ collection, locale, page }) =>
     `https://example.com/sitemaps/${collection}/${locale}/${page}.xml`,
-})
+});
 ```
 
 ## Schema utilities

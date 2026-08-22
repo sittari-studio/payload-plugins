@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import type { ClientField, GroupFieldClientProps } from "payload";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import type { ClientField, GroupFieldClientProps } from 'payload';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
   Button,
@@ -17,18 +17,18 @@ import {
   useLocale,
   useModal,
   useTranslation,
-} from "@payloadcms/ui";
-import { useDrawerDepth } from "@payloadcms/ui/elements/Drawer";
+} from '@payloadcms/ui';
+import { useDrawerDepth } from '@payloadcms/ui/elements/Drawer';
 
-import type { LinkFieldAdminCustom, LinkFieldValue } from "../types.js";
-import { getReferenceDocumentUrl } from "../utils/getReferenceDocumentUrl.js";
-import { getReferenceIdentity } from "../utils/getReferenceIdentity.js";
+import type { LinkFieldAdminCustom, LinkFieldValue } from '../types.js';
+import { getReferenceDocumentUrl } from '../utils/getReferenceDocumentUrl.js';
+import { getReferenceIdentity } from '../utils/getReferenceIdentity.js';
 import {
   getReferenceSummary,
   hasReferenceTitle,
-} from "../utils/getReferenceSummary.js";
-import { translate } from "../translations/index.js";
-import { LinkActionButtons, LinkDrawerBody } from "./SharedLinkControls.js";
+} from '../utils/getReferenceSummary.js';
+import { translate } from '../translations/index.js';
+import { LinkActionButtons, LinkDrawerBody } from './SharedLinkControls.js';
 
 const getFieldPath = (parentPath: string, name: string): string =>
   parentPath ? `${parentPath}.${name}` : name;
@@ -38,8 +38,8 @@ const getValueAtPath = (data: unknown, path: string): unknown => {
     return data;
   }
 
-  return path.split(".").reduce<unknown>((currentValue, pathSegment) => {
-    if (!currentValue || typeof currentValue !== "object") {
+  return path.split('.').reduce<unknown>((currentValue, pathSegment) => {
+    if (!currentValue || typeof currentValue !== 'object') {
       return undefined;
     }
 
@@ -48,7 +48,7 @@ const getValueAtPath = (data: unknown, path: string): unknown => {
 };
 
 const hasLinkValue = (value: unknown): value is LinkFieldValue => {
-  if (!value || typeof value !== "object") {
+  if (!value || typeof value !== 'object') {
     return false;
   }
 
@@ -62,18 +62,18 @@ const getReferenceRelationTo = (
 ): string | string[] | undefined => {
   const referenceField = fields.find(
     (childField) =>
-      "name" in childField &&
-      childField.name === "reference" &&
-      childField.type === "relationship",
+      'name' in childField &&
+      childField.name === 'reference' &&
+      childField.type === 'relationship',
   ) as (ClientField & { relationTo?: unknown }) | undefined;
 
-  if (typeof referenceField?.relationTo === "string") {
+  if (typeof referenceField?.relationTo === 'string') {
     return referenceField.relationTo;
   }
 
   if (
     Array.isArray(referenceField?.relationTo) &&
-    referenceField.relationTo.every((relation) => typeof relation === "string")
+    referenceField.relationTo.every((relation) => typeof relation === 'string')
   ) {
     return referenceField.relationTo;
   }
@@ -81,26 +81,26 @@ const getReferenceRelationTo = (
   return undefined;
 };
 
-const getDefaultType = (fields: ClientField[]): LinkFieldValue["type"] => {
+const getDefaultType = (fields: ClientField[]): LinkFieldValue['type'] => {
   const typeField = fields.find(
     (childField) =>
-      "name" in childField &&
-      childField.name === "type" &&
-      childField.type === "radio",
+      'name' in childField &&
+      childField.name === 'type' &&
+      childField.type === 'radio',
   ) as (ClientField & { defaultValue?: unknown }) | undefined;
 
-  return typeField?.defaultValue === "reference" ? "reference" : "custom";
+  return typeField?.defaultValue === 'reference' ? 'reference' : 'custom';
 };
 
 const getClearValue = (
   fieldName: string,
-  defaultType: LinkFieldValue["type"],
+  defaultType: LinkFieldValue['type'],
 ): unknown => {
-  if (fieldName === "type") {
+  if (fieldName === 'type') {
     return defaultType;
   }
 
-  if (fieldName === "newTab") {
+  if (fieldName === 'newTab') {
     return false;
   }
 
@@ -109,7 +109,7 @@ const getClearValue = (
 
 const getClearedLinkValue = (
   fieldNames: string[],
-  defaultType: LinkFieldValue["type"],
+  defaultType: LinkFieldValue['type'],
 ): LinkFieldValue =>
   fieldNames.reduce<LinkFieldValue>(
     (clearedValue, fieldName) => ({
@@ -167,7 +167,7 @@ const useResolvedReferenceDocument = ({
         locale,
       }),
       {
-        credentials: "same-origin",
+        credentials: 'same-origin',
         signal: abortController.signal,
       },
     )
@@ -178,7 +178,7 @@ const useResolvedReferenceDocument = ({
 
         const document = (await response.json()) as unknown;
 
-        return document && typeof document === "object"
+        return document && typeof document === 'object'
           ? (document as Record<string, unknown>)
           : null;
       })
@@ -189,7 +189,7 @@ const useResolvedReferenceDocument = ({
         });
       })
       .catch((error: unknown) => {
-        if (error instanceof DOMException && error.name === "AbortError") {
+        if (error instanceof DOMException && error.name === 'AbortError') {
           return;
         }
 
@@ -222,7 +222,7 @@ const NestedFields = ({
 }: {
   fields: ClientField[];
   path: string;
-  permissions: GroupFieldClientProps["permissions"];
+  permissions: GroupFieldClientProps['permissions'];
   readOnly?: boolean;
   schemaPath: string;
 }) => (
@@ -238,7 +238,7 @@ const NestedFields = ({
 
 export const LinkField = (props: GroupFieldClientProps) => {
   const { field, permissions, readOnly, schemaPath } = props;
-  const path = props.path ?? "";
+  const path = props.path ?? '';
   const { setValue, value } = useField<LinkFieldValue>({ path });
   const { initialData } = useDocumentInfo();
   const { dispatchFields, setModified } = useForm();
@@ -252,8 +252,8 @@ export const LinkField = (props: GroupFieldClientProps) => {
   const [wasCleared, setWasCleared] = useState(false);
   const custom = field.admin?.custom as LinkFieldAdminCustom | undefined;
   const linkFieldCustom = custom?.linkField;
-  const appearance = linkFieldCustom?.appearance ?? "drawer";
-  const apiRoute = linkFieldCustom?.apiRoute ?? "/api";
+  const appearance = linkFieldCustom?.appearance ?? 'drawer';
+  const apiRoute = linkFieldCustom?.apiRoute ?? '/api';
   const collections = linkFieldCustom?.collections;
   const showLabel = linkFieldCustom?.showLabel ?? true;
   const drawerDepth = useDrawerDepth();
@@ -268,13 +268,13 @@ export const LinkField = (props: GroupFieldClientProps) => {
     ];
 
     return {
-      customUrl: fields[getFieldPath(path, "customUrl")]?.value as
+      customUrl: fields[getFieldPath(path, 'customUrl')]?.value as
         | string
         | undefined,
-      label: fields[getFieldPath(path, "label")]?.value as string | undefined,
-      reference: fields[getFieldPath(path, "reference")]?.value,
-      type: fields[getFieldPath(path, "type")]?.value as LinkFieldValue["type"],
-      url: fields[getFieldPath(path, "url")]?.value as
+      label: fields[getFieldPath(path, 'label')]?.value as string | undefined,
+      reference: fields[getFieldPath(path, 'reference')]?.value,
+      type: fields[getFieldPath(path, 'type')]?.value as LinkFieldValue['type'],
+      url: fields[getFieldPath(path, 'url')]?.value as
         | null
         | string
         | undefined,
@@ -290,7 +290,7 @@ export const LinkField = (props: GroupFieldClientProps) => {
   const childFieldNames = useMemo(
     () =>
       field.fields.flatMap((childField) =>
-        "name" in childField ? [childField.name] : [],
+        'name' in childField ? [childField.name] : [],
       ),
     [field.fields],
   );
@@ -347,7 +347,7 @@ export const LinkField = (props: GroupFieldClientProps) => {
     childFieldNames.forEach((fieldName) => {
       dispatchFields({
         path: getFieldPath(path, fieldName),
-        type: "UPDATE",
+        type: 'UPDATE',
         value: getClearValue(fieldName, defaultType),
       });
     });
@@ -365,19 +365,19 @@ export const LinkField = (props: GroupFieldClientProps) => {
   const primaryText =
     showLabel && linkValue.label
       ? linkValue.label
-      : (referenceSummary ?? t("customLink"));
+      : (referenceSummary ?? t('customLink'));
 
   const secondaryText = referenceSummary ? referenceSummary : null;
 
   const nestedFields = field.fields.filter((childField) => {
-    if ("name" in childField && childField.name === "url") {
+    if ('name' in childField && childField.name === 'url') {
       return false;
     }
 
     return true;
   });
 
-  if (appearance === "inline") {
+  if (appearance === 'inline') {
     return (
       <div className="link-field field-type link-field--inline">
         <FieldLabel label={field.label} path={path} />
@@ -386,7 +386,7 @@ export const LinkField = (props: GroupFieldClientProps) => {
           path={path}
           permissions={permissions}
           readOnly={readOnly}
-          schemaPath={schemaPath ?? ""}
+          schemaPath={schemaPath ?? ''}
         />
       </div>
     );
@@ -407,7 +407,7 @@ export const LinkField = (props: GroupFieldClientProps) => {
             icon={<PlusIcon />}
             type="button"
           >
-            {t("addLink")}
+            {t('addLink')}
           </Button>
         </div>
       ) : (
@@ -417,9 +417,9 @@ export const LinkField = (props: GroupFieldClientProps) => {
               {primaryText}
               {linkValue.url && (
                 <>
-                  {" ⋅ "}
+                  {' ⋅ '}
                   <span className="link-field__summary-secondary">
-                    {linkValue.url || t("noUrlSet")}
+                    {linkValue.url || t('noUrlSet')}
                   </span>
                 </>
               )}
@@ -427,25 +427,28 @@ export const LinkField = (props: GroupFieldClientProps) => {
             <div className="link-field__summary-secondary">{secondaryText}</div>
           </div>
           <LinkActionButtons
-            editLabel={t("edit")}
+            editLabel={t('edit')}
             onEdit={handleOpenDrawer}
             onRemove={hasValue ? handleClear : undefined}
             readOnly={readOnly}
-            removeLabel={t("clear")}
+            removeLabel={t('clear')}
           />
         </div>
       )}
       <Drawer
         slug={drawerSlug}
-        title={typeof field.label === "string" ? field.label : t("link")}
+        title={typeof field.label === 'string' ? field.label : t('link')}
       >
-        <LinkDrawerBody doneLabel={t("done")} onDone={() => closeModal(drawerSlug)}>
+        <LinkDrawerBody
+          doneLabel={t('done')}
+          onDone={() => closeModal(drawerSlug)}
+        >
           <NestedFields
             fields={nestedFields}
             path={path}
             permissions={permissions}
             readOnly={readOnly}
-            schemaPath={schemaPath ?? ""}
+            schemaPath={schemaPath ?? ''}
           />
         </LinkDrawerBody>
       </Drawer>

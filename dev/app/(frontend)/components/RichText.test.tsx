@@ -1,8 +1,8 @@
-import { createElement } from 'react'
-import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { describe, expect, it } from 'vitest';
 
-import { RichText } from './RichText.js'
+import { RichText } from './RichText.js';
 
 describe('frontend RichText', () => {
   it('renders link-field nodes through the RSC-safe converter', () => {
@@ -44,10 +44,10 @@ describe('frontend RichText', () => {
           },
         } as never,
       }),
-    )
+    );
 
     expect(html).toBe(
       '<div class="payload-richtext"><a href="/frontend">Frontend link</a></div>',
-    )
-  })
-})
+    );
+  });
+});
