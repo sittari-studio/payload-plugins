@@ -45,14 +45,15 @@ const findRouteDocument = async ({
   const route = await findPathRouteByPath({ path, payload });
   if (!route) return null;
 
-  const document = await payload.findByID({
+  const findArgs = {
     collection: route.collection as never,
     draft: false,
     fallbackLocale: false,
     id: getRouteDocumentID({ payload, route }),
     ...(route.locale ? { locale: route.locale } : {}),
     overrideAccess: args.overrideAccess ?? false,
-  } as never);
+  };
+  const document = await payload.findByID(findArgs as never);
 
   return {
     collection: route.collection,

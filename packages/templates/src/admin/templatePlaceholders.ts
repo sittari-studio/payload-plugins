@@ -93,13 +93,15 @@ const applyFieldPlaceholder = (
     return field;
   }
 
-  return {
+  const fieldWithPlaceholder = {
     ...field,
     admin: {
       ...field.admin,
       placeholder,
     },
-  } as ClientField;
+  } as unknown as ClientField;
+
+  return fieldWithPlaceholder;
 };
 
 export const applyTemplatePlaceholders = (

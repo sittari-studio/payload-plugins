@@ -10,7 +10,7 @@ import {
   SelectInput,
   TextInput,
 } from '@payloadcms/ui';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { ChangeEvent } from 'react';
 
 import {
@@ -70,7 +70,6 @@ const PropertyNameInput = ({
   path: string;
 }) => {
   const [draft, setDraft] = useState(name);
-  useEffect(() => setDraft(name), [name]);
   return (
     <div
       className="seo-schema-compact-field st-h-full"

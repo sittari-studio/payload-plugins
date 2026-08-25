@@ -263,7 +263,11 @@ export default buildConfig({
     }),
 
     linkFieldPlugin({
-      resolveDocumentUrl: async ({ collectionSlug, document, payload }) => {
+      resolveDocumentUrl: async ({
+        collectionSlug,
+        document,
+        payload: _payload,
+      }) => {
         return `/${collectionSlug}/${document?.slug}`;
       },
     }),

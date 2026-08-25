@@ -44,12 +44,25 @@ const baseConfig = (): Config =>
     },
   }) as unknown as Config;
 
-const createPlugin = (overrides: Record<string, unknown> = {}) =>
-  permalinkPlugin({
+const makeReq = (overrides: Record<string, unknown> = {}) => {
+  const req = { context: {}, ...overrides };
+  return req as never;
+};
+
+const getPages = (config: Config) => {
+  const pages = config.collections?.find(({ slug }) => slug === 'pages');
+  if (!pages) throw new Error('Missing pages collection');
+  return pages;
+};
+
+const createPlugin = (overrides: Record<string, unknown> = {}) => {
+  const pluginConfig = {
     collections: { pages: { prefix: '' } },
     siteUrl: 'https://example.com/',
     ...overrides,
-  } as never);
+  };
+  return permalinkPlugin(pluginConfig as never);
+};
 
 describe('permalinkPlugin', () => {
   it('adds slug, path, permalink UI, and the route registry', () => {
@@ -89,16 +102,18 @@ describe('permalinkPlugin', () => {
         },
       },
     });
-    expect(output.collections?.some(({ slug }) => slug === 'path-routes')).toBe(
-      true,
-    );
+    expect(
+      output.collections?.some(
+        ({ slug: collectionSlug }) => collectionSlug === 'path-routes',
+      ),
+    ).toBe(true);
   });
 
   it('uses an existing text slug instead of adding a second one', () => {
     const config = baseConfig();
     config.collections![0]!.fields.push({ name: 'slug', type: 'text' });
     const output = createPlugin()(config) as Config;
-    const pages = output.collections?.find(({ slug }) => slug === 'pages')!;
+    const pages = getPages(output);
 
     const slugs: Field[] = [];
     const visit = (fields: Field[]) => {
@@ -119,7 +134,7 @@ describe('permalinkPlugin', () => {
     const output = createPlugin({
       collections: { pages: { prefix: 'blog' } },
     })(baseConfig()) as Config;
-    const pages = output.collections?.find(({ slug }) => slug === 'pages')!;
+    const pages = getPages(output);
     const hook = pages.hooks?.beforeChange?.at(-1);
 
     const english = await hook?.({
@@ -127,14 +142,14 @@ describe('permalinkPlugin', () => {
       context: {},
       data: { slug: 'about' },
       operation: 'create',
-      req: { context: {}, locale: 'en', payload: {} } as never,
+      req: makeReq({ locale: 'en', payload: {} }),
     });
     const ukrainian = await hook?.({
       collection: pages as never,
       context: {},
       data: { slug: 'pro-nas' },
       operation: 'create',
-      req: { context: {}, locale: 'uk', payload: {} } as never,
+      req: makeReq({ locale: 'uk', payload: {} }),
     });
 
     expect(english.path).toBe('/blog/about');
@@ -145,14 +160,14 @@ describe('permalinkPlugin', () => {
     const output = createPlugin({ localePrefix: 'always' })(
       baseConfig(),
     ) as Config;
-    const pages = output.collections?.find(({ slug }) => slug === 'pages')!;
+    const pages = getPages(output);
     const hook = pages.hooks?.beforeChange?.at(-1);
     const result = await hook?.({
       collection: pages as never,
       context: {},
       data: { slug: 'about' },
       operation: 'create',
-      req: { context: {}, locale: 'en', payload: {} } as never,
+      req: makeReq({ locale: 'en', payload: {} }),
     });
 
     expect(result.path).toBe('/en/about');
@@ -168,7 +183,7 @@ describe('permalinkPlugin', () => {
     const output = createPlugin({
       collections: { pages: { parentField: 'parent', prefix: 'docs' } },
     })(config) as Config;
-    const pages = output.collections?.find(({ slug }) => slug === 'pages')!;
+    const pages = getPages(output);
     const hook = pages.hooks?.beforeChange?.at(-1);
     const findByID = vi.fn(async () => ({ path: '/uk/docs/parent' }));
     const result = await hook?.({
@@ -176,11 +191,7 @@ describe('permalinkPlugin', () => {
       context: {},
       data: { parent: 1, slug: 'child' },
       operation: 'create',
-      req: {
-        context: {},
-        locale: 'uk',
-        payload: { findByID },
-      } as never,
+      req: makeReq({ locale: 'uk', payload: { findByID } }),
     });
 
     expect(result.path).toBe('/uk/docs/parent/child');
@@ -191,19 +202,20 @@ describe('permalinkPlugin', () => {
 
   it('allows an unresolved slug for drafts but not published writes', async () => {
     const output = createPlugin()(baseConfig()) as Config;
-    const pages = output.collections?.find(({ slug }) => slug === 'pages')!;
+    const pages = getPages(output);
     const beforeOperation = pages.hooks?.beforeOperation?.at(-1);
     const beforeChange = pages.hooks?.beforeChange?.at(-1);
     const context: Record<string, unknown> = {};
-    const req = { context, locale: 'en', payload: {} } as never;
+    const req = makeReq({ context, locale: 'en', payload: {} });
 
-    await beforeOperation?.({
-      args: { data: {}, draft: true, req } as never,
+    const beforeOperationArgs = {
+      args: { data: {}, draft: true, req },
       collection: pages as never,
       context,
       operation: 'create',
       req,
-    });
+    };
+    await beforeOperation?.(beforeOperationArgs as never);
     await expect(
       beforeChange?.({
         collection: pages as never,
@@ -220,7 +232,7 @@ describe('permalinkPlugin', () => {
         context: {},
         data: {},
         operation: 'create',
-        req: { context: {}, locale: 'en', payload: {} } as never,
+        req: makeReq({ locale: 'en', payload: {} }),
       }),
     ).rejects.toMatchObject({ status: 400 });
   });

@@ -177,7 +177,7 @@ export const SettingsSchemaManager = ({
               ),
             }
           : {
-              ...(existing ?? {}),
+              ...existing,
               templateId: draft.templateId,
               name: draft.name.trim(),
               schema: cloneJson(draft.schema),
@@ -206,7 +206,7 @@ export const SettingsSchemaManager = ({
               ),
             }
           : {
-              ...(existing ?? {}),
+              ...existing,
               templateId: draft.templateId,
               name: draft.name.trim(),
               schema: cloneJson(draft.schema),

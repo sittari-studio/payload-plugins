@@ -4,7 +4,6 @@ import { resolveSeoMetadataCore } from '../resolvers/metadata.js';
 import {
   isPublicSeoDocument,
   resolveCanonicalRobotsSeo,
-  resolveEffectiveSeo,
 } from '../resolvers/effective.js';
 import {
   loadDocumentWithoutFallback,

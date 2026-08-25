@@ -31,6 +31,8 @@ const getNamedField = (fields: Field[], name: string) =>
 const applyPlugin = (config: Config) =>
   templatesPlugin({ templates: definitions })(config) as Config;
 
+const noArgs = {};
+
 describe('templatesPlugin', () => {
   it('creates a marked template group field', () => {
     expect(templateField({ name: 'content', template: '404' })).toEqual({
@@ -62,8 +64,8 @@ describe('templatesPlugin', () => {
         useAsTitle: 'title',
       },
     });
-    expect(collection?.access?.create?.({} as never)).toBe(false);
-    expect(collection?.access?.delete?.({} as never)).toBe(false);
+    expect(collection?.access?.create?.(noArgs as never)).toBe(false);
+    expect(collection?.access?.delete?.(noArgs as never)).toBe(false);
   });
 
   it('generates protected identity fields and conditional template data groups', () => {
@@ -87,8 +89,8 @@ describe('templatesPlugin', () => {
     if (!templateType || !('access' in templateType)) {
       throw new Error('Expected templateType to be a data field');
     }
-    expect(templateType.access?.create?.({} as never)).toBe(false);
-    expect(templateType.access?.update?.({} as never)).toBe(false);
+    expect(templateType.access?.create?.(noArgs as never)).toBe(false);
+    expect(templateType.access?.update?.(noArgs as never)).toBe(false);
     expect(notFoundData).toMatchObject({
       type: 'group',
       label: false,
@@ -100,13 +102,17 @@ describe('templatesPlugin', () => {
       throw new Error('Expected data_404 to be a group field');
     }
     expect(
-      notFoundData.admin?.condition?.({}, { templateType: '404' }, {} as never),
+      notFoundData.admin?.condition?.(
+        {},
+        { templateType: '404' },
+        noArgs as never,
+      ),
     ).toBe(true);
     expect(
       notFoundData.admin?.condition?.(
         {},
         { templateType: 'home' },
-        {} as never,
+        noArgs as never,
       ),
     ).toBe(false);
   });
@@ -468,15 +474,14 @@ describe('templatesPlugin', () => {
       metadata: {},
     };
 
-    await expect(
-      hook({
-        context,
-        field: content,
-        req,
-        siblingData: { content: local },
-        value: local,
-      } as never),
-    ).resolves.toEqual({
+    const hookArgs = {
+      context,
+      field: content,
+      req,
+      siblingData: { content: local },
+      value: local,
+    };
+    await expect(hook(hookArgs as never)).resolves.toEqual({
       heading: 'Default heading',
       localizedHeading: {
         en: 'Default English heading',
@@ -495,15 +500,16 @@ describe('templatesPlugin', () => {
     });
 
     const localItems = [{ label: '' }];
-    await expect(
-      hook({
-        context,
-        field: content,
-        req,
-        siblingData: { content: { items: localItems } },
-        value: { items: localItems },
-      } as never),
-    ).resolves.toMatchObject({ items: localItems });
+    const itemsHookArgs = {
+      context,
+      field: content,
+      req,
+      siblingData: { content: { items: localItems } },
+      value: { items: localItems },
+    };
+    await expect(hook(itemsHookArgs as never)).resolves.toMatchObject({
+      items: localItems,
+    });
 
     expect(find).toHaveBeenCalledOnce();
     expect(find).toHaveBeenCalledWith(
@@ -558,20 +564,15 @@ describe('templatesPlugin', () => {
       },
     };
 
-    await hook({
+    const hookArgs = {
       context,
       field: content,
       req,
       siblingData,
       value: english,
-    } as never);
-    await hook({
-      context,
-      field: content,
-      req,
-      siblingData,
-      value: english,
-    } as never);
+    };
+    await hook(hookArgs as never);
+    await hook(hookArgs as never);
 
     expect(find).toHaveBeenCalledOnce();
     expect(find).toHaveBeenCalledWith(
@@ -628,13 +629,15 @@ describe('templatesPlugin', () => {
         },
       };
 
-      return hook({
+      const hookArgs = {
         context,
         field: content,
         req,
         siblingData: { content: local },
         value: local,
-      } as never);
+      };
+
+      return hook(hookArgs as never);
     };
 
     await expect(
@@ -744,11 +747,10 @@ describe('templatesPlugin', () => {
 
     expect(beforeOperation).toBeDefined();
 
-    const runHook = () =>
-      beforeOperation?.({
-        context: {},
-        req: { payload },
-      } as never);
+    const runHook = () => {
+      const hookArgs = { context: {}, req: { payload } };
+      return beforeOperation?.(hookArgs as never);
+    };
 
     await Promise.all([runHook(), runHook()]);
     await runHook();
@@ -774,20 +776,16 @@ describe('templatesPlugin', () => {
     const beforeOperation =
       getTemplatesCollection(output)?.hooks?.beforeOperation?.[0];
 
-    await beforeOperation?.({
-      context: {},
-      req: { payload },
-    } as never);
+    const initialArgs = { context: {}, req: { payload } };
+    await beforeOperation?.(initialArgs as never);
 
     const reconciliationContext = find.mock.calls[0]?.[0]?.context;
     if (!reconciliationContext) {
       throw new Error('Expected reconciliation context');
     }
 
-    await beforeOperation?.({
-      context: reconciliationContext,
-      req: { payload },
-    } as never);
+    const repeatArgs = { context: reconciliationContext, req: { payload } };
+    await beforeOperation?.(repeatArgs as never);
 
     expect(reconciliationContext).toEqual({ sittariTemplatesReconcile: true });
     expect(find).toHaveBeenCalledOnce();

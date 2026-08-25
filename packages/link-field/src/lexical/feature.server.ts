@@ -19,7 +19,6 @@ import {
   LINK_FIELD_FEATURE_CLIENT,
   LINK_FIELD_RUNTIME_CONFIG_KEY,
   type LinkFieldFeatureConfig,
-  type LinkFieldNodeFields,
   type LinkFieldRuntimeConfig,
   type SerializedLinkFieldNode,
 } from '../types.js';
@@ -35,6 +34,8 @@ type LinkFieldFeatureClientProps = Required<
 
 const isNamedField = (field: Field, name: string): boolean =>
   'name' in field && field.name === name;
+
+const normalizeHook = ({ node }: any) => normalizeSerializedLinkNode(node);
 
 const escapeAttribute = (value: string): string =>
   value
@@ -142,21 +143,21 @@ const createGraphQLPopulationPromise = ({
 
     const promise = (async () => {
       const remainingDepth = Math.max(0, args.depth - args.currentDepth - 1);
+      const findArgs = {
+        collection: identity.collectionSlug as never,
+        context: args.context,
+        depth: remainingDepth,
+        disableErrors: true,
+        draft: args.draft,
+        fallbackLocale: args.req.fallbackLocale,
+        id: identity.documentId,
+        locale: args.req.locale,
+        overrideAccess: args.overrideAccess,
+        req: args.req,
+        showHiddenFields: args.showHiddenFields,
+      };
       const document =
-        identity.document ??
-        (await args.req.payload.findByID({
-          collection: identity.collectionSlug as never,
-          context: args.context,
-          depth: remainingDepth,
-          disableErrors: true,
-          draft: args.draft,
-          fallbackLocale: args.req.fallbackLocale,
-          id: identity.documentId,
-          locale: args.req.locale,
-          overrideAccess: args.overrideAccess,
-          req: args.req,
-          showHiddenFields: args.showHiddenFields,
-        } as never));
+        identity.document ?? (await args.req.payload.findByID(findArgs));
 
       if (!document) {
         fieldsData.url = null;
@@ -258,8 +259,6 @@ export const LinkFieldFeature = createServerFeature<
       fields: sanitizedFields,
       runtime,
     });
-    const normalizeHook = ({ node }: any) => normalizeSerializedLinkNode(node);
-
     const commonNode = {
       converters: { html },
       getSubFields: () => sanitizedFields,

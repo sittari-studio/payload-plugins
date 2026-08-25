@@ -1,7 +1,7 @@
 'use client';
 
 import { Banner, Button, Collapsible, TextareaInput } from '@payloadcms/ui';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import { hasSameSchemaStructure } from '../../schema/editor.js';
 import { validateSchemaObject } from '../../schema/json.js';
@@ -25,10 +25,12 @@ export const RawSchemaEditor = ({
   const formatted = JSON.stringify(schema, null, 2);
   const [raw, setRaw] = useState(formatted);
   const [error, setError] = useState<string>();
-  useEffect(() => {
+  const [previousFormatted, setPreviousFormatted] = useState(formatted);
+  if (formatted !== previousFormatted) {
+    setPreviousFormatted(formatted);
     setRaw(formatted);
     setError(undefined);
-  }, [formatted]);
+  }
   const apply = () => {
     try {
       const parsed: unknown = JSON.parse(raw);

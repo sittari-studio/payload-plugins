@@ -85,6 +85,11 @@ const getTranslatedLabel = (
   return typeof translated === 'string' ? translated : undefined;
 };
 
+const getDocumentTitle = (
+  document: Record<string, unknown> | null | undefined,
+  collection: { admin?: { useAsTitle?: string } } | undefined,
+): unknown => document?.[collection?.admin?.useAsTitle ?? 'id'];
+
 const LinkIcon = () => (
   <svg
     aria-hidden="true"
@@ -231,8 +236,10 @@ const LinkFieldEditor = ({
   const isDrawerOpen = Boolean(modalState?.[drawerSlug]?.isOpen);
   const [state, setState] = useState<DrawerState>();
   const [activeLink, setActiveLink] = useState<LinkFieldNode | null>(null);
-  const [linkLabel, setLinkLabel] = useState<null | string>(null);
-  const [linkUrl, setLinkUrl] = useState<null | string>(null);
+  const [resolvedLinkLabel, setResolvedLinkLabel] = useState<{
+    key: string;
+    label: string;
+  }>();
   const editorRef = useRef<HTMLDivElement>(null);
   const selectedNodeRectRef = useRef<DOMRect | null>(null);
 
@@ -350,6 +357,8 @@ const LinkFieldEditor = ({
       editorRef.current,
       anchorElem,
     );
+    // `state?.text` intentionally repositions the editor when link text changes.
+    // eslint-disable-next-line react/exhaustive-effect-dependencies
   }, [activeLink, anchorElem, state?.text]);
 
   useEffect(() => {
@@ -371,36 +380,18 @@ const LinkFieldEditor = ({
 
   useEffect(() => {
     const fields = state?.data;
-    if (!activeLink || !fields) {
-      setLinkLabel(null);
-      setLinkUrl(null);
-      return;
-    }
-
-    if (fields.type === 'custom') {
-      setLinkLabel(null);
-      setLinkUrl(fields.customUrl ?? fields.url ?? null);
-      return;
-    }
+    if (!activeLink || !fields || fields.type === 'custom') return;
 
     const identity = getReferenceIdentity({
       reference: fields.reference,
       relationTo: clientProps.relationTo,
     });
-    if (!identity) {
-      setLinkLabel(fields.label ?? null);
-      setLinkUrl(fields.url ?? null);
-      return;
-    }
+    if (!identity) return;
 
     const collection = getEntityConfig({
       collectionSlug: identity.collectionSlug,
     });
-    if (!collection) {
-      setLinkLabel(fields.label ?? null);
-      setLinkUrl(fields.url ?? null);
-      return;
-    }
+    if (!collection) return;
 
     const collectionLabel =
       getTranslatedLabel(collection.labels.singular, i18n.language) ??
@@ -412,26 +403,16 @@ const LinkFieldEditor = ({
       }).replace(/<[^>]*>?/g, '');
     const documentTitle = identity.document?.[useAsTitle];
 
-    setLinkUrl(
-      `${config.routes.admin === '/' ? '' : config.routes.admin}/collections/${identity.collectionSlug}/${identity.documentId}`,
-    );
-
     if (
       documentTitle !== undefined &&
       documentTitle !== null &&
       documentTitle !== ''
     ) {
-      setLinkLabel(formatLabel(documentTitle));
       return;
     }
 
-    setLinkLabel(
-      t('fields:linkedTo', {
-        label: `${collectionLabel} - ${t('lexical:link:loadingWithEllipsis')}`,
-      }).replace(/<[^>]*>?/g, ''),
-    );
-
     const abortController = new AbortController();
+    const key = `${identity.collectionSlug}:${identity.documentId}:${locale?.code ?? ''}:${i18n.language}`;
     void fetch(
       `${config.serverURL}${getReferenceDocumentUrl({
         apiRoute: config.routes.api,
@@ -451,21 +432,26 @@ const LinkFieldEditor = ({
         return response.json() as Promise<Record<string, unknown>>;
       })
       .then((document) => {
-        setLinkLabel(formatLabel(document[useAsTitle]));
+        setResolvedLinkLabel({
+          key,
+          label: formatLabel(document[useAsTitle]),
+        });
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError')
           return;
-        setLinkLabel(
-          formatLabel(`${t('general:untitled')} - ID: ${identity.documentId}`),
-        );
+        setResolvedLinkLabel({
+          key,
+          label: formatLabel(
+            `${t('general:untitled')} - ID: ${identity.documentId}`,
+          ),
+        });
       });
 
     return () => abortController.abort();
   }, [
     activeLink,
     clientProps.relationTo,
-    config.routes.admin,
     config.routes.api,
     config.serverURL,
     getEntityConfig,
@@ -474,6 +460,55 @@ const LinkFieldEditor = ({
     state?.data,
     t,
   ]);
+
+  const displayFields = state?.data;
+  const displayIdentity = displayFields
+    ? getReferenceIdentity({
+        reference: displayFields.reference,
+        relationTo: clientProps.relationTo,
+      })
+    : null;
+  const displayCollection = displayIdentity
+    ? getEntityConfig({ collectionSlug: displayIdentity.collectionSlug })
+    : undefined;
+  const displayCollectionLabel = displayIdentity
+    ? (getTranslatedLabel(displayCollection?.labels.singular, i18n.language) ??
+      displayIdentity.collectionSlug)
+    : '';
+  const displayDocumentTitle = getDocumentTitle(
+    displayIdentity?.document,
+    displayCollection,
+  );
+  const displayReferenceKey =
+    displayIdentity && displayCollection
+      ? `${displayIdentity.collectionSlug}:${displayIdentity.documentId}:${locale?.code ?? ''}:${i18n.language}`
+      : null;
+  const formatDisplayLabel = (title: unknown): string =>
+    t('fields:linkedTo', {
+      label: `${displayCollectionLabel} - ${String(title)}`,
+    }).replace(/<[^>]*>?/g, '');
+  const linkUrl =
+    !activeLink || !displayFields
+      ? null
+      : displayFields.type === 'custom'
+        ? (displayFields.customUrl ?? displayFields.url ?? null)
+        : displayIdentity && displayCollection
+          ? `${config.routes.admin === '/' ? '' : config.routes.admin}/collections/${displayIdentity.collectionSlug}/${displayIdentity.documentId}`
+          : (displayFields.url ?? null);
+  const linkLabel =
+    !activeLink || !displayFields
+      ? null
+      : displayFields.type === 'custom'
+        ? null
+        : !displayIdentity || !displayCollection
+          ? (displayFields.label ?? null)
+          : displayDocumentTitle !== undefined &&
+              displayDocumentTitle !== null &&
+              displayDocumentTitle !== ''
+            ? formatDisplayLabel(displayDocumentTitle)
+            : resolvedLinkLabel?.key === displayReferenceKey
+              ? resolvedLinkLabel.label
+              : formatDisplayLabel(t('lexical:link:loadingWithEllipsis'));
 
   return createPortal(
     <>

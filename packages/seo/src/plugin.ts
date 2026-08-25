@@ -603,7 +603,7 @@ const validateDocumentSchemaOverrides =
   };
 
 export const seoPlugin =
-  (pluginConfig: SeoPluginConfig = {} as SeoPluginConfig): Plugin =>
+  (pluginConfig: SeoPluginConfig = {} as unknown as SeoPluginConfig): Plugin =>
   (incomingConfig: Config): Config => {
     if (!isRecord(pluginConfig)) {
       throw new Error(

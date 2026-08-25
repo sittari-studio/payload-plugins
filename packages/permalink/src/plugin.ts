@@ -128,10 +128,11 @@ const createPathField = (localized: boolean): Field => ({
 const hideSlugEditor = (fields: Field[]): Field[] =>
   fields.map((field): Field => {
     if ('name' in field && field.name === 'slug') {
-      return {
+      const slugField = {
         ...field,
         admin: { ...field.admin, hidden: true },
-      } as Field;
+      };
+      return slugField as Field;
     }
     if (field.type === 'tabs') {
       return {
@@ -143,10 +144,11 @@ const hideSlugEditor = (fields: Field[]): Field[] =>
       };
     }
     if ('fields' in field && Array.isArray(field.fields)) {
-      return {
+      const groupedField = {
         ...field,
         fields: hideSlugEditor(field.fields),
-      } as Field;
+      };
+      return groupedField as Field;
     }
     return field;
   });
@@ -349,7 +351,7 @@ export const permalinkPlugin = (
         createPathRoutesCollection(localeCodes.length > 0),
       ],
       custom: {
-        ...(incomingConfig.custom ?? {}),
+        ...incomingConfig.custom,
         [PATH_FIELD_RUNTIME_CONFIG_KEY]: runtime,
       },
     };
@@ -357,13 +359,14 @@ export const permalinkPlugin = (
     output.onInit = async (payload) => {
       await incomingConfig.onInit?.(payload);
       validateFinalConfig(payload.config as unknown as Config, runtime);
-      const routes = await payload.find({
+      const routesArgs = {
         collection: PATH_ROUTES_COLLECTION as never,
         depth: 0,
         limit: 1,
         overrideAccess: true,
         pagination: false,
-      } as never);
+      };
+      const routes = await payload.find(routesArgs as never);
       await rebuildDocumentPathsWithPayload(payload, { missingOnly: true });
       if (routes.docs.length === 0) {
         await backfillPublishedPathRoutes(payload, { force: true });

@@ -60,23 +60,27 @@ export const createResolveUrlHook = (
     }
 
     try {
+      const findArgs = {
+        collection: identity.collectionSlug as never,
+        context: {
+          ...args.context,
+          [RESOLVING_LINK_URL_CONTEXT_KEY]: true,
+        },
+        depth: 0,
+        disableErrors: true,
+        draft: args.draft,
+        fallbackLocale: getFallbackLocale(args),
+        id: identity.documentId,
+        locale: getLocale(args),
+        overrideAccess: args.overrideAccess,
+        req: args.req,
+      } as unknown as never;
       const document =
         identity.document ??
-        ((await args.req.payload.findByID({
-          collection: identity.collectionSlug as never,
-          context: {
-            ...(args.context ?? {}),
-            [RESOLVING_LINK_URL_CONTEXT_KEY]: true,
-          },
-          depth: 0,
-          disableErrors: true,
-          draft: args.draft,
-          fallbackLocale: getFallbackLocale(args),
-          id: identity.documentId,
-          locale: getLocale(args),
-          overrideAccess: args.overrideAccess,
-          req: args.req,
-        } as never)) as null | Record<string, unknown>);
+        ((await args.req.payload.findByID(findArgs)) as null | Record<
+          string,
+          unknown
+        >);
 
       if (!document) {
         return null;

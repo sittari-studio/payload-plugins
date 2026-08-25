@@ -41,28 +41,29 @@ const linkNode = ({
 const renderNode = (
   node: ReturnType<typeof linkNode>,
   renderer?: (args: LinkFieldRendererArgs) => React.ReactNode,
-): string =>
-  renderToStaticMarkup(
+): string => {
+  const data = {
+    root: {
+      children: [node],
+      direction: null,
+      format: '',
+      indent: 0,
+      type: 'root',
+      version: 1,
+    },
+  } as unknown as never;
+
+  return renderToStaticMarkup(
     <RichText
       converters={({ defaultConverters }) => ({
         ...defaultConverters,
         ...LinkFieldJSXConverter({ renderer }),
       })}
-      data={
-        {
-          root: {
-            children: [node],
-            direction: null,
-            format: '',
-            indent: 0,
-            type: 'root',
-            version: 1,
-          },
-        } as never
-      }
+      data={data}
       disableContainer
     />,
   );
+};
 
 describe('LinkFieldJSXConverter', () => {
   it('renders custom and reference links only from their populated URLs', () => {

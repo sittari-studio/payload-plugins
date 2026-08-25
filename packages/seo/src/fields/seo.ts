@@ -17,6 +17,11 @@ const socialCards = [
   { label: adminLabel('summaryLargeImage'), value: 'summary_large_image' },
 ];
 
+type FieldValidateOptions = {
+  req?: { i18n?: { language?: string } };
+  siblingData?: unknown;
+};
+
 const uploadField = (name: string, relationTo: string) => ({
   name,
   type: 'upload' as const,
@@ -41,6 +46,20 @@ export const createSeoField = ({
   schemaVariables?: SeoSchemaVariable[];
 }): GroupField => {
   const imageCollection = collection.media?.collection ?? mediaCollection;
+  const canonicalUrlField: TextField = {
+    name: 'url',
+    type: 'text',
+    label: adminLabel('canonicalUrl'),
+    localized,
+    validate: (value, { siblingData, req }: FieldValidateOptions = {}) =>
+      (siblingData as { mode?: string } | undefined)?.mode === 'manual' &&
+      !value
+        ? adminText('validationManualCanonical', req?.i18n?.language)
+        : validateCanonicalUrl(value, { req }, trailingSlashPolicy),
+    admin: {
+      condition: (_, siblingData) => siblingData?.mode === 'manual',
+    },
+  };
   return {
     name,
     type: 'group',
@@ -103,28 +122,7 @@ export const createSeoField = ({
                       { label: adminLabel('none'), value: 'none' },
                     ],
                   },
-                  {
-                    name: 'url',
-                    type: 'text',
-                    label: adminLabel('canonicalUrl'),
-                    localized,
-                    validate: (value, { siblingData, req } = {} as never) =>
-                      (siblingData as { mode?: string } | undefined)?.mode ===
-                        'manual' && !value
-                        ? adminText(
-                            'validationManualCanonical',
-                            req?.i18n?.language,
-                          )
-                        : validateCanonicalUrl(
-                            value,
-                            { req },
-                            trailingSlashPolicy,
-                          ),
-                    admin: {
-                      condition: (_, siblingData) =>
-                        siblingData?.mode === 'manual',
-                    },
-                  } as TextField,
+                  canonicalUrlField,
                 ],
               },
             ],
@@ -278,7 +276,7 @@ export const createSeoField = ({
                     required: true,
                     defaultValue: {},
                     admin: { hidden: true },
-                    validate: (value, { req } = {} as never) => {
+                    validate: (value, { req }: FieldValidateOptions = {}) => {
                       const result = validateSchemaObject(value);
                       return result === true
                         ? true
@@ -295,7 +293,10 @@ export const createSeoField = ({
                     type: 'json',
                     localized,
                     admin: { hidden: true },
-                    validate: (value, { req, siblingData } = {} as never) =>
+                    validate: (
+                      value,
+                      { req, siblingData }: FieldValidateOptions = {},
+                    ) =>
                       validateJsonPatch(value, {
                         scalarValuesOnly: true,
                         source: (
@@ -327,7 +328,7 @@ export const createSeoField = ({
                     type: 'json',
                     localized,
                     admin: { hidden: true },
-                    validate: (value, { req } = {} as never) =>
+                    validate: (value, { req }: FieldValidateOptions = {}) =>
                       validateJsonPatch(value, { scalarValuesOnly: true }) ===
                       true
                         ? true
@@ -355,7 +356,7 @@ export const createSeoField = ({
                     type: 'json',
                     localized,
                     admin: { hidden: true },
-                    validate: (value, { req } = {} as never) =>
+                    validate: (value, { req }: FieldValidateOptions = {}) =>
                       validateJsonPatch(value, { scalarValuesOnly: true }) ===
                       true
                         ? true

@@ -28,16 +28,16 @@ const cloneField = (
   blocks: BlockRegistry,
   resolving: ReadonlySet<string>,
 ): Field => {
-  let cloned = {
+  let cloned: Field = {
     ...field,
     ...('name' in field && field.type !== 'ui' ? { required: false } : {}),
-  } as Field;
+  };
 
   if ('fields' in cloned && Array.isArray(cloned.fields)) {
     cloned = {
       ...cloned,
       fields: cloneFields(cloned.fields, blocks, resolving),
-    } as Field;
+    };
   }
 
   if (cloned.type === 'tabs') {

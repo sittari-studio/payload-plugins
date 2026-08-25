@@ -562,7 +562,7 @@ describe('real Payload SEO persistence', () => {
         locale: 'en',
         data: {
           globalSchemas: [
-            { templateId: 'bad', name: 'Bad', schema: [] as never },
+            { templateId: 'bad', name: 'Bad', schema: [] as unknown as never },
           ],
         },
       }),
@@ -576,7 +576,11 @@ describe('real Payload SEO persistence', () => {
           slug: 'bad-custom-schema',
           seo: {
             documentSchemas: [
-              { schemaId: 'bad', name: 'Bad', schema: [] as never },
+              {
+                schemaId: 'bad',
+                name: 'Bad',
+                schema: [] as unknown as never,
+              },
             ],
           },
         },

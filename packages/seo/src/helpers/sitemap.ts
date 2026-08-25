@@ -1,4 +1,4 @@
-import type { SeoDocument, SeoPayload } from '../types.js';
+import type { SeoPayload } from '../types.js';
 import { resolveSeoNames } from '../plugin.js';
 import {
   resolveCanonicalRobotsSeo,
@@ -250,7 +250,8 @@ const mapBounded = async <T, R>(
   concurrency: number,
   mapper: (item: T) => Promise<R>,
 ): Promise<R[]> => {
-  const results = new Array<R>(items.length);
+  const results: R[] = [];
+  results.length = items.length;
   let next = 0;
   await Promise.all(
     Array.from({ length: Math.min(concurrency, items.length) }, async () => {

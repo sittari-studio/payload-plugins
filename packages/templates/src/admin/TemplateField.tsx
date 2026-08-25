@@ -38,11 +38,12 @@ export const TemplateField = (props: GroupFieldClientProps) => {
   const dataField = custom?.templateField?.dataField;
   const localeCode =
     typeof locale?.code === 'string' && locale.code ? locale.code : undefined;
+  const templateConfigured =
+    typeof template === 'string' && typeof dataField === 'string';
   const [templateDocument, setTemplateDocument] = useState<TemplateDocument>();
 
   useEffect(() => {
     if (typeof template !== 'string' || typeof dataField !== 'string') {
-      setTemplateDocument(undefined);
       return;
     }
 
@@ -89,6 +90,7 @@ export const TemplateField = (props: GroupFieldClientProps) => {
 
   const field = useMemo(() => {
     const templateData =
+      templateConfigured &&
       typeof dataField === 'string' &&
       templateDocument?.[dataField] &&
       typeof templateDocument[dataField] === 'object' &&
@@ -102,7 +104,7 @@ export const TemplateField = (props: GroupFieldClientProps) => {
           fields: applyTemplatePlaceholders(props.field.fields, templateData),
         }
       : props.field;
-  }, [dataField, props.field, templateDocument]);
+  }, [dataField, props.field, templateConfigured, templateDocument]);
 
   const templateID = templateDocument?.id;
   const templateURL =

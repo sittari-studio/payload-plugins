@@ -97,88 +97,101 @@ export const createRedirectsCollection = ({
 }: {
   access?: SeoPluginAccess['redirects'];
   slug: string;
-}): CollectionConfig => ({
-  slug,
-  labels: {
-    singular: adminLabel('seoRedirect'),
-    plural: adminLabel('seoRedirects'),
-  },
-  timestamps: true,
-  access: {
-    admin: access?.admin ?? deny,
-    create: access?.create ?? deny,
-    read: access?.read ?? deny,
-    update: access?.update ?? deny,
-    delete: access?.delete ?? deny,
-  },
-  admin: {
-    useAsTitle: 'source',
-    group: adminTabLabel('seo'),
-    defaultColumns: [
-      'source',
-      'destination',
-      'statusCode',
-      'enabled',
-      'updatedAt',
-    ],
-    custom: { seo: { marker: SEO_PLUGIN_MARKER } },
-  },
-  hooks: {
-    beforeValidate: [
-      normalizeRedirectFields,
-      (args) => validateRedirectGraph({ ...args, slug }),
-    ],
-  },
-  fields: [
-    {
-      name: 'source',
-      type: 'text',
-      label: adminLabel('source'),
-      required: true,
-      unique: true,
-      index: true,
-      validate: validatePath,
+}): CollectionConfig => {
+  const destinationField: TextField = {
+    name: 'destination',
+    type: 'text',
+    label: adminLabel('destination'),
+    required: true,
+    validate: (
+      value,
+      {
+        siblingData,
+        req,
+      }: {
+        req?: { i18n?: { language?: string } };
+        siblingData?: unknown;
+      } = {},
+    ) =>
+      (siblingData as { destinationType?: string } | undefined)
+        ?.destinationType === 'external'
+        ? isAbsoluteHttpUrl(value) ||
+          adminText('validationAbsoluteHttpUrl', req?.i18n?.language)
+        : validatePath(value, { req }),
+  };
+
+  return {
+    slug,
+    labels: {
+      singular: adminLabel('seoRedirect'),
+      plural: adminLabel('seoRedirects'),
     },
-    {
-      name: 'destinationType',
-      type: 'select',
-      label: adminLabel('destinationType'),
-      required: true,
-      defaultValue: 'internal',
-      options: [
-        { label: adminLabel('internal'), value: 'internal' },
-        { label: adminLabel('external'), value: 'external' },
+    timestamps: true,
+    access: {
+      admin: access?.admin ?? deny,
+      create: access?.create ?? deny,
+      read: access?.read ?? deny,
+      update: access?.update ?? deny,
+      delete: access?.delete ?? deny,
+    },
+    admin: {
+      useAsTitle: 'source',
+      group: adminTabLabel('seo'),
+      defaultColumns: [
+        'source',
+        'destination',
+        'statusCode',
+        'enabled',
+        'updatedAt',
+      ],
+      custom: { seo: { marker: SEO_PLUGIN_MARKER } },
+    },
+    hooks: {
+      beforeValidate: [
+        normalizeRedirectFields,
+        (args) => validateRedirectGraph({ ...args, slug }),
       ],
     },
-    {
-      name: 'destination',
-      type: 'text',
-      label: adminLabel('destination'),
-      required: true,
-      validate: (value, { siblingData, req } = {} as never) =>
-        (siblingData as { destinationType?: string } | undefined)
-          ?.destinationType === 'external'
-          ? isAbsoluteHttpUrl(value) ||
-            adminText('validationAbsoluteHttpUrl', req?.i18n?.language)
-          : validatePath(value, { req }),
-    } as TextField,
-    {
-      name: 'statusCode',
-      type: 'select',
-      label: adminLabel('statusCode'),
-      required: true,
-      defaultValue: '301',
-      options: [
-        { label: adminLabel('permanentRedirect'), value: '301' },
-        { label: adminLabel('temporaryRedirect'), value: '302' },
-      ],
-    },
-    {
-      name: 'enabled',
-      type: 'checkbox',
-      label: adminLabel('enabled'),
-      defaultValue: true,
-    },
-    { name: 'notes', type: 'textarea', label: adminLabel('notes') },
-  ],
-});
+    fields: [
+      {
+        name: 'source',
+        type: 'text',
+        label: adminLabel('source'),
+        required: true,
+        unique: true,
+        index: true,
+        validate: validatePath,
+      },
+      {
+        name: 'destinationType',
+        type: 'select',
+        label: adminLabel('destinationType'),
+        required: true,
+        defaultValue: 'internal',
+        options: [
+          { label: adminLabel('internal'), value: 'internal' },
+          { label: adminLabel('external'), value: 'external' },
+        ],
+      },
+      destinationField,
+      {
+        name: 'statusCode',
+        type: 'select',
+        label: adminLabel('statusCode'),
+        required: true,
+        defaultValue: '301',
+        options: [
+          { label: adminLabel('permanentRedirect'), value: '301' },
+          { label: adminLabel('temporaryRedirect'), value: '302' },
+        ],
+      },
+      {
+        name: 'enabled',
+        type: 'checkbox',
+        label: adminLabel('enabled'),
+        defaultValue: true,
+      },
+      { name: 'notes', type: 'textarea', label: adminLabel('notes') },
+    ],
+  };
+};

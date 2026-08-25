@@ -504,86 +504,86 @@ describe('editor-managed schema core', () => {
   });
 });
 
-describe('schema template Admin endpoint', () => {
-  const request = ({
-    fieldRead = true,
-    localized = true,
-    settingsRead = true,
-    user = true,
-  } = {}) => {
-    const access = {
-      admin: vi.fn(async () => true),
-      create: vi.fn(async () => true),
-      read: vi.fn(async () => ({ tenant: { equals: 'allowed' } })),
-    };
-    const seoRead = vi.fn(async () => fieldRead);
-    const findGlobal = vi.fn(async (options) => {
-      if (!settingsRead) throw new Error('denied');
-      return {
-        globalSchemas: [
-          {
-            templateId: 'global',
-            name: 'Global',
-            schema: { '@type': 'Organization' },
-          },
-        ],
-        collectionSchemas: [
-          {
-            collection: 'pages',
-            templates: [
-              {
-                templateId: 'article',
-                name: 'Article',
-                schema: { '@type': 'Article' },
-              },
-            ],
-          },
-        ],
-        options,
-      };
-    });
-    return {
-      req: {
-        url: localized
-          ? 'http://localhost/api/pages/seo-schema-templates?locale=uk'
-          : 'http://localhost/api/pages/seo-schema-templates',
-        user: user ? { collection: 'users', id: 1 } : undefined,
-        payload: {
-          collections: {
-            users: { config: { access: { admin: vi.fn(async () => true) } } },
-          },
-          config: {
-            admin: { user: 'users' },
-            localization: localized
-              ? {
-                  defaultLocale: 'en',
-                  locales: [{ code: 'en' }, { code: 'uk' }],
-                }
-              : undefined,
-            collections: [
-              {
-                slug: 'pages',
-                access,
-                fields: [
-                  {
-                    name: 'seo',
-                    type: 'group',
-                    access: { read: seoRead },
-                    fields: [],
-                  },
-                ],
-              },
-            ],
-          },
-          findGlobal,
-        },
-      } as any,
-      access,
-      findGlobal,
-      seoRead,
-    };
+const request = ({
+  fieldRead = true,
+  localized = true,
+  settingsRead = true,
+  user = true,
+} = {}) => {
+  const access = {
+    admin: vi.fn(async () => true),
+    create: vi.fn(async () => true),
+    read: vi.fn(async () => ({ tenant: { equals: 'allowed' } })),
   };
+  const seoRead = vi.fn(async () => fieldRead);
+  const findGlobal = vi.fn(async (options) => {
+    if (!settingsRead) throw new Error('denied');
+    return {
+      globalSchemas: [
+        {
+          templateId: 'global',
+          name: 'Global',
+          schema: { '@type': 'Organization' },
+        },
+      ],
+      collectionSchemas: [
+        {
+          collection: 'pages',
+          templates: [
+            {
+              templateId: 'article',
+              name: 'Article',
+              schema: { '@type': 'Article' },
+            },
+          ],
+        },
+      ],
+      options,
+    };
+  });
+  return {
+    req: {
+      url: localized
+        ? 'http://localhost/api/pages/seo-schema-templates?locale=uk'
+        : 'http://localhost/api/pages/seo-schema-templates',
+      user: user ? { collection: 'users', id: 1 } : undefined,
+      payload: {
+        collections: {
+          users: { config: { access: { admin: vi.fn(async () => true) } } },
+        },
+        config: {
+          admin: { user: 'users' },
+          localization: localized
+            ? {
+                defaultLocale: 'en',
+                locales: [{ code: 'en' }, { code: 'uk' }],
+              }
+            : undefined,
+          collections: [
+            {
+              slug: 'pages',
+              access,
+              fields: [
+                {
+                  name: 'seo',
+                  type: 'group',
+                  access: { read: seoRead },
+                  fields: [],
+                },
+              ],
+            },
+          ],
+        },
+        findGlobal,
+      },
+    } as any,
+    access,
+    findGlobal,
+    seoRead,
+  };
+};
 
+describe('schema template Admin endpoint', () => {
   it('requires authentication before returning template metadata', async () => {
     const endpoint = createSchemaTemplatesEndpoint({
       collection: 'pages',

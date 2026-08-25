@@ -91,6 +91,82 @@ const makeReq = (
 
 const role = (id: number, permissions: string[]) => ({ id, permissions });
 
+// Payload hook and access signatures are heavily generic; tests pass minimal
+// stubs that intentionally do not model every field.
+const asArgs = <T>(value: T): never => value as never;
+
+// `holders` is what every holder count returns.
+const holderCountDb = (holders: number) => ({
+  count: vi.fn(() => Promise.resolve({ totalDocs: holders })),
+  find: vi.fn((findArgs: { where?: { id?: { in?: (number | string)[] } } }) => {
+    const all = [
+      { id: 9, name: 'Super Admin', permissions: ['*'] },
+      { id: 3, name: 'Admin', permissions: ['*'] },
+    ];
+    const ids = findArgs.where?.id?.in;
+    return Promise.resolve({
+      docs: ids ? all.filter((r) => ids.includes(r.id)) : all,
+    });
+  }),
+});
+
+// `holders` is what the full-access holder count returns.
+const breakGlassDbWith = (holders: number) => ({
+  count: vi.fn(() => Promise.resolve({ totalDocs: holders })),
+  find: vi.fn((findArgs: { where?: { id?: { in?: (number | string)[] } } }) => {
+    const all = [
+      { id: 9, name: 'admin', permissions: ['*'] },
+      { id: 3, name: 'editor', permissions: ['posts:read'] },
+    ];
+    const ids = findArgs.where?.id?.in;
+    return Promise.resolve({
+      docs: ids ? all.filter((r) => ids.includes(r.id)) : all,
+    });
+  }),
+});
+
+const makePayload = (counts: number[], warn = vi.fn()) => {
+  const count = vi.fn(() =>
+    Promise.resolve({ totalDocs: counts.shift() ?? 0 }),
+  );
+  const find = vi.fn((findArgs: { where?: unknown }) =>
+    Promise.resolve({
+      docs: findArgs.where
+        ? [{ id: 9, name: 'admin', permissions: ['*'] }]
+        : [
+            { id: 9, name: 'admin', permissions: ['*'] },
+            { id: 7, name: 'old-admin', permissions: ['*'] },
+          ],
+    }),
+  );
+  return {
+    count,
+    find,
+    logger: { info: vi.fn(), warn },
+  } as unknown as Payload;
+};
+
+const credentialsRoleDb = () => ({
+  find: vi.fn((findArgs: { where?: { id?: { in?: (number | string)[] } } }) => {
+    const all = [
+      { id: 9, name: 'Super Admin' },
+      { id: 3, name: 'Admin' },
+      { id: 7, name: 'Custom' },
+    ];
+    const ids = findArgs.where?.id?.in;
+    return Promise.resolve({
+      docs: ids ? all.filter((r) => ids.includes(r.id)) : all,
+    });
+  }),
+});
+
+const adminUsersDb = (deleteTarget?: Record<string, unknown>) => ({
+  find: vi.fn(() =>
+    Promise.resolve({ docs: [{ id: 9, name: 'Administrator' }] }),
+  ),
+  findByID: vi.fn(() => Promise.resolve(deleteTarget ?? null)),
+});
+
 describe('@sittari/payload-rbac peer smoke', () => {
   it('adds a roles collection with matrix options and the matrix field component', async () => {
     const result = await rbacPlugin()(baseConfig());
@@ -195,23 +271,23 @@ describe('@sittari/payload-rbac peer smoke', () => {
     const read = posts.access?.read as Access;
     const update = posts.access?.update as Access;
 
-    expect(await read({ req: makeReq(result, null) } as never)).toBe(false);
+    expect(await read(asArgs({ req: makeReq(result, null) }))).toBe(false);
 
     const reader = makeReq(result, {
       id: 1,
       collection: 'users',
       roles: [role(1, ['posts:read'])],
     });
-    expect(await read({ req: reader } as never)).toBe(true);
-    expect(await update({ req: reader } as never)).toBe(false);
+    expect(await read(asArgs({ req: reader }))).toBe(true);
+    expect(await update(asArgs({ req: reader }))).toBe(false);
 
     const admin = makeReq(result, {
       id: 2,
       collection: 'users',
       roles: [role(2, ['*'])],
     });
-    expect(await read({ req: admin } as never)).toBe(true);
-    expect(await update({ req: admin } as never)).toBe(true);
+    expect(await read(asArgs({ req: admin }))).toBe(true);
+    expect(await update(asArgs({ req: admin }))).toBe(true);
   });
 
   it('resolves role IDs through one memoized find per request', async () => {
@@ -240,8 +316,8 @@ describe('@sittari/payload-rbac peer smoke', () => {
     const del = users.access?.delete as Access;
 
     const self = makeReq(result, { id: 5, collection: 'users', roles: [] });
-    expect(await read({ req: self } as never)).toEqual({ id: { equals: 5 } });
-    expect(await del({ req: self } as never)).toBe(false);
+    expect(await read(asArgs({ req: self }))).toEqual({ id: { equals: 5 } });
+    expect(await del(asArgs({ req: self }))).toBe(false);
 
     const disabled = await rbacPlugin({ ownAccountAccess: false })(
       baseConfig(),
@@ -249,9 +325,11 @@ describe('@sittari/payload-rbac peer smoke', () => {
     const readDisabled = getCollection(disabled, 'users').access
       ?.read as Access;
     expect(
-      await readDisabled({
-        req: makeReq(disabled, { id: 5, collection: 'users', roles: [] }),
-      } as never),
+      await readDisabled(
+        asArgs({
+          req: makeReq(disabled, { id: 5, collection: 'users', roles: [] }),
+        }),
+      ),
     ).toBe(false);
   });
 
@@ -263,8 +341,8 @@ describe('@sittari/payload-rbac peer smoke', () => {
       collection: 'users',
       roles: [role(1, ['posts:update'])],
     });
-    expect(await access({ req: editor } as never)).toBe(true);
-    expect(await access({ req: makeReq(result, null) } as never)).toBe(false);
+    expect(await access(asArgs({ req: editor }))).toBe(true);
+    expect(await access(asArgs({ req: makeReq(result, null) }))).toBe(false);
   });
 
   it('blocks assigning roles whose permissions the assigner does not hold', async () => {
@@ -285,21 +363,25 @@ describe('@sittari/payload-rbac peer smoke', () => {
     );
 
     await expect(
-      hook({
-        collection: usersCollection,
-        data: { roles: [9] },
-        originalDoc: { roles: [] },
-        req: editor,
-      } as never),
+      hook(
+        asArgs({
+          collection: usersCollection,
+          data: { roles: [9] },
+          originalDoc: { roles: [] },
+          req: editor,
+        }),
+      ),
     ).rejects.toThrow(/cannot assign the role "admin"/);
 
     // Keeping an already-assigned role is not an escalation.
-    const kept = await hook({
-      collection: usersCollection,
-      data: { email: 'x@y.z', roles: [9] },
-      originalDoc: { roles: [9] },
-      req: editor,
-    } as never);
+    const kept = await hook(
+      asArgs({
+        collection: usersCollection,
+        data: { email: 'x@y.z', roles: [9] },
+        originalDoc: { roles: [9] },
+        req: editor,
+      }),
+    );
     expect(kept).toEqual({ email: 'x@y.z', roles: [9] });
 
     // Users with '*' and system writes may assign anything.
@@ -309,20 +391,24 @@ describe('@sittari/payload-rbac peer smoke', () => {
       { find },
     );
     await expect(
-      hook({
-        collection: usersCollection,
-        data: { roles: [9] },
-        originalDoc: {},
-        req: admin,
-      } as never),
+      hook(
+        asArgs({
+          collection: usersCollection,
+          data: { roles: [9] },
+          originalDoc: {},
+          req: admin,
+        }),
+      ),
     ).resolves.toEqual({ roles: [9] });
     await expect(
-      hook({
-        collection: usersCollection,
-        data: { roles: [9] },
-        originalDoc: {},
-        req: makeReq(result, null),
-      } as never),
+      hook(
+        asArgs({
+          collection: usersCollection,
+          data: { roles: [9] },
+          originalDoc: {},
+          req: makeReq(result, null),
+        }),
+      ),
     ).resolves.toEqual({ roles: [9] });
   });
 
@@ -336,19 +422,23 @@ describe('@sittari/payload-rbac peer smoke', () => {
     });
 
     await expect(
-      hook({
-        data: { permissions: ['posts:read', 'tags:delete'] },
-        originalDoc: { permissions: ['posts:read'] },
-        req: editor,
-      } as never),
+      hook(
+        asArgs({
+          data: { permissions: ['posts:read', 'tags:delete'] },
+          originalDoc: { permissions: ['posts:read'] },
+          req: editor,
+        }),
+      ),
     ).rejects.toThrow(/cannot grant permissions you do not hold: tags:delete/);
 
     await expect(
-      hook({
-        data: { permissions: ['posts:read', 'posts:update'] },
-        originalDoc: { permissions: ['posts:read'] },
-        req: editor,
-      } as never),
+      hook(
+        asArgs({
+          data: { permissions: ['posts:read', 'posts:update'] },
+          originalDoc: { permissions: ['posts:read'] },
+          req: editor,
+        }),
+      ),
     ).resolves.toBeTruthy();
 
     // Protected roles are exempt: the protected-role guard already limits writes
@@ -358,11 +448,13 @@ describe('@sittari/payload-rbac peer smoke', () => {
       protectedRoleNames: ['admin'],
     });
     await expect(
-      withProtected({
-        data: { permissions: ['*'] },
-        originalDoc: { name: 'admin', permissions: ['posts:read'] },
-        req: editor,
-      } as never),
+      withProtected(
+        asArgs({
+          data: { permissions: ['*'] },
+          originalDoc: { name: 'admin', permissions: ['posts:read'] },
+          req: editor,
+        }),
+      ),
     ).resolves.toBeTruthy();
   });
 
@@ -379,48 +471,58 @@ describe('@sittari/payload-rbac peer smoke', () => {
 
     // Even a '*' holder cannot downgrade, rename, or extend a protected role.
     expect(() =>
-      hook({
-        data: { permissions: ['posts:read'] },
-        originalDoc: { name: 'admin', permissions: ['*'] },
-        req: admin,
-      } as never),
+      hook(
+        asArgs({
+          data: { permissions: ['posts:read'] },
+          originalDoc: { name: 'admin', permissions: ['*'] },
+          req: admin,
+        }),
+      ),
     ).toThrow(/protected — its permissions are defined in code/);
     expect(() =>
-      hook({
-        data: { name: 'superuser' },
-        originalDoc: { name: 'admin', permissions: ['*'] },
-        req: admin,
-      } as never),
+      hook(
+        asArgs({
+          data: { name: 'superuser' },
+          originalDoc: { name: 'admin', permissions: ['*'] },
+          req: admin,
+        }),
+      ),
     ).toThrow(/protected and cannot be renamed/);
 
     // Restoring the exact code definition and touching other fields is allowed.
     expect(
-      hook({
-        data: { description: 'Updated', permissions: ['*'] },
-        originalDoc: { name: 'admin', permissions: ['posts:read'] },
-        req: admin,
-      } as never),
+      hook(
+        asArgs({
+          data: { description: 'Updated', permissions: ['*'] },
+          originalDoc: { name: 'admin', permissions: ['posts:read'] },
+          req: admin,
+        }),
+      ),
     ).toEqual({ description: 'Updated', permissions: ['*'] });
 
     // Unprotected roles and system writes pass through.
     expect(
-      hook({
-        data: { permissions: ['posts:read'] },
-        originalDoc: { name: 'editor', permissions: ['posts:update'] },
-        req: admin,
-      } as never),
+      hook(
+        asArgs({
+          data: { permissions: ['posts:read'] },
+          originalDoc: { name: 'editor', permissions: ['posts:update'] },
+          req: admin,
+        }),
+      ),
     ).toBeTruthy();
     expect(
-      hook({
-        data: { permissions: ['posts:read'] },
-        originalDoc: { name: 'admin', permissions: ['*'] },
-        req: makeReq(result, null),
-      } as never),
+      hook(
+        asArgs({
+          data: { permissions: ['posts:read'] },
+          originalDoc: { name: 'admin', permissions: ['*'] },
+          req: makeReq(result, null),
+        }),
+      ),
     ).toBeTruthy();
 
     // Creating a role under a protected name must match the code definition too.
     expect(() =>
-      hook({ data: { name: 'admin', permissions: [] }, req: admin } as never),
+      hook(asArgs({ data: { name: 'admin', permissions: [] }, req: admin })),
     ).toThrow(/protected/);
   });
 
@@ -437,23 +539,25 @@ describe('@sittari/payload-rbac peer smoke', () => {
       { findByID },
     );
 
-    await expect(hook({ id: 9, req: admin } as never)).rejects.toThrow(
+    await expect(hook(asArgs({ id: 9, req: admin }))).rejects.toThrow(
       /protected and cannot be deleted/,
     );
     await expect(
-      hook({ id: 9, req: makeReq(result, null, { findByID }) } as never),
+      hook(asArgs({ id: 9, req: makeReq(result, null, { findByID }) })),
     ).resolves.toBe(undefined);
 
     const findOther = vi.fn(() => Promise.resolve({ id: 3, name: 'editor' }));
     await expect(
-      hook({
-        id: 3,
-        req: makeReq(
-          result,
-          { id: 1, collection: 'users', roles: [] },
-          { findByID: findOther },
-        ),
-      } as never),
+      hook(
+        asArgs({
+          id: 3,
+          req: makeReq(
+            result,
+            { id: 1, collection: 'users', roles: [] },
+            { findByID: findOther },
+          ),
+        }),
+      ),
     ).resolves.toBe(undefined);
   });
 
@@ -471,10 +575,10 @@ describe('@sittari/payload-rbac peer smoke', () => {
     const permissionsField = roles.fields.find(
       (f) => 'name' in f && f.name === 'permissions',
     ) as SelectField;
+    const fieldComponent = permissionsField.admin?.components?.Field;
+    if (!fieldComponent) throw new Error('Missing permissions field component');
     const clientProps = (
-      permissionsField.admin?.components?.Field as {
-        clientProps: { protectedRoleNames: string[] };
-      }
+      fieldComponent as { clientProps: { protectedRoleNames: string[] } }
     ).clientProps;
     expect(clientProps.protectedRoleNames).toEqual(['admin']);
 
@@ -487,11 +591,13 @@ describe('@sittari/payload-rbac peer smoke', () => {
       roles: [role(1, ['*'])],
     });
     expect(() =>
-      guard?.({
-        data: { permissions: [] },
-        originalDoc: { name: 'admin', permissions: ['*'] },
-        req: admin,
-      } as never),
+      guard?.(
+        asArgs({
+          data: { permissions: [] },
+          originalDoc: { name: 'admin', permissions: ['*'] },
+          req: admin,
+        }),
+      ),
     ).toThrow(/protected/);
 
     // The adminRole is seeded with ['*'] on init.
@@ -566,74 +672,65 @@ describe('@sittari/payload-rbac peer smoke', () => {
       rolesFieldName: 'roles',
     });
     const usersCollection = { slug: 'users' };
-
-    // `holders` is what every holder count returns.
-    const dbWith = (holders: number) => ({
-      count: vi.fn(() => Promise.resolve({ totalDocs: holders })),
-      find: vi.fn(
-        (findArgs: { where?: { id?: { in?: (number | string)[] } } }) => {
-          const all = [
-            { id: 9, name: 'Super Admin', permissions: ['*'] },
-            { id: 3, name: 'Admin', permissions: ['*'] },
-          ];
-          const ids = findArgs.where?.id?.in;
-          return Promise.resolve({
-            docs: ids ? all.filter((r) => ids.includes(r.id)) : all,
-          });
-        },
-      ),
-    });
     const client = { id: 2, collection: 'users', roles: [role(3, ['*'])] };
 
     // A '*' client cannot grant the admin role — not even to themselves.
     await expect(
-      hook({
-        collection: usersCollection,
-        data: { roles: [3, 9] },
-        originalDoc: { id: 2, roles: [3] },
-        req: makeReq(result, client, dbWith(1)),
-      } as never),
+      hook(
+        asArgs({
+          collection: usersCollection,
+          data: { roles: [3, 9] },
+          originalDoc: { id: 2, roles: [3] },
+          req: makeReq(result, client, holderCountDb(1)),
+        }),
+      ),
     ).rejects.toThrow(/can only be assigned by a user who holds it/);
 
     // A holder grants it freely, without any holder-count query.
     const holderReq = makeReq(
       result,
       { id: 1, collection: 'users', roles: [role(9, ['*'])] },
-      dbWith(1),
+      holderCountDb(1),
     );
     await expect(
-      hook({
-        collection: usersCollection,
-        data: { roles: [9] },
-        originalDoc: { id: 5, roles: [] },
-        req: holderReq,
-      } as never),
+      hook(
+        asArgs({
+          collection: usersCollection,
+          data: { roles: [9] },
+          originalDoc: { id: 5, roles: [] },
+          req: holderReq,
+        }),
+      ),
     ).resolves.toBeTruthy();
     expect(holderReq.payload.count).not.toHaveBeenCalled();
 
     // While nobody holds the role at all (fresh rename, or the plugin newly
     // added to an existing project), a full-access user may step up…
     await expect(
-      hook({
-        collection: usersCollection,
-        data: { roles: [3, 9] },
-        originalDoc: { id: 2, roles: [3] },
-        req: makeReq(result, client, dbWith(0)),
-      } as never),
+      hook(
+        asArgs({
+          collection: usersCollection,
+          data: { roles: [3, 9] },
+          originalDoc: { id: 2, roles: [3] },
+          req: makeReq(result, client, holderCountDb(0)),
+        }),
+      ),
     ).resolves.toBeTruthy();
 
     // …but the ordinary permission check still applies to everyone else.
     await expect(
-      hook({
-        collection: usersCollection,
-        data: { roles: [9] },
-        originalDoc: { id: 5, roles: [] },
-        req: makeReq(
-          result,
-          { id: 2, collection: 'users', roles: [] },
-          dbWith(0),
-        ),
-      } as never),
+      hook(
+        asArgs({
+          collection: usersCollection,
+          data: { roles: [9] },
+          originalDoc: { id: 5, roles: [] },
+          req: makeReq(
+            result,
+            { id: 2, collection: 'users', roles: [] },
+            holderCountDb(0),
+          ),
+        }),
+      ),
     ).rejects.toThrow(/cannot assign/);
 
     // The holder-only rule holds even with escalation protection disabled.
@@ -644,28 +741,32 @@ describe('@sittari/payload-rbac peer smoke', () => {
       rolesFieldName: 'roles',
     });
     await expect(
-      noEscalation({
-        collection: usersCollection,
-        data: { roles: [3] },
-        originalDoc: { id: 2, roles: [] },
-        req: makeReq(
-          result,
-          { id: 2, collection: 'users', roles: [] },
-          dbWith(1),
-        ),
-      } as never),
+      noEscalation(
+        asArgs({
+          collection: usersCollection,
+          data: { roles: [3] },
+          originalDoc: { id: 2, roles: [] },
+          req: makeReq(
+            result,
+            { id: 2, collection: 'users', roles: [] },
+            holderCountDb(1),
+          ),
+        }),
+      ),
     ).resolves.toBeTruthy();
     await expect(
-      noEscalation({
-        collection: usersCollection,
-        data: { roles: [9] },
-        originalDoc: { id: 2, roles: [] },
-        req: makeReq(
-          result,
-          { id: 2, collection: 'users', roles: [] },
-          dbWith(1),
-        ),
-      } as never),
+      noEscalation(
+        asArgs({
+          collection: usersCollection,
+          data: { roles: [9] },
+          originalDoc: { id: 2, roles: [] },
+          req: makeReq(
+            result,
+            { id: 2, collection: 'users', roles: [] },
+            holderCountDb(1),
+          ),
+        }),
+      ),
     ).rejects.toThrow(/can only be assigned by a user who holds it/);
   });
 
@@ -687,17 +788,19 @@ describe('@sittari/payload-rbac peer smoke', () => {
     });
 
     // Writes without a user — seeds, the first-user registration — pass through.
-    expect(await access({ req: makeReq(result, null) } as never)).toBe(true);
+    expect(await access(asArgs({ req: makeReq(result, null) }))).toBe(true);
 
     // `roles:update` (or '*') makes the field writable.
     expect(
-      await access({
-        req: makeReq(result, {
-          id: 1,
-          collection: 'users',
-          roles: [role(1, ['roles:update'])],
+      await access(
+        asArgs({
+          req: makeReq(result, {
+            id: 1,
+            collection: 'users',
+            roles: [role(1, ['roles:update'])],
+          }),
         }),
-      } as never),
+      ),
     ).toBe(true);
 
     // Everyone else gets a read-only field — even on their own account — as
@@ -709,13 +812,15 @@ describe('@sittari/payload-rbac peer smoke', () => {
       ),
     };
     expect(
-      await access({
-        req: makeReq(
-          result,
-          { id: 2, collection: 'users', roles: [role(2, ['users:update'])] },
-          adminExists,
-        ),
-      } as never),
+      await access(
+        asArgs({
+          req: makeReq(
+            result,
+            { id: 2, collection: 'users', roles: [role(2, ['users:update'])] },
+            adminExists,
+          ),
+        }),
+      ),
     ).toBe(false);
 
     // While nobody holds full access the field stays writable, so the
@@ -727,13 +832,15 @@ describe('@sittari/payload-rbac peer smoke', () => {
       ),
     };
     expect(
-      await access({
-        req: makeReq(
-          result,
-          { id: 2, collection: 'users', roles: [] },
-          stranded,
-        ),
-      } as never),
+      await access(
+        asArgs({
+          req: makeReq(
+            result,
+            { id: 2, collection: 'users', roles: [] },
+            stranded,
+          ),
+        }),
+      ),
     ).toBe(true);
 
     // Without an adminRole there is no break-glass path to hold open — the
@@ -747,7 +854,7 @@ describe('@sittari/payload-rbac peer smoke', () => {
       { id: 2, collection: 'users', roles: [] },
       { count: vi.fn(() => Promise.resolve({ totalDocs: 0 })), find: vi.fn() },
     );
-    expect(await noBreakGlass({ req: strandedReq } as never)).toBe(false);
+    expect(await noBreakGlass(asArgs({ req: strandedReq }))).toBe(false);
     expect(strandedReq.payload.find).not.toHaveBeenCalled();
 
     // A user-defined roles field is left entirely alone.
@@ -801,54 +908,64 @@ describe('@sittari/payload-rbac peer smoke', () => {
     // Removing the role that grants your access: the kept roles cannot cover it,
     // so you could never assign it back.
     await expect(
-      hook({
-        collection: usersCollection,
-        data: { roles: [2] },
-        originalDoc: { id: 7, roles: [1, 2] },
-        req: makeReq(result, self, db),
-      } as never),
+      hook(
+        asArgs({
+          collection: usersCollection,
+          data: { roles: [2] },
+          originalDoc: { id: 7, roles: [1, 2] },
+          req: makeReq(result, self, db),
+        }),
+      ),
     ).rejects.toThrow(/from your own account/);
 
     // Removing a role your kept roles fully cover is reversible and fine.
     await expect(
-      hook({
-        collection: usersCollection,
-        data: { roles: [1] },
-        originalDoc: { id: 7, roles: [1, 2] },
-        req: makeReq(result, self, db),
-      } as never),
+      hook(
+        asArgs({
+          collection: usersCollection,
+          data: { roles: [1] },
+          originalDoc: { id: 7, roles: [1, 2] },
+          req: makeReq(result, self, db),
+        }),
+      ),
     ).resolves.toBeTruthy();
 
     // A swap that adds covered roles but drops the covering role still throws.
     await expect(
-      hook({
-        collection: usersCollection,
-        data: { roles: [2, 3] },
-        originalDoc: { id: 7, roles: [1] },
-        req: makeReq(result, self, db),
-      } as never),
+      hook(
+        asArgs({
+          collection: usersCollection,
+          data: { roles: [2, 3] },
+          originalDoc: { id: 7, roles: [1] },
+          req: makeReq(result, self, db),
+        }),
+      ),
     ).rejects.toThrow(/from your own account/);
 
     // Dangling references (role documents deleted at the database level) grant
     // nothing and may always be removed.
     await expect(
-      hook({
-        collection: usersCollection,
-        data: { roles: [1] },
-        originalDoc: { id: 7, roles: [99, 1] },
-        req: makeReq(result, self, db),
-      } as never),
+      hook(
+        asArgs({
+          collection: usersCollection,
+          data: { roles: [1] },
+          originalDoc: { id: 7, roles: [99, 1] },
+          req: makeReq(result, self, db),
+        }),
+      ),
     ).resolves.toBeTruthy();
 
     // Stripping roles from someone else stays unrestricted — that is
     // management, gated by the roles:update field access.
     await expect(
-      hook({
-        collection: usersCollection,
-        data: { roles: [] },
-        originalDoc: { id: 8, roles: [1, 2] },
-        req: makeReq(result, self, db),
-      } as never),
+      hook(
+        asArgs({
+          collection: usersCollection,
+          data: { roles: [] },
+          originalDoc: { id: 8, roles: [1, 2] },
+          req: makeReq(result, self, db),
+        }),
+      ),
     ).resolves.toBeTruthy();
 
     // With escalation protection off, any removal can be re-assigned, so
@@ -859,12 +976,14 @@ describe('@sittari/payload-rbac peer smoke', () => {
       rolesFieldName: 'roles',
     });
     await expect(
-      noEscalation({
-        collection: usersCollection,
-        data: { roles: [] },
-        originalDoc: { id: 7, roles: [1, 2] },
-        req: makeReq(result, self, db),
-      } as never),
+      noEscalation(
+        asArgs({
+          collection: usersCollection,
+          data: { roles: [] },
+          originalDoc: { id: 7, roles: [1, 2] },
+          req: makeReq(result, self, db),
+        }),
+      ),
     ).resolves.toBeTruthy();
   });
 
@@ -877,23 +996,6 @@ describe('@sittari/payload-rbac peer smoke', () => {
     });
     const usersCollection = { slug: 'users' };
 
-    // `holders` is what the full-access holder count returns.
-    const dbWith = (holders: number) => ({
-      count: vi.fn(() => Promise.resolve({ totalDocs: holders })),
-      find: vi.fn(
-        (findArgs: { where?: { id?: { in?: (number | string)[] } } }) => {
-          const all = [
-            { id: 9, name: 'admin', permissions: ['*'] },
-            { id: 3, name: 'editor', permissions: ['posts:read'] },
-          ];
-          const ids = findArgs.where?.id?.in;
-          return Promise.resolve({
-            docs: ids ? all.filter((r) => ids.includes(r.id)) : all,
-          });
-        },
-      ),
-    });
-
     // A permissionless user claims the admin role for themselves — allowed,
     // because nobody in the system holds full access.
     const claim = {
@@ -903,31 +1005,33 @@ describe('@sittari/payload-rbac peer smoke', () => {
       req: makeReq(
         result,
         { id: 1, collection: 'users', roles: [] },
-        dbWith(0),
+        breakGlassDbWith(0),
       ),
     };
     await expect(hook(claim as never)).resolves.toEqual({ roles: [9] });
 
     // Blocked as soon as any user holds full access.
     await expect(
-      hook({
-        ...claim,
-        req: makeReq(
-          result,
-          { id: 1, collection: 'users', roles: [] },
-          dbWith(1),
-        ),
-      } as never),
+      hook(
+        asArgs({
+          ...claim,
+          req: makeReq(
+            result,
+            { id: 1, collection: 'users', roles: [] },
+            holderCountDb(1),
+          ),
+        }),
+      ),
     ).rejects.toThrow(/cannot assign/);
 
     // Only self-assignment is exempt — granting it to another user is blocked.
     await expect(
-      hook({ ...claim, originalDoc: { id: 2, roles: [] } } as never),
+      hook(asArgs({ ...claim, originalDoc: { id: 2, roles: [] } })),
     ).rejects.toThrow(/cannot assign/);
 
     // Only the admin role is exempt, even while stranded.
     await expect(
-      hook({ ...claim, data: { roles: [3] } } as never),
+      hook(asArgs({ ...claim, data: { roles: [3] } })),
     ).rejects.toThrow(/cannot assign/);
 
     // Without breakGlass configured, a stranded self-claim stays blocked.
@@ -943,19 +1047,17 @@ describe('@sittari/payload-rbac peer smoke', () => {
     const strandedReq = makeReq(
       result,
       { id: 1, collection: 'users', roles: [] },
-      dbWith(0),
+      holderCountDb(0),
     );
-    await expect(rolesRead?.({ req: strandedReq } as never)).resolves.toBe(
-      true,
-    );
+    await expect(rolesRead?.(asArgs({ req: strandedReq }))).resolves.toBe(true);
     const heldReq = makeReq(
       result,
       { id: 1, collection: 'users', roles: [] },
-      dbWith(1),
+      holderCountDb(1),
     );
-    await expect(rolesRead?.({ req: heldReq } as never)).resolves.toBe(false);
+    await expect(rolesRead?.(asArgs({ req: heldReq }))).resolves.toBe(false);
     await expect(
-      rolesRead?.({ req: makeReq(result, null, dbWith(0)) } as never),
+      rolesRead?.(asArgs({ req: makeReq(result, null, holderCountDb(0)) })),
     ).resolves.toBe(false);
   });
 
@@ -965,26 +1067,6 @@ describe('@sittari/payload-rbac peer smoke', () => {
       rolesCollectionSlug: 'roles',
       rolesFieldName: 'roles',
       userCollections: ['users'],
-    };
-    const makePayload = (counts: number[], warn = vi.fn()) => {
-      const count = vi.fn(() =>
-        Promise.resolve({ totalDocs: counts.shift() ?? 0 }),
-      );
-      const find = vi.fn((findArgs: { where?: unknown }) =>
-        Promise.resolve({
-          docs: findArgs.where
-            ? [{ id: 9, name: 'admin', permissions: ['*'] }]
-            : [
-                { id: 9, name: 'admin', permissions: ['*'] },
-                { id: 7, name: 'old-admin', permissions: ['*'] },
-              ],
-        }),
-      );
-      return {
-        count,
-        find,
-        logger: { info: vi.fn(), warn },
-      } as unknown as Payload;
     };
 
     // A holder exists — silent.
@@ -1019,7 +1101,9 @@ describe('@sittari/payload-rbac peer smoke', () => {
       rolesCollectionSlug: 'roles',
       rolesFieldName: 'roles',
     });
-    const collection = { slug: 'users' } as CollectionConfig;
+    const collection = {
+      slug: 'users',
+    } as unknown as CollectionConfig;
 
     // Existence check is a `find` (not `count`) so it is transaction-safe; it
     // returns no users on bootstrap and the role lookup returns the admin role.
@@ -1032,12 +1116,14 @@ describe('@sittari/payload-rbac peer smoke', () => {
         ),
       ),
     });
-    const created = await hook({
-      collection,
-      data: { email: 'a@b.co' },
-      operation: 'create',
-      req: bootstrapReq,
-    } as never);
+    const created = await hook(
+      asArgs({
+        collection,
+        data: { email: 'a@b.co' },
+        operation: 'create',
+        req: bootstrapReq,
+      }),
+    );
     expect(created).toEqual({ email: 'a@b.co', roles: ['r1'] });
 
     // A user already exists → not the first user → left untouched.
@@ -1051,12 +1137,14 @@ describe('@sittari/payload-rbac peer smoke', () => {
       ),
     });
     expect(
-      await hook({
-        collection,
-        data: { email: 'c@d.co' },
-        operation: 'create',
-        req: laterReq,
-      } as never),
+      await hook(
+        asArgs({
+          collection,
+          data: { email: 'c@d.co' },
+          operation: 'create',
+          req: laterReq,
+        }),
+      ),
     ).toEqual({ email: 'c@d.co' });
 
     // Admin-user guard, credential guard, escalation guard, last-admin guard, and
@@ -1077,140 +1165,151 @@ describe('@sittari/payload-rbac peer smoke', () => {
       rolesFieldName: 'roles',
       userCollectionSlug: 'users',
     });
-    const roleDb = () => ({
-      find: vi.fn(
-        (findArgs: { where?: { id?: { in?: (number | string)[] } } }) => {
-          const all = [
-            { id: 9, name: 'Super Admin' },
-            { id: 3, name: 'Admin' },
-            { id: 7, name: 'Custom' },
-          ];
-          const ids = findArgs.where?.id?.in;
-          return Promise.resolve({
-            docs: ids ? all.filter((r) => ids.includes(r.id)) : all,
-          });
-        },
-      ),
-    });
     const clientReq = () =>
-      makeReq(result, { id: 2, collection: 'users', roles: [3] }, roleDb());
+      makeReq(
+        result,
+        { id: 2, collection: 'users', roles: [3] },
+        credentialsRoleDb(),
+      );
     const dev = { id: 1, email: 'dev@agency.com', roles: [9] };
 
     // Another user cannot change the holder's password or email…
     await expect(
-      hook({
-        data: { password: 'hacked' },
-        operation: 'update',
-        originalDoc: dev,
-        req: clientReq(),
-      } as never),
+      hook(
+        asArgs({
+          data: { password: 'hacked' },
+          operation: 'update',
+          originalDoc: dev,
+          req: clientReq(),
+        }),
+      ),
     ).rejects.toThrow(/password-reset email/);
     await expect(
-      hook({
-        data: { email: 'evil@example.com' },
-        operation: 'update',
-        originalDoc: dev,
-        req: clientReq(),
-      } as never),
+      hook(
+        asArgs({
+          data: { email: 'evil@example.com' },
+          operation: 'update',
+          originalDoc: dev,
+          req: clientReq(),
+        }),
+      ),
     ).rejects.toThrow(
       /email of a user holding .* can only be changed by that user/,
     );
 
     // …but a full-document save with the email unchanged still passes.
     await expect(
-      hook({
-        data: { email: 'dev@agency.com' },
-        operation: 'update',
-        originalDoc: dev,
-        req: clientReq(),
-      } as never),
+      hook(
+        asArgs({
+          data: { email: 'dev@agency.com' },
+          operation: 'update',
+          originalDoc: dev,
+          req: clientReq(),
+        }),
+      ),
     ).resolves.toEqual({ email: 'dev@agency.com' });
 
     // The account owner changes their own credentials freely.
     await expect(
-      hook({
-        data: { password: 'new-password' },
-        operation: 'update',
-        originalDoc: dev,
-        req: makeReq(
-          result,
-          { id: 1, collection: 'users', roles: [9] },
-          roleDb(),
-        ),
-      } as never),
+      hook(
+        asArgs({
+          data: { password: 'new-password' },
+          operation: 'update',
+          originalDoc: dev,
+          req: makeReq(
+            result,
+            { id: 1, collection: 'users', roles: [9] },
+            credentialsRoleDb(),
+          ),
+        }),
+      ),
     ).resolves.toBeTruthy();
 
     // A holder of a database-only role is protected too — self-only is the
     // built-in default, not something a role has to opt into.
     await expect(
-      hook({
-        data: { password: 'reset-by-admin' },
-        operation: 'update',
-        originalDoc: { id: 6, roles: [7] },
-        req: clientReq(),
-      } as never),
+      hook(
+        asArgs({
+          data: { password: 'reset-by-admin' },
+          operation: 'update',
+          originalDoc: { id: 6, roles: [7] },
+          req: clientReq(),
+        }),
+      ),
     ).rejects.toThrow(/password-reset email/);
 
     // Any self-only role protects, even alongside an opted-out one (most
     // restrictive wins).
     await expect(
-      hook({
-        data: { password: 'reset-by-admin' },
-        operation: 'update',
-        originalDoc: { id: 6, roles: [3, 7] },
-        req: clientReq(),
-      } as never),
+      hook(
+        asArgs({
+          data: { password: 'reset-by-admin' },
+          operation: 'update',
+          originalDoc: { id: 6, roles: [3, 7] },
+          req: clientReq(),
+        }),
+      ),
     ).rejects.toThrow(/password-reset email/);
 
     // A user whose every role is opted out stays editable by others.
     await expect(
-      hook({
-        data: { password: 'reset-by-admin' },
-        operation: 'update',
-        originalDoc: { id: 5, roles: [3] },
-        req: clientReq(),
-      } as never),
+      hook(
+        asArgs({
+          data: { password: 'reset-by-admin' },
+          operation: 'update',
+          originalDoc: { id: 5, roles: [3] },
+          req: clientReq(),
+        }),
+      ),
     ).resolves.toBeTruthy();
 
     // Writes not touching credentials never hit the roles lookup.
     const noCredentialWrite = clientReq();
     await expect(
-      hook({
-        data: { roles: [3] },
-        operation: 'update',
-        originalDoc: dev,
-        req: noCredentialWrite,
-      } as never),
+      hook(
+        asArgs({
+          data: { roles: [3] },
+          operation: 'update',
+          originalDoc: dev,
+          req: noCredentialWrite,
+        }),
+      ),
     ).resolves.toBeTruthy();
     expect(noCredentialWrite.payload.find).not.toHaveBeenCalled();
 
     // A user with no roles has nothing to protect — editable, no lookup.
     const noRoleTarget = clientReq();
     await expect(
-      hook({
-        data: { password: 'onboard' },
-        operation: 'update',
-        originalDoc: { id: 8, roles: [] },
-        req: noRoleTarget,
-      } as never),
+      hook(
+        asArgs({
+          data: { password: 'onboard' },
+          operation: 'update',
+          originalDoc: { id: 8, roles: [] },
+          req: noRoleTarget,
+        }),
+      ),
     ).resolves.toBeTruthy();
     expect(noRoleTarget.payload.find).not.toHaveBeenCalled();
 
     // Creates and system writes (no user) pass through.
     await expect(
-      hook({
-        data: { password: 'x' },
-        operation: 'create',
-        req: clientReq(),
-      } as never),
+      hook(
+        asArgs({
+          data: { password: 'x' },
+          operation: 'create',
+          req: clientReq(),
+        }),
+      ),
     ).resolves.toBeTruthy();
     await expect(
-      hook({
-        data: { password: 'x' },
-        operation: 'update',
-        originalDoc: dev,
-        req: makeReq(result, null, roleDb()),
-      } as never),
+      hook(
+        asArgs({
+          data: { password: 'x' },
+          operation: 'update',
+          originalDoc: dev,
+          req: makeReq(result, null, credentialsRoleDb()),
+        }),
+      ),
     ).resolves.toBeTruthy();
 
     // Wiring: the guard is installed unconditionally — credentials are self-only
@@ -1252,43 +1351,51 @@ describe('@sittari/payload-rbac peer smoke', () => {
 
     // Removing the admin role from the last holder is blocked…
     await expect(
-      changeHook({
-        data: { roles: [] },
-        originalDoc: { id: 1, roles: [9] },
-        req: reqWithOtherAdmins(0),
-      } as never),
+      changeHook(
+        asArgs({
+          data: { roles: [] },
+          originalDoc: { id: 1, roles: [9] },
+          req: reqWithOtherAdmins(0),
+        }),
+      ),
     ).rejects.toThrow(/at least one administrator must remain/);
     // …but allowed while another admin exists, and when the role is kept.
     await expect(
-      changeHook({
-        data: { roles: [] },
-        originalDoc: { id: 1, roles: [9] },
-        req: reqWithOtherAdmins(1),
-      } as never),
+      changeHook(
+        asArgs({
+          data: { roles: [] },
+          originalDoc: { id: 1, roles: [9] },
+          req: reqWithOtherAdmins(1),
+        }),
+      ),
     ).resolves.toEqual({ roles: [] });
     await expect(
-      changeHook({
-        data: { email: 'a@b.co', roles: [9] },
-        originalDoc: { id: 1, roles: [9] },
-        req: reqWithOtherAdmins(0),
-      } as never),
+      changeHook(
+        asArgs({
+          data: { email: 'a@b.co', roles: [9] },
+          originalDoc: { id: 1, roles: [9] },
+          req: reqWithOtherAdmins(0),
+        }),
+      ),
     ).resolves.toBeTruthy();
 
     // Deleting the last admin is blocked; fine while another admin exists.
     await expect(
-      deleteHook({ id: 1, req: reqWithOtherAdmins(0) } as never),
+      deleteHook(asArgs({ id: 1, req: reqWithOtherAdmins(0) })),
     ).rejects.toThrow(/at least one administrator must remain/);
     await expect(
-      deleteHook({ id: 1, req: reqWithOtherAdmins(1) } as never),
+      deleteHook(asArgs({ id: 1, req: reqWithOtherAdmins(1) })),
     ).resolves.toBe(undefined);
 
     // System writes (no user) bypass the guard.
     await expect(
-      changeHook({
-        data: { roles: [] },
-        originalDoc: { id: 1, roles: [9] },
-        req: makeReq(result, null),
-      } as never),
+      changeHook(
+        asArgs({
+          data: { roles: [] },
+          originalDoc: { id: 1, roles: [9] },
+          req: makeReq(result, null),
+        }),
+      ),
     ).resolves.toEqual({ roles: [] });
   });
 
@@ -1307,12 +1414,6 @@ describe('@sittari/payload-rbac peer smoke', () => {
     const usersCollection = { slug: 'users' };
 
     // The admin role resolves to id 9; findByID returns the account being deleted.
-    const db = (deleteTarget?: Record<string, unknown>) => ({
-      find: vi.fn(() =>
-        Promise.resolve({ docs: [{ id: 9, name: 'Administrator' }] }),
-      ),
-      findByID: vi.fn(() => Promise.resolve(deleteTarget ?? null)),
-    });
 
     // A '*' client who does not hold the admin role — the developer/agency
     // account is off-limits despite full access.
@@ -1321,110 +1422,132 @@ describe('@sittari/payload-rbac peer smoke', () => {
 
     // Cannot update an administrator's document…
     await expect(
-      changeHook({
-        collection: usersCollection,
-        data: { firstName: 'Renamed' },
-        operation: 'update',
-        originalDoc: adminAccount,
-        req: makeReq(result, client, db()),
-      } as never),
+      changeHook(
+        asArgs({
+          collection: usersCollection,
+          data: { firstName: 'Renamed' },
+          operation: 'update',
+          originalDoc: adminAccount,
+          req: makeReq(result, client, adminUsersDb()),
+        }),
+      ),
     ).rejects.toThrow(/can modify an account that holds it/);
 
     // …cannot mint a new administrator…
     await expect(
-      changeHook({
-        collection: usersCollection,
-        data: { email: 'new@admin.co', roles: [9] },
-        operation: 'create',
-        req: makeReq(result, client, db()),
-      } as never),
+      changeHook(
+        asArgs({
+          collection: usersCollection,
+          data: { email: 'new@admin.co', roles: [9] },
+          operation: 'create',
+          req: makeReq(result, client, adminUsersDb()),
+        }),
+      ),
     ).rejects.toThrow(/can create an account with that role/);
 
     // …and cannot delete one, even when other administrators remain.
     await expect(
-      deleteHook({
-        id: 1,
-        req: makeReq(result, client, db(adminAccount)),
-      } as never),
+      deleteHook(
+        asArgs({
+          id: 1,
+          req: makeReq(result, client, adminUsersDb(adminAccount)),
+        }),
+      ),
     ).rejects.toThrow(/can delete an account that holds it/);
 
     // A holder of the admin role manages other administrators freely.
     const admin = { id: 5, collection: 'users', roles: [9] };
     await expect(
-      changeHook({
-        collection: usersCollection,
-        data: { firstName: 'Renamed' },
-        operation: 'update',
-        originalDoc: adminAccount,
-        req: makeReq(result, admin, db()),
-      } as never),
+      changeHook(
+        asArgs({
+          collection: usersCollection,
+          data: { firstName: 'Renamed' },
+          operation: 'update',
+          originalDoc: adminAccount,
+          req: makeReq(result, admin, adminUsersDb()),
+        }),
+      ),
     ).resolves.toBeTruthy();
     await expect(
-      deleteHook({
-        id: 1,
-        req: makeReq(result, admin, db(adminAccount)),
-      } as never),
+      deleteHook(
+        asArgs({
+          id: 1,
+          req: makeReq(result, admin, adminUsersDb(adminAccount)),
+        }),
+      ),
     ).resolves.toBe(undefined);
 
     // Non-administrator accounts stay editable and deletable by anyone with the
     // collection permission — the guard only shields administrators.
     const editorAccount = { id: 7, roles: [3] };
     await expect(
-      changeHook({
-        collection: usersCollection,
-        data: { firstName: 'Renamed' },
-        operation: 'update',
-        originalDoc: editorAccount,
-        req: makeReq(result, client, db()),
-      } as never),
+      changeHook(
+        asArgs({
+          collection: usersCollection,
+          data: { firstName: 'Renamed' },
+          operation: 'update',
+          originalDoc: editorAccount,
+          req: makeReq(result, client, adminUsersDb()),
+        }),
+      ),
     ).resolves.toBeTruthy();
     await expect(
-      deleteHook({
-        id: 7,
-        req: makeReq(result, client, db(editorAccount)),
-      } as never),
+      deleteHook(
+        asArgs({
+          id: 7,
+          req: makeReq(result, client, adminUsersDb(editorAccount)),
+        }),
+      ),
     ).resolves.toBe(undefined);
 
     // Adding the admin role to an existing non-admin is an assignment (guarded by
     // the roles-field holder-only rule), not "modifying an admin": this guard keys
     // off the account's existing roles, so it stands aside here.
     await expect(
-      changeHook({
-        collection: usersCollection,
-        data: { roles: [9] },
-        operation: 'update',
-        originalDoc: { id: 7, roles: [] },
-        req: makeReq(result, client, db()),
-      } as never),
+      changeHook(
+        asArgs({
+          collection: usersCollection,
+          data: { roles: [9] },
+          operation: 'update',
+          originalDoc: { id: 7, roles: [] },
+          req: makeReq(result, client, adminUsersDb()),
+        }),
+      ),
     ).resolves.toBeTruthy();
 
     // System writes (no user) — seeds, first-user bootstrap, break-glass self-claim
     // of an account that does not yet hold the role — pass through.
     await expect(
-      changeHook({
-        collection: usersCollection,
-        data: { email: 'seed@admin.co', roles: [9] },
-        operation: 'create',
-        req: makeReq(result, null, db()),
-      } as never),
+      changeHook(
+        asArgs({
+          collection: usersCollection,
+          data: { email: 'seed@admin.co', roles: [9] },
+          operation: 'create',
+          req: makeReq(result, null, adminUsersDb()),
+        }),
+      ),
     ).resolves.toBeTruthy();
     await expect(
-      deleteHook({
-        id: 1,
-        req: makeReq(result, null, db(adminAccount)),
-      } as never),
+      deleteHook(
+        asArgs({
+          id: 1,
+          req: makeReq(result, null, adminUsersDb(adminAccount)),
+        }),
+      ),
     ).resolves.toBe(undefined);
 
     // An account with no roles never triggers the role lookup.
-    const noRoleWrite = makeReq(result, client, db());
+    const noRoleWrite = makeReq(result, client, adminUsersDb());
     await expect(
-      changeHook({
-        collection: usersCollection,
-        data: { firstName: 'x' },
-        operation: 'update',
-        originalDoc: { id: 8, roles: [] },
-        req: noRoleWrite,
-      } as never),
+      changeHook(
+        asArgs({
+          collection: usersCollection,
+          data: { firstName: 'x' },
+          operation: 'update',
+          originalDoc: { id: 8, roles: [] },
+          req: noRoleWrite,
+        }),
+      ),
     ).resolves.toBeTruthy();
     expect(noRoleWrite.payload.find).not.toHaveBeenCalled();
   });
@@ -1590,9 +1713,11 @@ describe('@sittari/payload-rbac peer smoke', () => {
     const result = await rbacPlugin()(baseConfig());
     const access = createRbacAccess({ slug: 'posts', action: 'read' });
     expect(
-      await access({
-        req: makeReq(result, { id: 1, roles: [role(1, ['posts:read'])] }),
-      } as never),
+      await access(
+        asArgs({
+          req: makeReq(result, { id: 1, roles: [role(1, ['posts:read'])] }),
+        }),
+      ),
     ).toBe(true);
   });
 
@@ -1683,16 +1808,16 @@ describe('@sittari/payload-rbac peer smoke', () => {
       action: 'update',
     });
     const wildcardReader = { id: 1, roles: [role(1, ['*:read'])] };
-    expect(await read({ req: makeReq(result, wildcardReader) } as never)).toBe(
+    expect(await read(asArgs({ req: makeReq(result, wildcardReader) }))).toBe(
       true,
     );
-    expect(
-      await update({ req: makeReq(result, wildcardReader) } as never),
-    ).toBe(false);
+    expect(await update(asArgs({ req: makeReq(result, wildcardReader) }))).toBe(
+      false,
+    );
 
     const req = makeReq(result, { id: 2, roles: [role(2, ['posts:*'])] });
     const postsDelete = createRbacAccess({ slug: 'posts', action: 'delete' });
-    expect(await postsDelete({ req } as never)).toBe(true);
+    expect(await postsDelete(asArgs({ req }))).toBe(true);
 
     // Unknown slugs and actions still fail fast at startup.
     expect(() =>

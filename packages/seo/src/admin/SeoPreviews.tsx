@@ -16,9 +16,6 @@ import {
   type PreviewFormFields,
 } from './preview-document.js';
 
-const text = (value: unknown): string | undefined =>
-  typeof value === 'string' && value.trim() ? value.trim() : undefined;
-
 const cardStyle = {
   background: 'var(--theme-elevation-0)',
   border: '1px solid var(--theme-elevation-150)',
@@ -78,7 +75,7 @@ const previewEndpointUrl = (apiURL: string): string => {
 };
 
 /** Displays server-resolved previews while updating from unsaved form state. */
-export const SeoPreviews = ({ field }: UIFieldClientProps) => {
+export const SeoPreviews = (_props: UIFieldClientProps) => {
   const t = useAdminText();
   const values = useFormFields(([fields]) => fields as PreviewFormFields);
   const { apiURL, data } = useDocumentInfo();

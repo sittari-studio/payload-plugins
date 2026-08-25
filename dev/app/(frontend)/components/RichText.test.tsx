@@ -6,43 +6,44 @@ import { RichText } from './RichText.js';
 
 describe('frontend RichText', () => {
   it('renders link-field nodes through the RSC-safe converter', () => {
-    const html = renderToStaticMarkup(
-      createElement(RichText, {
-        data: {
-          root: {
+    const linkNodeState = {
+      root: {
+        children: [
+          {
             children: [
               {
-                children: [
-                  {
-                    detail: 0,
-                    format: 0,
-                    mode: 'normal',
-                    style: '',
-                    text: 'Frontend link',
-                    type: 'text',
-                    version: 1,
-                  },
-                ],
-                direction: null,
-                fields: {
-                  customUrl: '/ignored',
-                  type: 'custom',
-                  url: '/frontend',
-                },
-                format: '',
-                id: 'frontend-link',
-                indent: 0,
-                type: 'link',
+                detail: 0,
+                format: 0,
+                mode: 'normal',
+                style: '',
+                text: 'Frontend link',
+                type: 'text',
                 version: 1,
               },
             ],
             direction: null,
+            fields: {
+              customUrl: '/ignored',
+              type: 'custom',
+              url: '/frontend',
+            },
             format: '',
+            id: 'frontend-link',
             indent: 0,
-            type: 'root',
+            type: 'link',
             version: 1,
           },
-        } as never,
+        ],
+        direction: null,
+        format: '',
+        indent: 0,
+        type: 'root',
+        version: 1,
+      },
+    } as unknown as never;
+    const html = renderToStaticMarkup(
+      createElement(RichText, {
+        data: linkNodeState,
       }),
     );
 

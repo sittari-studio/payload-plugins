@@ -25,12 +25,13 @@ export const traverseField = (
   let nextField = field;
 
   if (hasFields(nextField)) {
-    nextField = {
+    const transformedField = {
       ...nextField,
       fields: nextField.fields.map((childField) =>
         traverseField(childField, transformer),
       ),
-    } as Field;
+    } as unknown as Field;
+    nextField = transformedField;
   }
 
   if (nextField.type === 'tabs') {

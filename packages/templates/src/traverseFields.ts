@@ -24,7 +24,8 @@ export const transformField = (
   if ('fields' in transformed && Array.isArray(transformed.fields)) {
     const fields = transformFields(transformed.fields, transformer);
     if (fields !== transformed.fields) {
-      transformed = { ...transformed, fields } as Field;
+      const nextTransformed: Field = { ...transformed, fields };
+      transformed = nextTransformed;
     }
   }
 

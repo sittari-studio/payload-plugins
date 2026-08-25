@@ -240,19 +240,20 @@ export type SchemaImportResult =
   | { ok: false; reason: 'invalid' | 'root' }
   | { ok: true; schema: JsonObject; hasManagedContext: boolean };
 
+const containsContext = (value: JsonValue): boolean =>
+  Array.isArray(value)
+    ? value.some(containsContext)
+    : value !== null && typeof value === 'object'
+      ? Object.entries(value).some(
+          ([key, child]) => key === '@context' || containsContext(child),
+        )
+      : false;
+
 export const parseSchemaImport = (raw: string): SchemaImportResult => {
   try {
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed))
       return { ok: false, reason: 'root' };
-    const containsContext = (value: JsonValue): boolean =>
-      Array.isArray(value)
-        ? value.some(containsContext)
-        : value !== null && typeof value === 'object'
-          ? Object.entries(value).some(
-              ([key, child]) => key === '@context' || containsContext(child),
-            )
-          : false;
     return {
       ok: true,
       schema: parsed as JsonObject,
@@ -263,16 +264,17 @@ export const parseSchemaImport = (raw: string): SchemaImportResult => {
   }
 };
 
+const removeManagedContextValue = (value: JsonValue): JsonValue => {
+  if (Array.isArray(value)) return value.map(removeManagedContextValue);
+  if (value !== null && typeof value === 'object')
+    return Object.fromEntries(
+      Object.entries(value).flatMap(([key, child]) =>
+        key === '@context' ? [] : [[key, removeManagedContextValue(child)]],
+      ),
+    );
+  return value;
+};
+
 export const removeManagedContext = (schema: JsonObject): JsonObject => {
-  const visit = (value: JsonValue): JsonValue => {
-    if (Array.isArray(value)) return value.map(visit);
-    if (value !== null && typeof value === 'object')
-      return Object.fromEntries(
-        Object.entries(value).flatMap(([key, child]) =>
-          key === '@context' ? [] : [[key, visit(child)]],
-        ),
-      );
-    return value;
-  };
-  return visit(schema) as JsonObject;
+  return removeManagedContextValue(schema) as JsonObject;
 };

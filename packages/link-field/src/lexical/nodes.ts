@@ -18,7 +18,6 @@ import {
   type LexicalUpdateJSON,
   type NodeKey,
   type RangeSelection,
-  type SerializedLexicalNode,
 } from '@payloadcms/richtext-lexical/lexical';
 
 import type {
@@ -74,7 +73,7 @@ export class LinkFieldNode extends ElementNode {
 
   static importDOM(): DOMConversionMap | null {
     return {
-      a: (node) => ({
+      a: (_node) => ({
         conversion: (domNode) => {
           if (!isHTMLAnchorElement(domNode) || !domNode.textContent)
             return { node: null };

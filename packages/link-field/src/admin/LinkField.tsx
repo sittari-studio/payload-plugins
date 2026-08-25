@@ -153,7 +153,6 @@ const useResolvedReferenceDocument = ({
 
   useEffect(() => {
     if (!identity || !needsResolvedDocument || !referenceKey) {
-      setResolvedReference(null);
       return;
     }
 
@@ -299,8 +298,8 @@ export const LinkField = (props: GroupFieldClientProps) => {
       ? (value?.url ?? (wasCleared ? undefined : initialValue?.url))
       : formValues.url;
   const linkValue = {
-    ...(wasCleared ? {} : (initialValue ?? {})),
-    ...(value ?? {}),
+    ...(wasCleared ? {} : initialValue),
+    ...value,
     ...formValues,
     url,
   };

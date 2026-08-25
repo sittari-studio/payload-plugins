@@ -192,7 +192,7 @@ describe('linkField', () => {
 describe('linkFieldPlugin', () => {
   it('resolves empty relationTo to non-Payload collection slugs and attaches the url hook', () => {
     const field = linkField({ name: 'link' });
-    const outputConfig = applyPlugin({
+    const config = {
       collections: [
         {
           slug: 'pages',
@@ -207,7 +207,8 @@ describe('linkFieldPlugin', () => {
           fields: [],
         },
       ],
-    } as Config);
+    } as unknown as Config;
+    const outputConfig = applyPlugin(config);
     const link = outputConfig.collections?.[0]?.fields[0] as GroupField;
 
     expect(
@@ -233,7 +234,7 @@ describe('linkFieldPlugin', () => {
   });
 
   it('filters the current document from same-collection reference options', async () => {
-    const outputConfig = applyPlugin({
+    const config = {
       collections: [
         {
           slug: 'pages',
@@ -244,7 +245,8 @@ describe('linkFieldPlugin', () => {
           fields: [],
         },
       ],
-    } as Config);
+    } as unknown as Config;
+    const outputConfig = applyPlugin(config);
     const link = outputConfig.collections?.[0]?.fields[0] as GroupField;
     const reference = getChildField<RelationshipField>(link, 'reference');
 
@@ -267,7 +269,7 @@ describe('linkFieldPlugin', () => {
   });
 
   it('passes collection labels and title fields to the admin component', () => {
-    const outputConfig = applyPlugin({
+    const config = {
       collections: [
         {
           slug: 'pages',
@@ -288,12 +290,13 @@ describe('linkFieldPlugin', () => {
             singular: 'Post',
           },
           useAsSlug: 'slug',
-        } as never,
+        },
       ],
       routes: {
         api: '/payload-api',
       },
-    } as Config);
+    } as unknown as Config;
+    const outputConfig = applyPlugin(config);
     const link = outputConfig.collections?.[0]?.fields[0] as GroupField;
 
     expect(link.admin?.custom?.linkField).toMatchObject({
@@ -363,7 +366,7 @@ describe('linkFieldPlugin', () => {
       description: 'Pick a link',
     };
 
-    const outputConfig = applyPlugin({
+    const config = {
       collections: [
         {
           slug: 'pages',
@@ -378,7 +381,8 @@ describe('linkFieldPlugin', () => {
           fields: [],
         },
       ],
-    } as Config);
+    } as unknown as Config;
+    const outputConfig = applyPlugin(config);
     const link = outputConfig.collections?.[0]?.fields[0] as GroupField;
 
     expect(link.admin?.description).toBe('Pick a link');
@@ -394,7 +398,7 @@ describe('linkFieldPlugin', () => {
   });
 
   it('discards a user-provided Payload collection relation', () => {
-    const outputConfig = applyPlugin({
+    const config = {
       collections: [
         {
           slug: 'pages',
@@ -405,7 +409,8 @@ describe('linkFieldPlugin', () => {
           fields: [],
         },
       ],
-    } as Config);
+    } as unknown as Config;
+    const outputConfig = applyPlugin(config);
     const link = outputConfig.collections?.[0]?.fields[0] as GroupField;
 
     expect(
@@ -414,7 +419,7 @@ describe('linkFieldPlugin', () => {
   });
 
   it('walks collections, globals, arrays, blocks, groups, and tabs', () => {
-    const outputConfig = applyPlugin({
+    const config = {
       collections: [
         {
           slug: 'pages',
@@ -458,7 +463,8 @@ describe('linkFieldPlugin', () => {
           ],
         },
       ],
-    } as Config);
+    } as unknown as Config;
+    const outputConfig = applyPlugin(config);
     const arrayField = outputConfig.collections?.[0]?.fields[0] as Field & {
       fields: Field[];
     };
@@ -582,7 +588,7 @@ describe('Lexical link nodes', () => {
     const editor = createHeadlessEditor({
       nodes: [LinkFieldNode, LinkFieldAutoLinkNode],
     });
-    const state = editor.parseEditorState({
+    const editorState = {
       root: {
         children: [
           {
@@ -615,8 +621,8 @@ describe('Lexical link nodes', () => {
         type: 'root',
         version: 1,
       },
-    } as never);
-
+    } as unknown as never;
+    const state = editor.parseEditorState(editorState);
     const node = state.toJSON().root.children[0] as any;
     expect(node.fields).toEqual({
       customUrl: '/about',
@@ -632,7 +638,7 @@ describe('Lexical link nodes', () => {
     const editor = createHeadlessEditor({
       nodes: [LinkFieldNode, LinkFieldAutoLinkNode],
     });
-    const state = editor.parseEditorState({
+    const editorState = {
       root: {
         children: [
           {
@@ -664,7 +670,8 @@ describe('Lexical link nodes', () => {
         type: 'root',
         version: 1,
       },
-    } as never);
+    } as unknown as never;
+    const state = editor.parseEditorState(editorState);
 
     expect((state.toJSON().root.children[0] as any).fields).toMatchObject({
       label: 'Post',
@@ -865,15 +872,14 @@ describe('resolveUrl hook', () => {
   it('resolves custom URLs', async () => {
     const resolver = vi.fn();
     const hook = createResolveUrlHook(resolver);
+    const hookArgs = {
+      siblingData: {
+        customUrl: '/about',
+        type: 'custom',
+      },
+    } as unknown as never;
 
-    await expect(
-      hook({
-        siblingData: {
-          customUrl: '/about',
-          type: 'custom',
-        },
-      } as never),
-    ).resolves.toBe('/about');
+    await expect(hook(hookArgs)).resolves.toBe('/about');
     expect(resolver).not.toHaveBeenCalled();
   });
 
@@ -890,29 +896,28 @@ describe('resolveUrl hook', () => {
       locale: 'uk',
       payload,
     };
-
-    await expect(
-      hook({
-        data: { id: 'doc' },
-        originalDoc: { id: 'original' },
-        path: ['hero', 'link', 'url'],
-        req,
-        siblingData: {
-          reference: {
-            relationTo: 'posts',
-            value: { id: 'post-1', slug: 'hello' },
-          },
-          type: 'reference',
+    const hookArgs = {
+      data: { id: 'doc' },
+      originalDoc: { id: 'original' },
+      path: ['hero', 'link', 'url'],
+      req,
+      siblingData: {
+        reference: {
+          relationTo: 'posts',
+          value: { id: 'post-1', slug: 'hello' },
         },
-        siblingFields: [
-          {
-            name: 'reference',
-            relationTo: ['pages', 'posts'],
-            type: 'relationship',
-          },
-        ],
-      } as never),
-    ).resolves.toBe('/posts/hello');
+        type: 'reference',
+      },
+      siblingFields: [
+        {
+          name: 'reference',
+          relationTo: ['pages', 'posts'],
+          type: 'relationship',
+        },
+      ],
+    } as unknown as never;
+
+    await expect(hook(hookArgs)).resolves.toBe('/posts/hello');
     expect(resolver).toHaveBeenCalledWith(
       expect.objectContaining({
         collectionSlug: 'posts',
@@ -935,34 +940,33 @@ describe('resolveUrl hook', () => {
     const hook = createResolveUrlHook(resolver);
     const error = vi.fn();
     const findByID = vi.fn(() => ({ id: 'post-1', slug: 'hello' }));
+    const hookArgs = {
+      path: ['link', 'url'],
+      req: {
+        payload: {
+          findByID,
+          logger: {
+            error,
+          },
+        },
+      },
+      siblingData: {
+        reference: {
+          relationTo: 'posts',
+          value: 'post-1',
+        },
+        type: 'reference',
+      },
+      siblingFields: [
+        {
+          name: 'reference',
+          relationTo: ['pages', 'posts'],
+          type: 'relationship',
+        },
+      ],
+    } as unknown as never;
 
-    await expect(
-      hook({
-        path: ['link', 'url'],
-        req: {
-          payload: {
-            findByID,
-            logger: {
-              error,
-            },
-          },
-        },
-        siblingData: {
-          reference: {
-            relationTo: 'posts',
-            value: 'post-1',
-          },
-          type: 'reference',
-        },
-        siblingFields: [
-          {
-            name: 'reference',
-            relationTo: ['pages', 'posts'],
-            type: 'relationship',
-          },
-        ],
-      } as never),
-    ).resolves.toBeNull();
+    await expect(hook(hookArgs)).resolves.toBeNull();
     expect(findByID).toHaveBeenCalledWith(
       expect.objectContaining({
         collection: 'posts',

@@ -1,4 +1,4 @@
-import type { Field, GroupField, LabelFunction, StaticLabel } from 'payload';
+import type { Field, GroupField } from 'payload';
 
 export type TemplateFieldConfig = {
   /** Field name used in the consuming collection, global, or block. */

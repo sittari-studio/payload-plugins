@@ -249,7 +249,7 @@ const resolveForLocale = async ({
   if (options.parentField) {
     const parentID = getRelationshipID(effective[options.parentField]);
     if (parentID !== undefined) {
-      const parent = await req.payload.findByID({
+      const parentArgs = {
         collection: collection as never,
         depth: 0,
         draft: false,
@@ -259,7 +259,8 @@ const resolveForLocale = async ({
         overrideAccess: true,
         req,
         select: { path: true },
-      } as never);
+      };
+      const parent = await req.payload.findByID(parentArgs as never);
       const parentPath = (parent as unknown as Record<string, unknown>).path;
       if (typeof parentPath !== 'string' || parentPath.length === 0) {
         return {
@@ -499,7 +500,7 @@ export const createPathAfterChangeHook =
         !('slug' in document) ||
         (collectionHasDrafts && !('_status' in document))
       ) {
-        const hydrated = await req.payload.findByID({
+        const hydrateArgs = {
           collection: collection as never,
           depth: 0,
           draft: false,
@@ -514,7 +515,8 @@ export const createPathAfterChangeHook =
             slug: true,
             ...(collectionHasDrafts ? { _status: true } : {}),
           },
-        } as never);
+        };
+        const hydrated = await req.payload.findByID(hydrateArgs as never);
         document = {
           ...document,
           ...(hydrated as unknown as Record<string, unknown>),
@@ -569,7 +571,7 @@ export const createPathAfterChangeHook =
               locale,
             );
             const status = getLocalizedValue(document._status, locale);
-            const updated = (await req.payload.update({
+            const updateArgs = {
               collection: collection as never,
               data: {
                 slug: suffixedSlug,
@@ -582,7 +584,10 @@ export const createPathAfterChangeHook =
               ...(locale ? { locale: locale as never } : {}),
               overrideAccess: true,
               req,
-            } as never)) as unknown as Record<string, unknown>;
+            };
+            const updated = (await req.payload.update(
+              updateArgs as never,
+            )) as unknown as Record<string, unknown>;
 
             document = updateLocalizedResult({
               document,

@@ -110,7 +110,7 @@ export const createLinkFields = ({
     },
   };
 
-  const referenceField = {
+  const referenceField: RelationshipField = {
     name: 'reference',
     type: 'relationship',
     admin: {
@@ -118,7 +118,7 @@ export const createLinkFields = ({
       condition: isActiveType('reference'),
     },
     label: localizedText('document'),
-    relationTo: normalizedRelationTo as RelationshipField['relationTo'],
+    relationTo: normalizedRelationTo as never,
     required,
     validate: (value, { collectionSlug, id, req, siblingData } = {} as any) => {
       const siblings = siblingData as { type?: string } | undefined;
@@ -138,7 +138,7 @@ export const createLinkFields = ({
       }
       return true;
     },
-  } as RelationshipField;
+  };
 
   return [
     {

@@ -1,5 +1,12 @@
-const CONTROL_CHARACTERS = /[\u0000-\u001F\u007F]/;
 const URI_SCHEME = /[A-Za-z][A-Za-z\d+.-]*:/;
+
+const hasControlCharacter = (value: string): boolean => {
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code <= 0x1f || code === 0x7f) return true;
+  }
+  return false;
+};
 
 export const validateDocumentPath = (path: unknown): string | true => {
   if (typeof path !== 'string' || path.length === 0) {
@@ -17,7 +24,7 @@ export const validateDocumentPath = (path: unknown): string | true => {
   if (path.includes('\\')) {
     return 'Path cannot contain backslashes.';
   }
-  if (CONTROL_CHARACTERS.test(path)) {
+  if (hasControlCharacter(path)) {
     return 'Path cannot contain control characters.';
   }
   if (URI_SCHEME.test(path)) {

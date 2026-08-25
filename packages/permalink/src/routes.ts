@@ -97,7 +97,7 @@ const routeFind = async ({
   payload: Payload;
   req?: PayloadRequest;
 }): Promise<PathRouteDocument | null> => {
-  const result = await payload.find({
+  const findArgs = {
     collection: routeCollection,
     depth: 0,
     limit: 1,
@@ -105,7 +105,8 @@ const routeFind = async ({
     pagination: false,
     ...(req ? { req } : {}),
     where: routeWhere({ collection, documentID, locale }),
-  } as never);
+  };
+  const result = await payload.find(findArgs as never);
 
   return (result.docs[0] as PathRouteDocument | undefined) ?? null;
 };
@@ -119,7 +120,7 @@ export const findPathRouteByPath = async ({
   payload: Payload;
   req?: PayloadRequest;
 }): Promise<PathRouteDocument | null> => {
-  const result = await payload.find({
+  const findArgs = {
     collection: routeCollection,
     depth: 0,
     limit: 1,
@@ -127,7 +128,8 @@ export const findPathRouteByPath = async ({
     pagination: false,
     ...(req ? { req } : {}),
     where: { path: { equals: path } },
-  } as never);
+  };
+  const result = await payload.find(findArgs as never);
 
   return (result.docs[0] as PathRouteDocument | undefined) ?? null;
 };
@@ -145,12 +147,13 @@ export const deletePathRoutes = async ({
   payload: Payload;
   req?: PayloadRequest;
 }): Promise<void> => {
-  await payload.delete({
+  const deleteArgs = {
     collection: routeCollection,
     overrideAccess: true,
     ...(req ? { req } : {}),
     where: routeWhere({ collection, documentID, locale }),
-  } as never);
+  };
+  await payload.delete(deleteArgs as never);
 };
 
 export const upsertPathRoute = async ({
@@ -183,22 +186,24 @@ export const upsertPathRoute = async ({
   };
 
   if (existing) {
-    await payload.update({
+    const updateArgs = {
       collection: routeCollection,
       data,
       id: existing.id,
       overrideAccess: true,
       ...(req ? { req } : {}),
-    } as never);
+    };
+    await payload.update(updateArgs as never);
     return;
   }
 
-  await payload.create({
+  const createArgs = {
     collection: routeCollection,
     data,
     overrideAccess: true,
     ...(req ? { req } : {}),
-  } as never);
+  };
+  await payload.create(createArgs as never);
 };
 
 export const backfillPublishedPathRoutes = async (
@@ -206,13 +211,14 @@ export const backfillPublishedPathRoutes = async (
   { force = false }: { force?: boolean } = {},
 ): Promise<void> => {
   if (!force) {
-    const existing = await payload.find({
+    const existingArgs = {
       collection: routeCollection,
       depth: 0,
       limit: 1,
       overrideAccess: true,
       pagination: false,
-    } as never);
+    };
+    const existing = await payload.find(existingArgs as never);
     if (existing.docs.length > 0) return;
   }
 
@@ -238,7 +244,7 @@ export const backfillPublishedPathRoutes = async (
     for (const locale of locales) {
       let page = 1;
       while (true) {
-        const result = await payload.find({
+        const findArgs = {
           collection: collection as never,
           depth: 0,
           draft: false,
@@ -251,7 +257,8 @@ export const backfillPublishedPathRoutes = async (
           ...(collectionHasDrafts
             ? { where: { _status: { equals: 'published' } } }
             : {}),
-        } as never);
+        };
+        const result = await payload.find(findArgs as never);
 
         for (const document of result.docs as Array<{
           id: number | string;

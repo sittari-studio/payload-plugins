@@ -25,6 +25,17 @@ export type CreateRolesCollectionArgs = {
   slug: string;
 };
 
+const localizedPermissionLabel = (
+  label: MatrixRow['label'],
+  key: RbacTranslationKey,
+): Record<RbacLanguage, string> =>
+  Object.fromEntries(
+    Object.keys(translations).map((language) => [
+      language,
+      `${resolveLocalizedText(label, language)}: ${translate(key, language)}`,
+    ]),
+  ) as Record<RbacLanguage, string>;
+
 /**
  * Builds the roles collection. Permissions are stored as an array of
  * `'<slug>:<action>'` strings (plus `'*'` and the `'<slug>:*'`/`'*:<action>'`
@@ -40,17 +51,6 @@ export const createRolesCollection = ({
   override,
   protectedRoleNames = [],
 }: CreateRolesCollectionArgs): CollectionConfig => {
-  const localizedPermissionLabel = (
-    label: MatrixRow['label'],
-    key: RbacTranslationKey,
-  ): Record<RbacLanguage, string> =>
-    Object.fromEntries(
-      Object.keys(translations).map((language) => [
-        language,
-        `${resolveLocalizedText(label, language)}: ${translate(key, language)}`,
-      ]),
-    ) as Record<RbacLanguage, string>;
-
   const options: Option[] = [
     { label: localizedText('fullAccess'), value: FULL_ACCESS },
     ...collectionActions.map((action) => ({

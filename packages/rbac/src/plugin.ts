@@ -58,6 +58,22 @@ const hasNamedField = (fields: Field[], name: string): boolean => {
   return fields.some((field) => 'name' in field && field.name === name);
 };
 
+const withGlobalAccess = (global: GlobalConfig): GlobalConfig => {
+  const access = { ...global.access };
+  for (const action of globalActions) {
+    if (access[action] === undefined) {
+      access[action] = createRbacAccess({ slug: global.slug, action });
+    }
+  }
+  if (access.readVersions === undefined) {
+    access.readVersions = createRbacAccess({
+      slug: global.slug,
+      action: 'read',
+    });
+  }
+  return { ...global, access };
+};
+
 const resolveUserCollections = (
   config: Config,
   pluginConfig: RbacPluginConfig,
@@ -226,22 +242,6 @@ export const rbacPlugin = (pluginConfig: RbacPluginConfig = {}): Plugin => {
         });
       }
       return { ...collection, access };
-    };
-
-    const withGlobalAccess = (global: GlobalConfig): GlobalConfig => {
-      const access = { ...global.access };
-      for (const action of globalActions) {
-        if (access[action] === undefined) {
-          access[action] = createRbacAccess({ slug: global.slug, action });
-        }
-      }
-      if (access.readVersions === undefined) {
-        access.readVersions = createRbacAccess({
-          slug: global.slug,
-          action: 'read',
-        });
-      }
-      return { ...global, access };
     };
 
     // Changing role membership requires `roles:update`. Field-level access is

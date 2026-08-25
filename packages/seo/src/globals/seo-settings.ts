@@ -68,27 +68,28 @@ const schemaTemplateFields = (mode: 'collection' | 'global') => [
     : []),
 ];
 
+const collectTemplateIds = (items: unknown, target: Set<string>): void => {
+  if (!Array.isArray(items)) return;
+  for (const template of items)
+    if (template && typeof template === 'object') {
+      const id =
+        (template as Record<string, unknown>).templateId ??
+        (template as Record<string, unknown>).id;
+      if (typeof id === 'string') target.add(id);
+    }
+};
+
 const templateIdsByScope = (
   document: unknown,
 ): { collection: Set<string>; global: Set<string> } => {
   const output = { collection: new Set<string>(), global: new Set<string>() };
   if (!document || typeof document !== 'object') return output;
   const record = document as Record<string, unknown>;
-  const collect = (items: unknown, target: Set<string>): void => {
-    if (!Array.isArray(items)) return;
-    for (const template of items)
-      if (template && typeof template === 'object') {
-        const id =
-          (template as Record<string, unknown>).templateId ??
-          (template as Record<string, unknown>).id;
-        if (typeof id === 'string') target.add(id);
-      }
-  };
-  collect(record.globalSchemas, output.global);
+  collectTemplateIds(record.globalSchemas, output.global);
   if (Array.isArray(record.collectionSchemas))
     for (const group of record.collectionSchemas) {
       if (group && typeof group === 'object')
-        collect(
+        collectTemplateIds(
           (group as Record<string, unknown>).templates,
           output.collection,
         );

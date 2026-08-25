@@ -86,16 +86,17 @@ beforeAll(async () => {
     ],
   });
 
+  const userData = {
+    email: 'editor@example.com',
+    password: 'test-password',
+  };
   payload = await getPayload({
     config,
     key: `templates-integration-${databaseFile}`,
   });
   user = (await payload.create({
     collection: 'users' as never,
-    data: {
-      email: 'editor@example.com',
-      password: 'test-password',
-    } as never,
+    data: userData as never,
   })) as unknown as Record<string, unknown>;
 });
 
@@ -142,26 +143,28 @@ describe('real Payload template persistence', () => {
     });
     const document = docs[0] as { id: number | string };
 
+    const duplicateData = {
+      data_404: { heading: 'Duplicate' },
+      templateType: 'other',
+      title: 'Other',
+    };
     await expect(
       payload.create({
         collection: 'templates' as never,
-        data: {
-          data_404: { heading: 'Duplicate' },
-          templateType: 'other',
-          title: 'Other',
-        } as never,
+        data: duplicateData as never,
         overrideAccess: false,
         user: user as never,
       }),
     ).rejects.toThrow();
 
+    const updatedData = {
+      data_404: { heading: 'Updated by user' },
+      templateType: 'changed-by-user',
+    };
     const updated = (await payload.update({
       collection: 'templates' as never,
       id: document.id,
-      data: {
-        data_404: { heading: 'Updated by user' },
-        templateType: 'changed-by-user',
-      } as never,
+      data: updatedData as never,
       overrideAccess: false,
       user: user as never,
     })) as unknown as { data_404: { heading: string }; templateType: string };
@@ -180,14 +183,15 @@ describe('real Payload template persistence', () => {
   });
 
   it('enforces templateType uniqueness at the database layer', async () => {
+    const duplicateData = {
+      data_404: { heading: 'Duplicate' },
+      templateType: '404',
+      title: 'Duplicate',
+    };
     await expect(
       payload.create({
         collection: 'templates' as never,
-        data: {
-          data_404: { heading: 'Duplicate' },
-          templateType: '404',
-          title: 'Duplicate',
-        } as never,
+        data: duplicateData as never,
         overrideAccess: true,
       }),
     ).rejects.toThrow();
@@ -201,40 +205,42 @@ describe('real Payload template persistence', () => {
     });
     const templateDocument = docs[0] as { id: number | string };
 
+    const defaultsData = {
+      data_404: {
+        count: 7,
+        enabled: true,
+        heading: 'Default heading',
+        localizedHeading: 'Localized default heading',
+        items: [{ label: 'Default item' }],
+        nested: {
+          description: 'Default description',
+          title: 'Default title',
+        },
+      },
+    };
     await payload.update({
       collection: 'templates' as never,
       id: templateDocument.id,
-      data: {
-        data_404: {
-          count: 7,
-          enabled: true,
-          heading: 'Default heading',
-          localizedHeading: 'Localized default heading',
-          items: [{ label: 'Default item' }],
-          nested: {
-            description: 'Default description',
-            title: 'Default title',
-          },
-        },
-      } as never,
+      data: defaultsData as never,
       overrideAccess: true,
     });
 
+    const pageContent = {
+      content: {
+        count: 0,
+        enabled: false,
+        heading: '',
+        localizedHeading: '',
+        items: [],
+        nested: {
+          description: 'Local description',
+          title: null,
+        },
+      },
+    };
     const created = (await payload.create({
       collection: 'pages' as never,
-      data: {
-        content: {
-          count: 0,
-          enabled: false,
-          heading: '',
-          localizedHeading: '',
-          items: [],
-          nested: {
-            description: 'Local description',
-            title: null,
-          },
-        },
-      } as never,
+      data: pageContent as never,
     })) as unknown as {
       content: Record<string, unknown>;
       id: number | string;
@@ -252,22 +258,23 @@ describe('real Payload template persistence', () => {
       },
     });
 
+    const changedData = {
+      data_404: {
+        count: 9,
+        enabled: true,
+        heading: 'Changed default',
+        localizedHeading: 'Changed localized default',
+        items: [{ label: 'Changed default item' }],
+        nested: {
+          description: 'Changed default description',
+          title: 'Changed default title',
+        },
+      },
+    };
     await payload.update({
       collection: 'templates' as never,
       id: templateDocument.id,
-      data: {
-        data_404: {
-          count: 9,
-          enabled: true,
-          heading: 'Changed default',
-          localizedHeading: 'Changed localized default',
-          items: [{ label: 'Changed default item' }],
-          nested: {
-            description: 'Changed default description',
-            title: 'Changed default title',
-          },
-        },
-      } as never,
+      data: changedData as never,
       overrideAccess: true,
     });
 
@@ -288,15 +295,16 @@ describe('real Payload template persistence', () => {
       },
     });
 
+    const overrideData = {
+      content: {
+        heading: 'Local heading',
+        items: [{ label: '' }],
+      },
+    };
     const overridden = (await payload.update({
       collection: 'pages' as never,
       id: created.id,
-      data: {
-        content: {
-          heading: 'Local heading',
-          items: [{ label: '' }],
-        },
-      } as never,
+      data: overrideData as never,
     })) as unknown as { content: Record<string, unknown> };
 
     expect(overridden.content).toMatchObject({

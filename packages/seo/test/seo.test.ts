@@ -279,9 +279,12 @@ describe('seoPlugin', () => {
     expect(() => seoPlugin()(payloadConfig())).toThrow(
       'collections must be a non-empty mapping',
     );
-    expect(() =>
-      seoPlugin({ collections: {} } as SeoPluginConfig)(payloadConfig()),
-    ).toThrow('collections must be a non-empty mapping');
+    const emptyCollectionsConfig = {
+      collections: {},
+    } as unknown as SeoPluginConfig;
+    expect(() => seoPlugin(emptyCollectionsConfig)(payloadConfig())).toThrow(
+      'collections must be a non-empty mapping',
+    );
 
     const { siteUrl: _siteUrl, ...withoutSiteUrl } = validConfig();
     expect(() =>
@@ -627,21 +630,25 @@ describe('locale-safe resolver core', () => {
 });
 
 describe('effective SEO resolution regression coverage', () => {
-  const input = (overrides: Record<string, unknown> = {}) => ({
-    collection: 'pages',
-    config: validConfig(),
-    locale: 'en',
-    settings: {
+  const input = (overrides: Record<string, unknown> = {}) => {
+    const settings: SeoDocument = {
       siteName: 'Example',
       defaultRobots: { mode: 'noindex-follow' },
-    } as SeoDocument,
-    document: {
+    };
+    const document: SeoDocument = {
       id: 'p1',
       title: 'Page',
       _status: 'published',
       ...overrides,
-    } as SeoDocument,
-  });
+    };
+    return {
+      collection: 'pages',
+      config: validConfig(),
+      locale: 'en',
+      settings,
+      document,
+    };
+  };
 
   it('inherits global robots until a page explicitly selects an override', async () => {
     expect((await resolveEffectiveSeo(input())).robots).toMatchObject({
@@ -1247,11 +1254,12 @@ describe('Admin preview resolution', () => {
       seo: { canonical: { mode: 'none' } },
     };
     const endpoint = createSeoPreviewEndpoint('pages');
-    const response = await endpoint.handler({
+    const handlerArgs = {
       json: async () => ({ document, locale: 'en' }),
       payload,
       user: { collection: 'users', id: 'admin' },
-    } as never);
+    } as unknown as never;
+    const response = await endpoint.handler(handlerArgs);
 
     const preview = await response.json();
     expect(preview).toEqual(
@@ -1295,7 +1303,7 @@ describe('Admin preview resolution', () => {
       findGlobal: vi.fn(async () => ({})),
       findByID,
     };
-    const response = await createSeoPreviewEndpoint('pages').handler({
+    const handlerArgs = {
       json: async () => ({
         document: {
           hero: 'mapped',
@@ -1308,7 +1316,9 @@ describe('Admin preview resolution', () => {
       }),
       payload,
       user: { collection: 'users', id: 'admin' },
-    } as never);
+    } as unknown as never;
+    const response =
+      await createSeoPreviewEndpoint('pages').handler(handlerArgs);
 
     expect(await response.json()).toMatchObject({
       image: 'https://cdn.example/open-graph.jpg',
@@ -1326,17 +1336,19 @@ describe('Admin preview resolution', () => {
   });
 
   it('rejects unauthenticated preview requests', async () => {
-    const response = await createSeoPreviewEndpoint('pages').handler({
-      user: null,
-    } as never);
+    const handlerArgs = { user: null } as unknown as never;
+    const response =
+      await createSeoPreviewEndpoint('pages').handler(handlerArgs);
     expect(response.status).toBe(401);
   });
 
   it('rejects authenticated users without Payload Admin access', async () => {
-    const response = await createSeoPreviewEndpoint('pages').handler({
+    const handlerArgs = {
       payload: { collections: {}, config: { admin: { user: 'users' } } },
       user: { collection: 'customers', id: 'customer' },
-    } as never);
+    } as unknown as never;
+    const response =
+      await createSeoPreviewEndpoint('pages').handler(handlerArgs);
     expect(response.status).toBe(403);
   });
 
@@ -1364,11 +1376,13 @@ describe('Admin preview resolution', () => {
       findGlobal: vi.fn(),
       findByID: vi.fn(),
     };
-    const response = await createSeoPreviewEndpoint('pages').handler({
+    const handlerArgs = {
       json: async () => ({ document: { title: 'Hidden' }, locale: 'en' }),
       payload,
       user: { collection: 'users', id: 'editor' },
-    } as never);
+    } as unknown as never;
+    const response =
+      await createSeoPreviewEndpoint('pages').handler(handlerArgs);
     expect(response.status).toBe(403);
   });
 });

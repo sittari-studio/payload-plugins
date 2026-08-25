@@ -55,6 +55,7 @@ const rebuildCollectionLocale = async ({
         : constraints.length === 1
           ? constraints[0]
           : { and: constraints };
+    const select = { _status: true, id: true } as const;
     const result = await payload.find({
       collection: collection as never,
       depth: 0,
@@ -64,7 +65,7 @@ const rebuildCollectionLocale = async ({
       locale: locale as never,
       overrideAccess: true,
       page: missingOnly ? 1 : page,
-      select: { _status: true, id: true } as never,
+      select,
       where,
     });
 

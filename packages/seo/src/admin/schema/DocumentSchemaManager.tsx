@@ -91,8 +91,20 @@ export const DocumentSchemaManager = ({
   const documentSchemas = documentSchemasArray.rows;
   const globalOverrides = globalsArray.rows;
   const [templates, setTemplates] = useState<TemplateEndpointResponse>();
-  const [loadError, setLoadError] = useState<string>();
-  const [loading, setLoading] = useState(true);
+  const schemaAccessDenied = t('schemaAccessDenied');
+  const schemaLoadFailed = t('schemaLoadFailed');
+  const requestKey = JSON.stringify([
+    collection,
+    custom?.apiRoute,
+    document.id,
+    locale.code,
+  ]);
+  const [loadState, setLoadState] = useState<{
+    error?: string;
+    key: string;
+  }>();
+  const loading = Boolean(collection) && loadState?.key !== requestKey;
+  const loadError = loadState?.key === requestKey ? loadState.error : undefined;
   const [stage, setStage] = useState<'editor' | 'picker' | 'templates'>(
     'templates',
   );
@@ -117,8 +129,6 @@ export const DocumentSchemaManager = ({
     const params = new URLSearchParams();
     if (locale.code) params.set('locale', locale.code);
     if (document.id !== undefined) params.set('id', String(document.id));
-    setLoading(true);
-    setLoadError(undefined);
     fetch(
       `${custom?.apiRoute ?? '/api'}/${collection}/seo-schema-templates?${params}`,
       { credentials: 'include', signal: controller.signal },
@@ -126,24 +136,32 @@ export const DocumentSchemaManager = ({
       .then(async (response) => {
         if (!response.ok)
           throw new Error(
-            response.status === 403
-              ? t('schemaAccessDenied')
-              : t('schemaLoadFailed'),
+            response.status === 403 ? schemaAccessDenied : schemaLoadFailed,
           );
         return response.json() as Promise<TemplateEndpointResponse>;
       })
-      .then((result) => setTemplates(result))
-      .catch((error: unknown) => {
-        if (!(error instanceof DOMException && error.name === 'AbortError'))
-          setLoadError(
-            error instanceof Error ? error.message : t('schemaLoadFailed'),
-          );
+      .then((result) => {
+        setTemplates(result);
+        setLoadState({ key: requestKey });
       })
-      .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === 'AbortError')
+          return;
+        setLoadState({
+          error: error instanceof Error ? error.message : schemaLoadFailed,
+          key: requestKey,
+        });
       });
     return () => controller.abort();
-  }, [collection, custom?.apiRoute, document.id, locale.code]);
+  }, [
+    collection,
+    custom?.apiRoute,
+    document.id,
+    locale.code,
+    requestKey,
+    schemaAccessDenied,
+    schemaLoadFailed,
+  ]);
 
   const close = () => {
     closeModal(drawerSlug);
@@ -217,7 +235,7 @@ export const DocumentSchemaManager = ({
     });
     setStage('editor');
   };
-  const useTemplate = (template: StoredSchemaTemplate) => {
+  const applyTemplate = (template: StoredSchemaTemplate) => {
     instancesArray.add({
       id: createClientId(),
       templateId: template.templateId,
@@ -243,7 +261,7 @@ export const DocumentSchemaManager = ({
               ),
             }
           : {
-              ...(existing ?? {}),
+              ...existing,
               schemaId: draft.templateId,
               name: draft.name.trim(),
               schema: structuredClone(draft.schema),
@@ -663,7 +681,7 @@ export const DocumentSchemaManager = ({
                     actions={
                       <Button
                         buttonStyle="secondary"
-                        onClick={() => useTemplate(template)}
+                        onClick={() => applyTemplate(template)}
                         size="small"
                         type="button"
                       >

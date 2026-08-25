@@ -251,25 +251,27 @@ const reconcileTemplates = async (
     const existing = documentsByType.get(template.name);
 
     if (!existing) {
+      const createData = {
+        [dataFieldName(template.name)]: template.initialData ?? {},
+        templateType: template.name,
+        title: template.label,
+      };
       await payload.create({
         collection: COLLECTION_SLUG as never,
         context,
-        data: {
-          [dataFieldName(template.name)]: template.initialData ?? {},
-          templateType: template.name,
-          title: template.label,
-        } as never,
+        data: createData as never,
         overrideAccess: true,
       });
       continue;
     }
 
     if (existing.title !== template.label) {
+      const updateData = { title: template.label };
       await payload.update({
         collection: COLLECTION_SLUG as never,
         context,
         id: existing.id,
-        data: { title: template.label } as never,
+        data: updateData as never,
         overrideAccess: true,
       });
     }

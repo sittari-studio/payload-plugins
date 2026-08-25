@@ -167,8 +167,7 @@ const transformLinkField = ({
     custom: {
       ...field.admin?.custom,
       linkField: {
-        ...((field.admin?.custom as LinkFieldAdminCustom | undefined)
-          ?.linkField ?? {}),
+        ...(field.admin?.custom as LinkFieldAdminCustom | undefined)?.linkField,
         apiRoute,
         collections: collectionSummaries,
       },
@@ -176,7 +175,7 @@ const transformLinkField = ({
   },
   fields: field.fields.map((childField) => {
     if (isReferenceField(childField)) {
-      return {
+      const referenceChild = {
         ...childField,
         filterOptions: withSelfReferenceFilter(
           childField.filterOptions,
@@ -187,7 +186,8 @@ const transformLinkField = ({
             ? allCollectionSlugs
             : childField.relationTo,
         ),
-      } as RelationshipField;
+      } as unknown as RelationshipField;
+      return referenceChild;
     }
 
     if (isUrlField(childField)) {
@@ -257,7 +257,7 @@ export const linkFieldPlugin =
         fields: traverseFields(global.fields, createTransformField()) ?? [],
       })),
       custom: {
-        ...(incomingConfig.custom ?? {}),
+        ...incomingConfig.custom,
         [LINK_FIELD_RUNTIME_CONFIG_KEY]: {
           resolveDocumentUrl: pluginConfig.resolveDocumentUrl,
         },

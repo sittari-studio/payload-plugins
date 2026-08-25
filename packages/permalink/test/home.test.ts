@@ -19,6 +19,11 @@ const baseConfig = (): Config =>
     },
   }) as unknown as Config;
 
+const makeReq = (overrides: Record<string, unknown> = {}) => {
+  const req = { context: {}, ...overrides };
+  return req as never;
+};
+
 const resolvePath = async ({
   locale,
   prefix,
@@ -39,7 +44,7 @@ const resolvePath = async ({
     context: {},
     data: { slug: '__home' },
     operation: 'create',
-    req: { context: {}, locale, payload: {} } as never,
+    req: makeReq({ locale, payload: {} }),
   });
 };
 

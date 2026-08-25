@@ -7,7 +7,6 @@ import type {
   SeoDocument,
   SeoEnabledPluginConfig,
   SeoPreview,
-  SeoRobotsDirectives,
 } from '../types.js';
 import { getByPath, getSeoGroup } from './document.js';
 import {
