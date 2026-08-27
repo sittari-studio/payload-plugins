@@ -1,6 +1,8 @@
 export type {
+  GetStringsOptions,
   GetTranslationsOptions,
   LocalizedText,
+  Strings,
   StringsPluginConfig,
   StringsRuntimeConfig,
   StringsScope,

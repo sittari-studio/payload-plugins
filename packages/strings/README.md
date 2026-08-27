@@ -62,9 +62,9 @@ strings.auth.loginTitle;
 
 Runtime translation behavior — including whether missing locale values fall back to the default locale — is controlled by Payload's `localization` configuration and per-request `fallbackLocale` options, exactly as for any other localized field.
 
-## `getTranslations`
+## `getStrings` and `getTranslations`
 
-For application code, `getTranslations` resolves keys like `general.cancelButton` in one shot. It loads every configured locale once with `fallbackLocale: false`, then returns a synchronous translator:
+For application code, `getTranslations` resolves keys like `general.cancelButton` in one shot. It loads every configured locale in a single query with `locale: 'all'` and `fallbackLocale: false`, then returns a synchronous translator:
 
 ```ts
 import { getTranslations } from '@sittari/payload-strings';
@@ -84,6 +84,52 @@ Resolution order per key and locale:
 Because lookups happen with `fallbackLocale: false`, locales stay fully isolated: an untranslated string falls back to its developer-defined `defaultValue` instead of leaking another locale's wording.
 
 The helper discovers both custom slugs (`slug`) and configured defaults automatically from internal metadata the plugin attaches to the Payload config, so it works without duplicating any configuration. It throws if `stringsPlugin` is not part of the Payload config.
+
+### `getStrings`
+
+`getStrings` performs the single `findGlobal({ slug, locale: 'all', fallbackLocale: false })` call itself and returns the normalized data behind every translator — one request for all locales, no `Promise.all` fan-out per locale:
+
+```ts
+import { getStrings } from '@sittari/payload-strings';
+
+const strings = await getStrings({ payload });
+```
+
+Payload's `locale: 'all'` response is scopes-first (`scope.key.locale`). `getStrings` inverts it into a locale-first table, materializing every configured locale, scope, and key; missing, nullish, and empty stored values become the scope's `defaultValue`, or `null` when none exists (whitespace-only strings count as values):
+
+```ts
+{
+  en: {
+    general: {
+      cancelButton: 'Cancel',   // stored '' → defaultValue
+      saveButton: 'Save changes',
+    },
+  },
+  fr: {
+    general: {
+      cancelButton: 'Annuler',
+      saveButton: null,         // untranslated, no default
+    },
+  },
+}
+```
+
+Locales missing entirely from the table (for example a requested code that is not configured) resolve to `null` downstream.
+
+### `createTranslator`
+
+The two helpers compose explicitly: `getTranslations` is just `createTranslator(await getStrings(...))`. You can call them directly when you want the normalized table (e.g. for caching) or several translators sharing one fetch:
+
+```ts
+import { createTranslator, getStrings } from '@sittari/payload-strings';
+
+const strings = await getStrings({ payload });
+const t = createTranslator(strings, 'en');
+
+t('general.saveButton'); // 'Save changes'
+t('general.saveButton', 'fr'); // null — locales stay isolated
+t('general.unknownKey'); // null
+```
 
 ## Configuration
 
@@ -168,8 +214,10 @@ Configuration types are exported from the package root and from `@sittari/payloa
 
 ```ts
 import type {
+  GetStringsOptions,
   GetTranslationsOptions,
   LocalizedText,
+  Strings,
   StringsPluginConfig,
   StringsRuntimeConfig,
   StringsScope,

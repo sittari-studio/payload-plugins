@@ -1,12 +1,16 @@
 export { stringsPlugin } from './plugin.js';
 export {
-  getTranslations,
+  createTranslator,
+  getStrings,
   getStringsRuntimeConfig,
+  getTranslations,
   STRINGS_RUNTIME_CONFIG_KEY,
 } from './helpers.js';
 export type {
+  GetStringsOptions,
   GetTranslationsOptions,
   LocalizedText,
+  Strings,
   StringsPluginConfig,
   StringsRuntimeConfig,
   StringsScope,

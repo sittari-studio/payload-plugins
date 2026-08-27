@@ -1,7 +1,9 @@
 import type { Payload } from 'payload';
 
 import type {
+  GetStringsOptions,
   GetTranslationsOptions,
+  Strings,
   StringsRuntimeConfig,
   Translator,
 } from './types.js';
@@ -11,8 +13,6 @@ import type {
  * scope definitions so helpers can discover custom slugs and defaults.
  */
 export const STRINGS_RUNTIME_CONFIG_KEY = '@sittari/payload-strings/config';
-
-type ScopedStrings = Record<string, Record<string, unknown>>;
 
 export const getStringsRuntimeConfig = (
   payload: Payload,
@@ -47,12 +47,97 @@ const localeCodes = (payload: Payload): string[] => {
   );
 };
 
-const storedValue = (
-  values: Map<string, ScopedStrings>,
-  scope: string,
-  key: string,
-  locale: string | undefined,
-): unknown => (locale ? values.get(locale)?.[scope]?.[key] : undefined);
+/**
+ * Raw `findGlobal({ locale: 'all' })` response: scopes-first, with each
+ * string holding a record keyed by locale code.
+ */
+type AllLocalesResponse = Record<
+  string,
+  Record<string, Record<string, unknown>>
+>;
+
+/**
+ * Loads every configured locale in one query and returns a normalized,
+ * locale-first string table. Every configured locale, scope, and key is
+ * materialized; missing, empty, and nullish stored values are replaced by
+ * the scope's `defaultValue`, or `null` when no default exists.
+ * Whitespace-only strings are preserved as valid values.
+ *
+ * ```ts
+ * const strings = await getStrings({ payload });
+ * strings.en.general.cancelButton; // stored value | defaultValue | null
+ * ```
+ */
+export const getStrings = async ({
+  payload,
+}: GetStringsOptions): Promise<Strings> => {
+  const { scopes, slug } = getStringsRuntimeConfig(payload);
+
+  const response = await payload.findGlobal({
+    slug,
+    locale: 'all',
+    fallbackLocale: false,
+  });
+
+  const allLocales: AllLocalesResponse =
+    (response ?? {}) as AllLocalesResponse;
+
+  const strings: Strings = {};
+
+  for (const code of localeCodes(payload)) {
+    const scoped: Record<string, Record<string, string | null>> = {};
+
+    for (const [scopeName, scope] of Object.entries(scopes)) {
+      const values: Record<string, string | null> = {};
+
+      for (const [stringKey, definition] of Object.entries(
+        scope.strings ?? {},
+      )) {
+        const raw = allLocales[scopeName]?.[stringKey];
+        const stored =
+          typeof raw === 'object' && raw !== null
+            ? (raw as Record<string, unknown>)[code]
+            : undefined;
+
+        values[stringKey] =
+          typeof stored === 'string' && stored.length > 0
+            ? stored
+            : (definition.defaultValue ?? null);
+      }
+
+      scoped[scopeName] = values;
+    }
+
+    strings[code] = scoped;
+  }
+
+  return strings;
+};
+
+/**
+ * Builds the existing synchronous {@link Translator} from a normalized
+ * locale-first table returned by {@link getStrings}. Dot-separated keys
+ * resolve through scopes; per-call locales override the default; unknown
+ * scopes, keys, or locales resolve to `null`.
+ */
+export const createTranslator = (
+  strings: Strings,
+  locale?: string,
+): Translator =>
+  (key, requested) => {
+    const code = requested ?? locale;
+
+    if (!code) {
+      return null;
+    }
+
+    const [scopeName, ...rest] = key.split('.');
+    const stringKey = rest.join('.');
+
+    const stored = strings[code]?.[scopeName]?.[stringKey];
+
+    return typeof stored === 'string' ? stored : null;
+  };
 
 /**
  * Loads every configured locale once and returns a synchronous translator.
@@ -67,40 +152,11 @@ export const getTranslations = async ({
   payload,
   locale,
 }: GetTranslationsOptions): Promise<Translator> => {
-  const { scopes, slug } = getStringsRuntimeConfig(payload);
+  const strings = await getStrings({ payload });
 
-  const values = new Map<string, ScopedStrings>(
-    await Promise.all(
-      localeCodes(payload).map(
-        async (code): Promise<[string, ScopedStrings]> => [
-          code,
-          ((await payload.findGlobal({
-            slug,
-            locale: code,
-            fallbackLocale: false,
-          })) ?? {}) as ScopedStrings,
-        ],
-      ),
-    ),
-  );
+  const localization = payload.config.localization;
+  const defaultLocale = locale ??
+    (localization ? localization.defaultLocale : undefined);
 
-  return (key, requested) => {
-    const [scopeName, ...rest] = key.split('.');
-    const stringKey = rest.join('.');
-    const localization = payload.config.localization;
-    const code =
-      requested ??
-      locale ??
-      (localization ? localization.defaultLocale : locale);
-
-    const stored = storedValue(values, scopeName, stringKey, code);
-    if (typeof stored === 'string' && stored.length > 0) {
-      return stored;
-    }
-
-    const defaultValue =
-      scopes?.[scopeName]?.strings?.[stringKey]?.defaultValue;
-
-    return defaultValue ?? null;
-  };
+  return createTranslator(strings, defaultLocale);
 };

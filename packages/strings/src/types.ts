@@ -41,9 +41,24 @@ export type StringsRuntimeConfig = {
 };
 
 /**
- * Synchronous translator returned by {@link getTranslations}.
- * Returns the stored translation when non-empty, otherwise the configured
- * `defaultValue`, or `null` when neither exists.
+ * Normalized locale-first string table returned by {@link getStrings},
+ * keyed by locale code, then scope name, then string key. Missing, nullish,
+ * and empty stored values are replaced with the configured `defaultValue`,
+ * or `null` when no default exists.
+ */
+export type Strings = Record<
+  string,
+  Record<string, Record<string, string | null>>
+>;
+
+export type GetStringsOptions = {
+  payload: Payload;
+};
+
+/**
+ * Synchronous translator returned by {@link getTranslations} and
+ * {@link createTranslator}. Returns the stored translation when non-empty,
+ * otherwise the configured `defaultValue`, or `null` when neither exists.
  */
 export type Translator = {
   (key: string, locale?: string): string | null;
