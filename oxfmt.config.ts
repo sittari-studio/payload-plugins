@@ -19,4 +19,5 @@ export default defineConfig({
   sortTailwindcss: {
     functions: ['clsx', 'cn', 'cva'],
   },
+  ignorePatterns: ['next-env.d.ts', 'payload-types.ts', 'importMap.js'],
 });

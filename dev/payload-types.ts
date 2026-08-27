@@ -95,29 +95,25 @@ export interface Config {
     templates: TemplatesSelect<false> | TemplatesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
-    'payload-locked-documents':
-      | PayloadLockedDocumentsSelect<false>
-      | PayloadLockedDocumentsSelect<true>;
-    'payload-preferences':
-      | PayloadPreferencesSelect<false>
-      | PayloadPreferencesSelect<true>;
-    'payload-migrations':
-      | PayloadMigrationsSelect<false>
-      | PayloadMigrationsSelect<true>;
+    'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
+    'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
+    'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
   };
   db: {
     defaultIDType: number;
   };
-  fallbackLocale: null;
+  fallbackLocale: ('false' | 'none' | 'null') | false | null | ('en' | 'es') | ('en' | 'es')[];
   globals: {
     'site-settings': SiteSetting;
     'seo-settings': SeoSetting;
+    strings: String;
   };
   globalsSelect: {
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     'seo-settings': SeoSettingsSelect<false> | SeoSettingsSelect<true>;
+    strings: StringsSelect<false> | StringsSelect<true>;
   };
-  locale: null;
+  locale: 'en' | 'es';
   widgets: {
     collections: CollectionsWidget;
   };
@@ -248,6 +244,9 @@ export interface Role {
         | 'seo-settings:*'
         | 'seo-settings:read'
         | 'seo-settings:update'
+        | 'strings:*'
+        | 'strings:read'
+        | 'strings:update'
       )[]
     | null;
   updatedAt: string;
@@ -388,13 +387,7 @@ export interface Page {
       url?: string | null;
     };
     robots: {
-      mode:
-        | 'inherit'
-        | 'index-follow'
-        | 'noindex-follow'
-        | 'index-nofollow'
-        | 'noindex-nofollow'
-        | 'custom';
+      mode: 'inherit' | 'index-follow' | 'noindex-follow' | 'index-nofollow' | 'noindex-nofollow' | 'custom';
       directives?: string | null;
     };
     openGraph?: {
@@ -479,6 +472,7 @@ export interface PathRoute {
   path: string;
   collection: string;
   documentID: string;
+  locale: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -896,6 +890,7 @@ export interface PathRoutesSelect<T extends boolean = true> {
   path?: T;
   collection?: T;
   documentID?: T;
+  locale?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1029,12 +1024,7 @@ export interface SeoSetting {
   defaultTwitterCreator?: string | null;
   defaultLocale?: string | null;
   defaultRobots: {
-    mode:
-      | 'index-follow'
-      | 'noindex-follow'
-      | 'index-nofollow'
-      | 'noindex-nofollow'
-      | 'custom';
+    mode: 'index-follow' | 'noindex-follow' | 'index-nofollow' | 'noindex-nofollow' | 'custom';
     directives?: string | null;
   };
   globalSchemas?:
@@ -1115,6 +1105,26 @@ export interface SeoSetting {
         }[]
       | null;
     overrideText?: string | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "strings".
+ */
+export interface String {
+  id: number;
+  general?: {
+    /**
+     * Label for destructive actions.
+     */
+    cancelButton?: string | null;
+    saveButton?: string | null;
+  };
+  auth?: {
+    loginTitle?: string | null;
+    loginSubmit?: string | null;
   };
   updatedAt?: string | null;
   createdAt?: string | null;
@@ -1206,6 +1216,27 @@ export interface SeoSettingsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "strings_select".
+ */
+export interface StringsSelect<T extends boolean = true> {
+  general?:
+    | T
+    | {
+        cancelButton?: T;
+        saveButton?: T;
+      };
+  auth?:
+    | T
+    | {
+        loginTitle?: T;
+        loginSubmit?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "collections_widget".
  */
 export interface CollectionsWidget {
@@ -1238,6 +1269,7 @@ export interface TaskSchedulePublish {
 export interface Auth {
   [k: string]: unknown;
 }
+
 
 declare module 'payload' {
   export interface GeneratedTypes extends Config {}

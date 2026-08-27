@@ -223,11 +223,46 @@ const ensureSeoSettings = async (payload: Payload): Promise<void> => {
   });
 };
 
+const seedStrings = async (payload: Payload): Promise<void> => {
+  await payload.updateGlobal({
+    slug: 'strings',
+    locale: 'en',
+    data: {
+      general: {
+        cancelButton: 'Cancel',
+        saveButton: 'Save',
+      },
+      auth: {
+        loginTitle: 'Sign in',
+        loginSubmit: 'Sign in',
+      },
+    },
+  });
+
+  await payload.updateGlobal({
+    slug: 'strings',
+    locale: 'es',
+    data: {
+      general: {
+        cancelButton: 'Cancelar',
+        // Empty on purpose so the strings fixture demonstrates the
+        // defaultValue ("Save") returned by getTranslations.
+        saveButton: '',
+      },
+      auth: {
+        loginTitle: 'Iniciar sesión',
+        loginSubmit: 'Iniciar sesión',
+      },
+    },
+  });
+};
+
 export const seed = async (payload: Payload): Promise<void> => {
   await ensureDevUser(payload);
   await ensureSeoSettings(payload);
   await ensureSamplePage(payload);
   await ensureSampleCategories(payload);
+  await seedStrings(payload);
 };
 
 export const script = async (config: SanitizedConfig): Promise<void> => {

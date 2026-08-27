@@ -20,6 +20,7 @@ import {
 import { permalinkPlugin } from '@sittari/payload-permalink';
 import { rbacPlugin } from '@sittari/payload-rbac';
 import { seoPlugin } from '@sittari/payload-seo';
+import { stringsPlugin } from '@sittari/payload-strings';
 import { templateField, templatesPlugin } from '@sittari/payload-templates';
 
 import { uk } from '@payloadcms/translations/languages/uk';
@@ -148,6 +149,13 @@ export default buildConfig({
       uk,
       ru,
     },
+  },
+  localization: {
+    defaultLocale: 'en',
+    locales: [
+      { code: 'en', label: 'English' },
+      { code: 'es', label: 'Español' },
+    ],
   },
   editor: lexicalEditor({
     features: ({ defaultFeatures }) => [
@@ -292,6 +300,30 @@ export default buildConfig({
           },
         },
       ],
+    }),
+    stringsPlugin({
+      scopes: {
+        general: {
+          labels: { en: 'General', ru: 'Genera1l' },
+          strings: {
+            cancelButton: {
+              defaultValue: 'Cancel',
+              description: {
+                en: 'Label for destructive actions.',
+                ru: 'Etiqueta para acciones destructivas.',
+              },
+            },
+            saveButton: { defaultValue: 'Save' },
+          },
+        },
+        auth: {
+          labels: { en: 'Authentication', es: 'Autenticación' },
+          strings: {
+            loginTitle: { defaultValue: 'Sign in' },
+            loginSubmit: { defaultValue: 'Sign in' },
+          },
+        },
+      },
     }),
     // Keep RBAC last so its matrix and access rules include collections and
     // globals introduced by every plugin above.

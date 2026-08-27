@@ -65,6 +65,9 @@ importers:
       '@sittari/payload-seo':
         specifier: workspace:*
         version: link:../packages/seo
+      '@sittari/payload-strings':
+        specifier: workspace:*
+        version: link:../packages/strings
       '@sittari/payload-templates':
         specifier: workspace:*
         version: link:../packages/templates
@@ -98,7 +101,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 4.1.9
-        version: 4.1.9(@types/node@26.1.0)(happy-dom@20.10.6)(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(jiti@1.21.7)(sass@1.77.4)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.9(@types/node@26.1.0)(happy-dom@20.10.6)(vite@8.1.3(@types/node@26.1.0)(esbuild@0.25.12)(jiti@1.21.7)(sass@1.77.4)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/link-field:
     dependencies:
@@ -138,7 +141,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: 4.1.9
-        version: 4.1.9(@types/node@26.1.0)(happy-dom@20.10.6)(vite@8.1.3(@types/node@26.1.0)(esbuild@0.25.12)(jiti@1.21.7)(sass@1.77.4)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.9(@types/node@26.1.0)(happy-dom@20.10.6)(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(jiti@1.21.7)(sass@1.77.4)(tsx@4.22.4)(yaml@2.9.0))
 
   packages/pages:
     devDependencies:
@@ -269,6 +272,21 @@ importers:
       react:
         specifier: ^19.0.0
         version: 19.2.7
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 4.1.9
+        version: 4.1.9(@types/node@26.1.0)(happy-dom@20.10.6)(vite@8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(jiti@1.21.7)(sass@1.77.4)(tsx@4.22.4)(yaml@2.9.0))
+
+  packages/strings:
+    devDependencies:
+      '@payloadcms/db-sqlite':
+        specifier: 3.85.2
+        version: 3.85.2(payload@3.85.2(graphql@16.14.2)(typescript@5.9.3))
+      payload:
+        specifier: ^3.0.0
+        version: 3.85.2(graphql@16.14.2)(typescript@5.9.3)
       typescript:
         specifier: 5.9.3
         version: 5.9.3
@@ -6865,7 +6883,7 @@ snapshots:
       picomatch: 4.0.5
       std-env: 4.1.0
       tinybench: 2.9.0
-      tinyexec: 1.2.4
+      tinyexec: 1.3.0
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
       vite: 8.1.3(@types/node@26.1.0)(esbuild@0.25.12)(jiti@1.21.7)(sass@1.77.4)(tsx@4.22.4)(yaml@2.9.0)
@@ -6893,7 +6911,7 @@ snapshots:
       picomatch: 4.0.5
       std-env: 4.1.0
       tinybench: 2.9.0
-      tinyexec: 1.2.4
+      tinyexec: 1.3.0
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
       vite: 8.1.3(@types/node@26.1.0)(esbuild@0.28.1)(jiti@1.21.7)(sass@1.77.4)(tsx@4.22.4)(yaml@2.9.0)
