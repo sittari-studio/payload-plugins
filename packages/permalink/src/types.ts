@@ -27,6 +27,7 @@ export const PATH_FIELD_RUNTIME_CONFIG_KEY =
   '@sittari/payload-permalink/config';
 export const PATH_ALLOW_UNRESOLVED_CONTEXT_KEY =
   'sittariPathFieldAllowUnresolved';
+export const PATH_AUTOSAVE_CONTEXT_KEY = 'sittariPathFieldAutosave';
 export const PATH_REMOVE_ALL_ROUTES_CONTEXT_KEY =
   'sittariPathFieldRemoveAllRoutes';
 export const PATH_REBUILD_CONTEXT_KEY = 'sittariPathFieldRebuild';

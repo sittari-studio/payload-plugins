@@ -200,6 +200,41 @@ describe('permalinkPlugin', () => {
     );
   });
 
+  it('does not regenerate slugs during autosaves', async () => {
+    const output = createPlugin()(baseConfig()) as Config;
+    const pages = getPages(output);
+    const beforeOperation = pages.hooks?.beforeOperation?.at(-1);
+    const beforeChange = pages.hooks?.beforeChange?.at(-1);
+    const context: Record<string, unknown> = {};
+    const req = makeReq({ context, locale: 'en', payload: {} });
+
+    const beforeOperationArgs: Record<string, unknown> = {
+      args: {
+        autosave: true,
+        collection: pages as never,
+        context,
+        data: { title: 'Partially typed' },
+        draft: true,
+        req,
+      },
+      collection: pages as never,
+      operation: 'update',
+      req,
+    };
+    await beforeOperation?.(beforeOperationArgs as never);
+
+    await expect(
+      beforeChange?.({
+        collection: pages as never,
+        context,
+        data: { slug: 'partially', title: 'Partially typed' },
+        operation: 'update',
+        originalDoc: { id: 1, path: '/existing', slug: 'existing' },
+        req,
+      }),
+    ).resolves.toMatchObject({ path: '/existing', slug: 'existing' });
+  });
+
   it('allows an unresolved slug for drafts but not published writes', async () => {
     const output = createPlugin()(baseConfig()) as Config;
     const pages = getPages(output);

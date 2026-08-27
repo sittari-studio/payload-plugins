@@ -19,6 +19,7 @@ import { translatePathValidationMessage } from './translations.js';
 import type { LocalePrefixMode, PathCollectionOptions } from './types.js';
 import {
   PATH_ALLOW_UNRESOLVED_CONTEXT_KEY,
+  PATH_AUTOSAVE_CONTEXT_KEY,
   PATH_REBUILD_CONTEXT_KEY,
   PATH_REMOVE_ALL_ROUTES_CONTEXT_KEY,
 } from './types.js';
@@ -146,16 +147,23 @@ export const markPathUnresolvedOperation: CollectionBeforeOperationHook = ({
   const isReleasingRoute =
     ('unpublishAllLocales' in args && isTrue(args.unpublishAllLocales)) ||
     data?.deletedAt != null;
-  const allowsUnresolved =
+  const isRoutableWrite =
     (operation === 'create' || operation === 'update') &&
     !isPublishing &&
-    !isReleasingRoute &&
+    !isReleasingRoute;
+  const allowsUnresolved =
+    isRoutableWrite &&
     (('autosave' in args && args.autosave === true) ||
       ('draft' in args && args.draft === true));
+  const isAutosave =
+    isRoutableWrite && 'autosave' in args && args.autosave === true;
   const context = args.req?.context;
 
   if (context && allowsUnresolved) {
     context[PATH_ALLOW_UNRESOLVED_CONTEXT_KEY] = true;
+  }
+  if (context && isAutosave) {
+    context[PATH_AUTOSAVE_CONTEXT_KEY] = true;
   }
   if (
     context &&
@@ -332,6 +340,15 @@ export const createPathBeforeChangeHook = ({
     const allowUnresolved =
       context[PATH_ALLOW_UNRESOLVED_CONTEXT_KEY] === true ||
       context[PATH_REBUILD_CONTEXT_KEY] === true;
+
+    // Autosaves must never generate slugs: a mid-edit autosave would otherwise
+    // freeze the slug from a partially typed title. Keep whatever is stored.
+    if (context[PATH_AUTOSAVE_CONTEXT_KEY] === true) {
+      const preserved: Record<string, unknown> = {};
+      if ('path' in (originalDoc ?? {})) preserved.path = originalDoc?.path;
+      if ('slug' in (originalDoc ?? {})) preserved.slug = originalDoc?.slug;
+      return { ...effectiveData, ...preserved };
+    }
 
     if (requestLocale === 'all') {
       const paths: Record<string, null | string> = {};
