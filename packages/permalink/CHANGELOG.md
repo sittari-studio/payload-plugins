@@ -1,5 +1,11 @@
 # @sittari/payload-permalink
 
+## 1.0.2
+
+### Patch Changes
+
+- 10de10d: skip slug generation during autosaves
+
 ## 1.0.1
 
 ### Patch Changes
