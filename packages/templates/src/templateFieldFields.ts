@@ -115,13 +115,67 @@ const isEmptyValue = (value: unknown): boolean =>
   (Array.isArray(value) && value.length === 0) ||
   (isPlainObject(value) && Object.keys(value).length === 0);
 
+type MergeOptions = {
+  fallbackLocale?: unknown;
+  flattenLocalizedValues?: boolean;
+  locale?: string;
+};
+
+const hasOwn = (value: object, key: string): boolean =>
+  Object.prototype.hasOwnProperty.call(value, key);
+
+const getFallbackLocales = (fallbackLocale: unknown): string[] => {
+  if (typeof fallbackLocale === 'string') {
+    return [fallbackLocale];
+  }
+
+  return Array.isArray(fallbackLocale)
+    ? fallbackLocale.filter(
+        (locale): locale is string => typeof locale === 'string',
+      )
+    : [];
+};
+
+const getLocalizedTemplateValue = (
+  templateValue: unknown,
+  { fallbackLocale, locale }: MergeOptions,
+): unknown => {
+  if (!locale || !isPlainObject(templateValue)) {
+    return templateValue;
+  }
+
+  const localizedValue = hasOwn(templateValue, locale)
+    ? templateValue[locale]
+    : undefined;
+  if (!isEmptyValue(localizedValue)) {
+    return localizedValue;
+  }
+
+  for (const fallback of getFallbackLocales(fallbackLocale)) {
+    const fallbackValue = hasOwn(templateValue, fallback)
+      ? templateValue[fallback]
+      : undefined;
+    if (!isEmptyValue(fallbackValue)) {
+      return fallbackValue;
+    }
+  }
+
+  return hasOwn(templateValue, locale) ? localizedValue : undefined;
+};
+
 const mergeFieldValue = (
   field: Field,
   localValue: unknown,
   templateValue: unknown,
+  options: MergeOptions,
 ): unknown => {
   if (field.type === 'group') {
-    return mergeStructuralValue(field.fields, localValue, templateValue);
+    return mergeStructuralValue(
+      field.fields,
+      localValue,
+      templateValue,
+      options,
+    );
   }
 
   return isEmptyValue(localValue) && templateValue !== undefined
@@ -133,13 +187,25 @@ const mergeLocalizedFieldValue = (
   field: Field,
   localValue: unknown,
   templateValue: unknown,
+  options: MergeOptions,
 ): unknown => {
+  if (options.flattenLocalizedValues && isPlainObject(localValue)) {
+    localValue = getLocalizedTemplateValue(localValue, options);
+  }
+
   if (isEmptyValue(localValue)) {
-    return templateValue === undefined ? localValue : cloneValue(templateValue);
+    const resolvedTemplateValue =
+      isPlainObject(localValue) && Object.keys(localValue).length > 0
+        ? templateValue
+        : getLocalizedTemplateValue(templateValue, options);
+
+    return resolvedTemplateValue === undefined
+      ? localValue
+      : mergeFieldValue(field, localValue, resolvedTemplateValue, options);
   }
 
   if (!isPlainObject(localValue) || !isPlainObject(templateValue)) {
-    return mergeFieldValue(field, localValue, templateValue);
+    return mergeFieldValue(field, localValue, templateValue, options);
   }
 
   const result = { ...localValue };
@@ -150,6 +216,7 @@ const mergeLocalizedFieldValue = (
       field,
       result[locale],
       localizedTemplateValue,
+      options,
     );
   }
   return result;
@@ -159,14 +226,24 @@ const mergeNamedFields = (
   fields: Field[],
   localValue: unknown,
   templateValue: unknown,
+  options: MergeOptions,
+  preserveTemplateFields = false,
 ): Record<string, unknown> => {
   const localData = isPlainObject(localValue) ? localValue : {};
   const templateData = isPlainObject(templateValue) ? templateValue : {};
-  let result: Record<string, unknown> = { ...localData };
+  let result: Record<string, unknown> = preserveTemplateFields
+    ? (cloneValue(templateData) as Record<string, unknown>)
+    : { ...localData };
 
   for (const field of fields) {
     if (field.type === 'row' || field.type === 'collapsible') {
-      result = mergeNamedFields(field.fields, result, templateData);
+      result = mergeNamedFields(
+        field.fields,
+        result,
+        templateData,
+        options,
+        preserveTemplateFields,
+      );
       continue;
     }
 
@@ -177,16 +254,29 @@ const mergeNamedFields = (
             tab.fields,
             result[tab.name],
             templateData[tab.name],
+            options,
           );
         } else {
-          result = mergeNamedFields(tab.fields, result, templateData);
+          result = mergeNamedFields(
+            tab.fields,
+            result,
+            templateData,
+            options,
+            preserveTemplateFields,
+          );
         }
       }
       continue;
     }
 
     if (field.type === 'group' && !('name' in field)) {
-      result = mergeNamedFields(field.fields, result, templateData);
+      result = mergeNamedFields(
+        field.fields,
+        result,
+        templateData,
+        options,
+        preserveTemplateFields,
+      );
       continue;
     }
 
@@ -202,6 +292,7 @@ const mergeNamedFields = (
         field,
         localFieldValue,
         templateFieldValue,
+        options,
       );
       continue;
     }
@@ -210,6 +301,7 @@ const mergeNamedFields = (
       field,
       localFieldValue,
       templateFieldValue,
+      options,
     );
   }
 
@@ -220,20 +312,26 @@ const mergeStructuralValue = (
   fields: Field[],
   localValue: unknown,
   templateValue: unknown,
+  options: MergeOptions,
 ): unknown => {
   if (isEmptyValue(localValue)) {
-    return templateValue === undefined ? localValue : cloneValue(templateValue);
+    return templateValue === undefined
+      ? localValue
+      : isPlainObject(templateValue)
+        ? mergeNamedFields(fields, {}, templateValue, options, true)
+        : cloneValue(templateValue);
   }
 
   if (!isPlainObject(localValue) || !isPlainObject(templateValue)) {
     return localValue;
   }
 
-  return mergeNamedFields(fields, localValue, templateValue);
+  return mergeNamedFields(fields, localValue, templateValue, options);
 };
 
 export const mergeTemplateValues = (
   fields: Field[],
   localValue: unknown,
   templateValue: unknown,
-): unknown => mergeStructuralValue(fields, localValue, templateValue);
+  options: MergeOptions = {},
+): unknown => mergeStructuralValue(fields, localValue, templateValue, options);

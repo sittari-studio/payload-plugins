@@ -11,6 +11,15 @@ type TemplateFieldCache = {
   warned: Set<string>;
 };
 
+const isPlainObject = (value: unknown): value is Record<string, unknown> => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+};
+
 const isPathWithinRoute = (pathname: string, route: string): boolean => {
   const normalizedRoute = route === '/' ? route : route.replace(/\/+$/, '');
 
@@ -114,15 +123,79 @@ const getCache = (context: Record<string, unknown>): TemplateFieldCache => {
 const localeCacheKey = (locale: unknown): string =>
   Array.isArray(locale) ? locale.join(',') : String(locale ?? '');
 
+const containsReference = (
+  value: unknown,
+  target: unknown,
+  seen: Set<object> = new Set(),
+): boolean => {
+  if (value === target) {
+    return true;
+  }
+
+  if (!value || typeof value !== 'object' || seen.has(value)) {
+    return false;
+  }
+
+  seen.add(value);
+
+  return Array.isArray(value)
+    ? value.some((childValue) => containsReference(childValue, target, seen))
+    : Object.values(value).some((childValue) =>
+        containsReference(childValue, target, seen),
+      );
+};
+
+const isLexicalDocument = (value: unknown): boolean =>
+  isPlainObject(value) &&
+  isPlainObject(value.root) &&
+  Array.isArray(value.root.children);
+
+const isLocalizedRichTextValue = ({
+  data,
+  path,
+  value,
+}: {
+  data?: unknown;
+  path?: (number | string)[];
+  value: unknown;
+}): boolean => {
+  if (!data || !path?.length || !isPlainObject(data)) {
+    return false;
+  }
+
+  const firstPathSegment = path[0];
+  if (typeof firstPathSegment !== 'string') {
+    return false;
+  }
+
+  const richTextValue = data[firstPathSegment];
+  if (isLexicalDocument(richTextValue)) {
+    return true;
+  }
+
+  return (
+    isPlainObject(richTextValue) &&
+    Object.values(richTextValue).some(
+      (localizedValue) =>
+        isLexicalDocument(localizedValue) &&
+        containsReference(localizedValue, value),
+    )
+  );
+};
+
 const getEffectiveLocale = ({
   fieldName,
   req,
   siblingData,
+  data,
+  path,
   value,
 }: {
   fieldName: string;
   req: PayloadRequest;
   siblingData: Record<string, unknown>;
+  data?: unknown;
+  path?: (number | string)[];
   value: unknown;
 }): string | undefined => {
   if (req.locale !== 'all') {
@@ -130,16 +203,34 @@ const getEffectiveLocale = ({
   }
 
   const localizedValues = siblingData[fieldName];
-  if (
-    !localizedValues ||
-    typeof localizedValues !== 'object' ||
-    Array.isArray(localizedValues)
-  ) {
+  if (isPlainObject(localizedValues)) {
+    const siblingLocale = Object.entries(localizedValues).find(
+      ([, localizedValue]) => localizedValue === value,
+    )?.[0];
+
+    if (siblingLocale) {
+      return siblingLocale;
+    }
+  }
+
+  // Lexical runs localized node hooks with req.locale set to `all`. Locate the
+  // current node in the corresponding localized document to recover its locale.
+  if (!data || !path?.length || !isPlainObject(data)) {
     return undefined;
   }
 
-  return Object.entries(localizedValues).find(
-    ([, localizedValue]) => localizedValue === value,
+  const firstPathSegment = path[0];
+  if (typeof firstPathSegment !== 'string') {
+    return undefined;
+  }
+
+  const localizedDocument = data[firstPathSegment];
+  if (!isPlainObject(localizedDocument)) {
+    return undefined;
+  }
+
+  return Object.entries(localizedDocument).find(([, localizedValue]) =>
+    containsReference(localizedValue, value),
   )?.[0];
 };
 
@@ -153,7 +244,7 @@ export const createTemplateFallbackHook =
     localized: boolean;
     template: string;
   }): FieldHook =>
-  async ({ context, field, req, siblingData, value }) => {
+  async ({ context, data, field, path, req, siblingData, value }) => {
     if (!shouldResolveTemplateFields({ context, req })) {
       return value;
     }
@@ -165,6 +256,8 @@ export const createTemplateFallbackHook =
       fieldName,
       req,
       siblingData,
+      data,
+      path,
       value,
     });
     const cacheKey = [
@@ -212,5 +305,9 @@ export const createTemplateFallbackHook =
       return value;
     }
 
-    return mergeTemplateValues(fields, value, document[groupField]);
+    return mergeTemplateValues(fields, value, document[groupField], {
+      fallbackLocale: req.fallbackLocale,
+      flattenLocalizedValues: isLocalizedRichTextValue({ data, path, value }),
+      locale,
+    });
   };

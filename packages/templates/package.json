@@ -46,6 +46,7 @@
   },
   "devDependencies": {
     "@payloadcms/db-sqlite": "3.85.2",
+    "@payloadcms/richtext-lexical": "3.85.2",
     "@types/react": "^19.0.0",
     "payload": "^3.0.0",
     "react": "^19.0.0",
