@@ -291,10 +291,28 @@ describe('permalinkPlugin', () => {
 });
 
 describe('permalink display', () => {
-  it('keeps the stored canonical path while the slug is being edited', () => {
+  it('keeps the stored canonical path without a prior slug', () => {
     expect(permalinkDisplayPath('/', 'home')).toBe('/');
     expect(permalinkDisplayPath('/blog/one-value', 'changed', 'blog')).toBe(
       '/blog/one-value',
+    );
+  });
+
+  it('optimistically replaces the stored slug in the canonical path', () => {
+    expect(
+      permalinkDisplayPath(
+        '/blog/parent/one-value',
+        'changed',
+        'blog',
+        'one-value',
+      ),
+    ).toBe('/blog/parent/changed');
+    expect(permalinkDisplayPath('/', 'about', '', '__home')).toBe('/about');
+    expect(permalinkDisplayPath('/uk', 'about', '', '__home')).toBe(
+      '/uk/about',
+    );
+    expect(permalinkDisplayPath('/blog/about', '__home', 'blog', 'about')).toBe(
+      '/blog',
     );
   });
 

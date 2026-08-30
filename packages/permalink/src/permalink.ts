@@ -17,9 +17,21 @@ export const permalinkDisplayPath = (
   storedPath: string | null,
   slug: string,
   prefix = '',
+  storedSlug = slug,
 ): string => {
-  if (storedPath) return storedPath;
-  return joinPathSegments(prefix, slug === HOME_SLUG ? undefined : slug);
+  if (!storedPath) {
+    return joinPathSegments(prefix, slug === HOME_SLUG ? undefined : slug);
+  }
+  if (slug === storedSlug) return storedPath;
+  if (storedSlug === HOME_SLUG) {
+    return joinPathSegments(storedPath, slug === HOME_SLUG ? undefined : slug);
+  }
+
+  const storedSlugSuffix = `/${storedSlug}`;
+  if (!storedPath.endsWith(storedSlugSuffix)) return storedPath;
+
+  const parentPath = storedPath.slice(0, -storedSlugSuffix.length);
+  return joinPathSegments(parentPath, slug === HOME_SLUG ? undefined : slug);
 };
 
 export const permalinkPrefix = ({

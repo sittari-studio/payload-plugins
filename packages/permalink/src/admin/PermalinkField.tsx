@@ -25,6 +25,11 @@ type PermalinkFieldProps = {
   slugSourceFieldName: string;
 };
 
+type OptimisticPath = {
+  path: string;
+  sourcePath: unknown;
+};
+
 const translations = {
   en: { cancel: 'Cancel', edit: 'Edit', label: 'Permalink', ok: 'OK' },
   ru: {
@@ -112,7 +117,13 @@ export const PermalinkField = ({
   const language = i18n.language.split('-')[0] as keyof typeof translations;
   const strings = translations[language] ?? translations.en;
   const slug = typeof slugValue === 'string' ? slugValue : '';
-  const path = normalizePath(pathValue);
+  const [optimisticPath, setOptimisticPath] = useState<OptimisticPath | null>(
+    null,
+  );
+  const path =
+    optimisticPath && Object.is(optimisticPath.sourcePath, pathValue)
+      ? optimisticPath.path
+      : normalizePath(pathValue);
   const displayPath = permalinkDisplayPath(path, slug, prefix);
   const url = joinUrl(siteUrl, displayPath);
   const [draftSlug, setDraftSlug] = useState(slug);
@@ -136,6 +147,10 @@ export const PermalinkField = ({
         ? formatPermalinkSlug(valueToSlugify, locale.code)
         : '';
 
+    setOptimisticPath({
+      path: permalinkDisplayPath(path, formatted, prefix, slug),
+      sourcePath: pathValue,
+    });
     setValue(formatted);
     setEditing(false);
   };
