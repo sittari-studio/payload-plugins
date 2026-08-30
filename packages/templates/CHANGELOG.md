@@ -1,5 +1,11 @@
 # @sittari/payload-templates
 
+## 0.4.2
+
+### Patch Changes
+
+- 3a0b63b: Resolve localized template fields inside localized Lexical Rich Text blocks using the requested locale instead of returning locale maps.
+
 ## 0.4.0
 
 ### Minor Changes
