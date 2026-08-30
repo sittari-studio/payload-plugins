@@ -1,5 +1,11 @@
 # @sittari/payload-permalink
 
+## 1.0.3
+
+### Patch Changes
+
+- 8fb6067: Update the permalink preview immediately after editing a slug.
+
 ## 1.0.2
 
 ### Patch Changes

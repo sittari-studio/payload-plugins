@@ -1,6 +1,6 @@
 {
   "name": "@sittari/payload-permalink",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "WordPress-style slugs, canonical paths, permalinks, and routing helpers for Payload CMS.",
   "type": "module",
   "license": "MIT",
