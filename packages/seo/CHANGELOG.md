@@ -1,5 +1,11 @@
 # @sittari/payload-seo
 
+## 0.2.4
+
+### Patch Changes
+
+- 0911d32: Refactor sitemap manifest resolution and localized enrichment.
+
 ## 0.2.3
 
 ### Patch Changes
