@@ -81,7 +81,7 @@ export type SeoSitemapConfig = {
    * projected; the callback receives exactly this projection plus SEO state.
    */
   fields?: readonly string[];
-  /** Return false to omit a document after its effective SEO state is resolved. */
+  /** Return true to omit a document after its effective SEO state is resolved. */
   exclude?: (input: {
     collection: string;
     document: SeoDocument;

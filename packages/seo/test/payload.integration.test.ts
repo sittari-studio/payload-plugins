@@ -55,6 +55,9 @@ const seoPayload = (): SeoPayload => ({
       limit: options.limit as number,
       page: options.page as number | undefined,
       pagination: options.pagination as boolean | undefined,
+      sort: options.sort as string | undefined,
+      where: options.where as never,
+      select: options.select as never,
     });
     return { docs: result.docs as SeoDocument[], totalDocs: result.totalDocs };
   },

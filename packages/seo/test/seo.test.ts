@@ -39,6 +39,7 @@ import {
   type SeoDocument,
   type SeoEnabledPluginConfig,
   type SeoPluginConfig,
+  type SeoPayload,
 } from '../src/types.js';
 import { releasePages, releasePayload, releaseSettings } from './fixtures.js';
 
@@ -915,7 +916,19 @@ describe('effective SEO resolution regression coverage', () => {
 });
 
 describe('frontend helpers', () => {
-  const runtimePayload = () => {
+  type RuntimePayload = Omit<
+    SeoPayload,
+    'config' | 'find' | 'findByID' | 'findGlobal'
+  > & {
+    config: NonNullable<SeoPayload['config']> & {
+      custom: Record<string, unknown>;
+    };
+    find: NonNullable<SeoPayload['find']> & ReturnType<typeof vi.fn>;
+    findByID: SeoPayload['findByID'] & ReturnType<typeof vi.fn>;
+    findGlobal: SeoPayload['findGlobal'] & ReturnType<typeof vi.fn>;
+  };
+
+  const runtimePayload = (): RuntimePayload => {
     const config = validConfig();
     config.collections.pages.fields = { title: 'title' };
     return {
@@ -1167,6 +1180,139 @@ describe('frontend helpers', () => {
         select: { destination: true, destinationType: true, statusCode: true },
       }),
     );
+  });
+
+  it('keeps the sitemap index manifest-only', async () => {
+    const payload = runtimePayload();
+    const config = payload.config.custom[
+      SEO_RUNTIME_CONFIG_KEY
+    ] as SeoEnabledPluginConfig;
+    const lastModified = vi.fn(() => '2026-01-02T03:04:05.000Z');
+    config.collections.pages.lastModified = lastModified;
+
+    await renderSitemapIndexXml({ payload });
+
+    expect(lastModified).not.toHaveBeenCalled();
+    expect(payload.findByID).not.toHaveBeenCalled();
+    expect(config.resolveUrl).toHaveBeenCalledTimes(2);
+    expect(
+      payload.find.mock.calls.some((call) =>
+        Boolean((call[0] as Record<string, unknown>).where),
+      ),
+    ).toBe(false);
+    expect(payload.find.mock.calls).toEqual(
+      expect.arrayContaining([
+        [expect.objectContaining({ collection: 'pages', sort: 'id' })],
+      ]),
+    );
+  });
+
+  it('batches projected alternate reads and reuses the active SEO decision', async () => {
+    const payload = runtimePayload();
+    const config = payload.config.custom[
+      SEO_RUNTIME_CONFIG_KEY
+    ] as SeoEnabledPluginConfig;
+    config.collections.pages.sitemap = { fields: ['slug'] };
+    const resolveUrl = vi.fn(({ locale }) =>
+      locale === 'es' ? '/pagina' : '/page',
+    );
+    config.resolveUrl = resolveUrl;
+    payload.find = vi.fn(async ({ where, locale }) =>
+      where
+        ? {
+            docs: [
+              {
+                id: 'page-1',
+                _status: 'published',
+                slug: 'pagina',
+              },
+            ],
+            totalDocs: 1,
+          }
+        : {
+            docs: [
+              {
+                id: 'page-1',
+                _status: 'published',
+                slug: locale === 'es' ? 'pagina' : 'page',
+              },
+            ],
+            totalDocs: 1,
+          },
+    );
+
+    const xml = await renderSitemapXml({
+      payload,
+      collection: 'pages',
+      locale: 'en',
+      page: 1,
+    });
+    const alternateCalls = payload.find.mock.calls.filter((call) =>
+      Boolean((call[0] as Record<string, unknown>).where),
+    );
+
+    expect(alternateCalls).toHaveLength(1);
+    expect(alternateCalls[0]![0]).toMatchObject({
+      collection: 'pages',
+      locale: 'es',
+      depth: 0,
+      fallbackLocale: false,
+      pagination: false,
+      sort: 'id',
+      where: { id: { in: ['page-1'] } },
+      select: {
+        id: true,
+        slug: true,
+        updatedAt: true,
+        seo: true,
+        _status: true,
+        deletedAt: true,
+        _deleted: true,
+      },
+    });
+    expect(resolveUrl.mock.calls.map(([input]) => input.locale)).toEqual([
+      'en',
+      'es',
+    ]);
+    expect(xml).toContain(
+      '<xhtml:link rel="alternate" hreflang="es" href="https://example.com/pagina"/>',
+    );
+  });
+
+  it('applies alternate-locale settings when deciding hreflang eligibility', async () => {
+    const payload = runtimePayload();
+    payload.findGlobal = vi.fn(async ({ locale }) => ({
+      defaultRobots: {
+        mode: locale === 'es' ? 'noindex-follow' : 'index-follow',
+      },
+    }));
+    payload.find = vi.fn(async ({ where }) =>
+      where
+        ? {
+            docs: [{ id: 'page-1', _status: 'published' }],
+            totalDocs: 1,
+          }
+        : {
+            docs: [{ id: 'page-1', _status: 'published' }],
+            totalDocs: 1,
+          },
+    );
+
+    const xml = await renderSitemapXml({
+      payload,
+      collection: 'pages',
+      locale: 'en',
+      page: 1,
+    });
+
+    expect(payload.findGlobal).toHaveBeenCalledTimes(2);
+    expect(
+      payload.findGlobal.mock.calls.map(
+        (call) => (call[0] as Record<string, unknown>).locale,
+      ),
+    ).toEqual(expect.arrayContaining(['en', 'es']));
+    expect(xml).toContain('<xhtml:link rel="alternate" hreflang="en"');
+    expect(xml).not.toContain('hreflang="es"');
   });
 
   it('keeps the healthy sitemap entries when one document callback fails', async () => {
@@ -1731,9 +1877,8 @@ describe('release readiness fixture scenarios', () => {
     async (totalDocs, chunks) => {
       const payload = releasePayload();
       payload.config!.localization = undefined;
-      payload.find = vi.fn(async ({ collection, limit, page }) => {
+      const find = vi.fn(async ({ collection, page }) => {
         if (collection !== 'pages') return { docs: [], totalDocs: 0 };
-        if (limit === 0) return { docs: [], totalDocs };
         const start = ((page as number) - 1) * 25_000;
         const size = Math.max(0, Math.min(25_000, totalDocs - start));
         return {
@@ -1745,10 +1890,95 @@ describe('release readiness fixture scenarios', () => {
           totalDocs,
         };
       });
+      payload.find = find;
       const xml = await renderSitemapIndexXml({ payload });
       expect(xml.match(/<sitemap>/g)).toHaveLength(chunks);
+      expect(find).not.toHaveBeenCalledWith(
+        expect.objectContaining({ limit: 0, pagination: false }),
+      );
+      expect(find.mock.calls.every(([options]) => options.sort === 'id')).toBe(
+        true,
+      );
     },
   );
+
+  it('keeps canonical collisions from shifting post-deduplication chunk boundaries', async () => {
+    const payload = releasePayload();
+    payload.config!.localization = undefined;
+    const config = payload.config!.custom![
+      SEO_RUNTIME_CONFIG_KEY
+    ] as SeoEnabledPluginConfig;
+    const lastModified = vi.fn(() => null);
+    config.collections.pages.lastModified = lastModified;
+    const firstPage = [
+      ...Array.from({ length: 24_999 }, (_, index) => ({
+        id: index,
+        _status: 'published',
+        slug: `boundary-${index}`,
+      })),
+      {
+        id: 'winner',
+        _status: 'published',
+        slug: 'winner',
+        seo: {
+          canonical: {
+            mode: 'manual',
+            url: 'https://example.com/shared',
+          },
+        },
+      },
+    ];
+    const loser = {
+      id: 'loser',
+      _status: 'published',
+      slug: 'loser',
+      seo: {
+        canonical: {
+          mode: 'manual',
+          url: 'https://example.com/shared/',
+        },
+      },
+    };
+    const find = vi.fn(
+      async ({ collection, page }: Record<string, unknown>) => {
+        if (collection !== 'pages') return { docs: [], totalDocs: 0 };
+        return {
+          docs: page === 2 ? [loser] : firstPage,
+          totalDocs: 25_001,
+        };
+      },
+    );
+    payload.find = find;
+
+    const index = await renderSitemapIndexXml({ payload });
+    const firstChunk = await renderSitemapXml({
+      payload,
+      collection: 'pages',
+      locale: 'en',
+      page: 1,
+    });
+    const secondChunk = await renderSitemapXml({
+      payload,
+      collection: 'pages',
+      locale: 'en',
+      page: 2,
+    });
+
+    expect(index.match(/<sitemap>/g)).toHaveLength(1);
+    expect(firstChunk.match(/<url>/g)).toHaveLength(25_000);
+    expect(firstChunk).toContain('<loc>https://example.com/shared</loc>');
+    expect(secondChunk).not.toContain('shared');
+    expect(lastModified).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        document: expect.objectContaining({ id: 'loser' }),
+      }),
+    );
+    expect(
+      find.mock.calls.every(
+        (call) => (call[0] as Record<string, unknown>).sort === 'id',
+      ),
+    ).toBe(true);
+  });
 
   it('renders a valid empty sitemap when the requested page has no documents', async () => {
     const payload = releasePayload();
@@ -1776,10 +2006,14 @@ describe('release readiness fixture scenarios', () => {
   it('deduplicates final normalized canonical URLs with the first stable document as winner', async () => {
     const payload = releasePayload();
     payload.config!.localization = undefined;
-    payload.find = vi.fn(async ({ collection, limit }) =>
-      collection === 'pages' && limit === 0
-        ? { docs: [], totalDocs: 3 }
-        : {
+    const config = payload.config!.custom![
+      SEO_RUNTIME_CONFIG_KEY
+    ] as SeoEnabledPluginConfig;
+    const lastModified = vi.fn(({ document }) => document.updatedAt);
+    config.collections.pages.lastModified = lastModified;
+    payload.find = vi.fn(async ({ collection }) =>
+      collection === 'pages'
+        ? {
             docs: [
               {
                 id: 'first',
@@ -1813,7 +2047,8 @@ describe('release readiness fixture scenarios', () => {
               },
             ],
             totalDocs: 3,
-          },
+          }
+        : { docs: [], totalDocs: 0 },
     );
     const xml = await renderSitemapXml({
       payload,
@@ -1827,6 +2062,12 @@ describe('release readiness fixture scenarios', () => {
     expect(xml).toContain('<lastmod>2026-01-01T00:00:00.000Z</lastmod>');
     expect(xml).not.toContain('2026-02-01');
     expect(xml).not.toContain('2026-03-01');
+    expect(lastModified).toHaveBeenCalledTimes(1);
+    expect(lastModified).toHaveBeenCalledWith(
+      expect.objectContaining({
+        document: expect.objectContaining({ id: 'first' }),
+      }),
+    );
   });
 
   it('uses the metadata alternate map verbatim in localized sitemap XHTML links', async () => {

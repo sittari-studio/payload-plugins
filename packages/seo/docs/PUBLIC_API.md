@@ -56,3 +56,11 @@ with `@context`; multiple schemas use `@graph` under one top-level context.
 `renderSitemapIndexXml` remain framework-neutral. The Next.js adapter remains
 available from `@sittari/payload-seo/next`. Locale-bearing reads explicitly set
 `fallbackLocale: false`.
+
+Sitemap generation first builds a manifest of published, indexable, same-site
+canonicals, then enriches only the requested chunk with `lastmod` and hreflang
+links. Canonical URLs are normalized and deduplicated before enrichment. When
+two eligible documents resolve to the same canonical, the first document in
+the stable `id` sort order wins; this ordering also determines chunk boundaries.
+Returning `true` from a collection's `sitemap.exclude` callback omits that
+document.

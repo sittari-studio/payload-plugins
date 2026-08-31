@@ -1,4 +1,4 @@
-import type { SeoPayload } from '../types.js';
+import type { ResolvedSitemapSeo, SeoDocument, SeoPayload } from '../types.js';
 import { resolveSeoNames } from '../plugin.js';
 import {
   resolveCanonicalRobotsSeo,
@@ -7,10 +7,39 @@ import {
 import { isAbsoluteHttpUrl } from '../utils/validation.js';
 import { isSameSiteUrl, normalizeCanonicalUrl } from '../utils/urls.js';
 import { getSeoRuntimeConfig } from './config.js';
-import { resolveSeoAlternates } from './metadata.js';
+import { resolveSeoAlternatesForSitemap } from './metadata.js';
 
 const PAGE_SIZE = 25_000;
 const RESOLUTION_CONCURRENCY = 16;
+const INDEX_MANIFEST_CONCURRENCY = 4;
+const SITEMAP_SORT = 'id';
+
+const createLimiter = (limit: number) => {
+  let active = 0;
+  const waiters: Array<() => void> = [];
+  const acquire = (): Promise<void> => {
+    if (active < limit) {
+      active++;
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => waiters.push(resolve));
+  };
+  const release = (): void => {
+    const next = waiters.shift();
+    if (next) next();
+    else active--;
+  };
+  return async <T>(task: () => Promise<T>): Promise<T> => {
+    await acquire();
+    try {
+      return await task();
+    } finally {
+      release();
+    }
+  };
+};
+
+const runWithGlobalSitemapConcurrency = createLimiter(RESOLUTION_CONCURRENCY);
 const escapeXml = (value: string): string =>
   value.replace(
     /[&<>"']/g,
@@ -46,6 +75,7 @@ const sitemapSelect = (
     [
       ...new Set([
         'updatedAt',
+        'id',
         '_status',
         'deletedAt',
         '_deleted',
@@ -62,12 +92,27 @@ type SitemapEntry = {
   url: string;
 };
 
+type SitemapManifestEntry = {
+  document: SeoDocument;
+  effective: ResolvedSitemapSeo;
+  url: string;
+};
+
+type SitemapManifest = {
+  config: NonNullable<ReturnType<typeof getSeoRuntimeConfig>>;
+  entries: SitemapManifestEntry[];
+  locale: string;
+  names: ReturnType<typeof resolveSeoNames>;
+  select?: Record<string, true>;
+  settings: SeoDocument;
+};
+
 /**
- * Resolves the complete locale dataset before slicing it into chunks. Collisions
- * are keyed by the final normalized canonical URL; the first eligible document
- * in Payload's stable query order wins.
+ * Resolves only the canonical manifest. Collisions are keyed by the final
+ * normalized canonical URL; the first eligible document in the explicit stable
+ * query order wins.
  */
-const resolveSitemapEntries = async ({
+const resolveSitemapManifest = async ({
   payload,
   collection,
   locale,
@@ -75,7 +120,7 @@ const resolveSitemapEntries = async ({
   payload: SeoPayload;
   collection: string;
   locale: string;
-}): Promise<SitemapEntry[]> => {
+}): Promise<SitemapManifest | null> => {
   const config = getSeoRuntimeConfig(payload);
   const collectionConfig = config?.collections[collection];
   if (
@@ -84,103 +129,89 @@ const resolveSitemapEntries = async ({
     !collectionConfig ||
     collectionConfig.sitemap?.enabled === false
   )
-    return [];
+    return null;
+  const find = payload.find;
   const names = resolveSeoNames(config.names);
-  const settings = await payload.findGlobal({
-    slug: names.settingsGlobal,
-    locale,
-    fallbackLocale: false,
-    draft: false,
-  });
+  const settings = await runWithGlobalSitemapConcurrency(() =>
+    payload.findGlobal({
+      slug: names.settingsGlobal,
+      locale,
+      fallbackLocale: false,
+      draft: false,
+    }),
+  );
   const select = sitemapSelect(
     collectionConfig.sitemap?.fields,
     names.seoField,
   );
-  const count = await payload.find({
+  const sourceQuery = {
     collection,
     locale,
     fallbackLocale: false,
     draft: false,
     depth: 0,
-    limit: 0,
-    pagination: false,
-  });
-  const entries: SitemapEntry[] = [];
+    limit: PAGE_SIZE,
+    page: 1,
+    sort: SITEMAP_SORT,
+    ...(select ? { select } : {}),
+  };
+  const firstPage = await runWithGlobalSitemapConcurrency(() =>
+    find(sourceQuery),
+  );
+  const totalDocs = firstPage.totalDocs ?? firstPage.docs.length;
+  const entries: SitemapManifestEntry[] = [];
   const seen = new Set<string>();
   for (
     let rawPage = 1;
-    rawPage <= Math.ceil((count.totalDocs ?? 0) / PAGE_SIZE);
+    rawPage <= Math.ceil(totalDocs / PAGE_SIZE);
     rawPage++
   ) {
-    const result = await payload.find({
-      collection,
-      locale,
-      fallbackLocale: false,
-      draft: false,
-      depth: 0,
-      limit: PAGE_SIZE,
-      page: rawPage,
-      ...(select ? { select } : {}),
-    });
+    const result =
+      rawPage === 1
+        ? firstPage
+        : await runWithGlobalSitemapConcurrency(() =>
+            find({ ...sourceQuery, page: rawPage }),
+          );
     const resolved = await mapBounded(
       result.docs,
       RESOLUTION_CONCURRENCY,
-      async (document) => {
-        try {
-          const input = {
-            collection,
-            config,
-            document,
-            locale,
-            names,
-            settings,
-          };
-          const effective = await resolveCanonicalRobotsSeo(input);
-          if (
-            !(await resolveSitemapEligibility({ effective, document, input }))
-          )
-            return null;
-          const url = normalizeCanonicalUrl(
-            effective.canonical.url,
-            config.url?.trailingSlash ?? 'never',
-          );
-          if (!url) return null;
-          let lastmod = validDate(document.updatedAt);
-          if (collectionConfig.lastModified)
-            lastmod = validDate(
-              await collectionConfig.lastModified({
-                collection,
-                document,
-                locale,
-              }),
-            );
-          return {
-            url,
-            ...(lastmod ? { lastmod } : {}),
-            alternates: await resolveSeoAlternates({
-              payload,
+      (document) =>
+        runWithGlobalSitemapConcurrency(async () => {
+          try {
+            const input = {
               collection,
-              locale,
-              document,
               config,
+              document,
+              locale,
               names,
               settings,
-            }),
-          };
-        } catch {
-          config.diagnostics?.({
-            area: 'sitemap',
-            collection,
-            documentId:
-              typeof document.id === 'string' || typeof document.id === 'number'
-                ? document.id
-                : undefined,
-            locale,
-            message: 'Sitemap document resolution failed.',
-          });
-          return null;
-        }
-      },
+            };
+            const effective = await resolveCanonicalRobotsSeo(input);
+            if (
+              !(await resolveSitemapEligibility({ effective, document, input }))
+            )
+              return null;
+            const url = normalizeCanonicalUrl(
+              effective.canonical.url,
+              config.url?.trailingSlash ?? 'never',
+            );
+            if (!url) return null;
+            return { document, effective, url };
+          } catch {
+            config.diagnostics?.({
+              area: 'sitemap',
+              collection,
+              documentId:
+                typeof document.id === 'string' ||
+                typeof document.id === 'number'
+                  ? document.id
+                  : undefined,
+              locale,
+              message: 'Sitemap document resolution failed.',
+            });
+            return null;
+          }
+        }),
     );
     for (const entry of resolved) {
       if (!entry) continue;
@@ -197,7 +228,72 @@ const resolveSitemapEntries = async ({
       entries.push(entry);
     }
   }
-  return entries;
+  return { config, entries, locale, names, select, settings };
+};
+
+const enrichSitemapEntries = async ({
+  payload,
+  collection,
+  manifest,
+  entries,
+}: {
+  payload: SeoPayload;
+  collection: string;
+  manifest: SitemapManifest;
+  entries: readonly SitemapManifestEntry[];
+}): Promise<SitemapEntry[]> => {
+  if (!entries.length) return [];
+  const alternatesByDocument = await resolveSeoAlternatesForSitemap({
+    payload,
+    collection,
+    locale: manifest.locale,
+    entries,
+    config: manifest.config,
+    names: manifest.names,
+    settings: manifest.settings,
+    select: manifest.select,
+    runWithGlobalSitemapConcurrency,
+  });
+  const collectionConfig = manifest.config.collections[collection];
+  const resolved = await mapBounded(entries, RESOLUTION_CONCURRENCY, (entry) =>
+    runWithGlobalSitemapConcurrency(async (): Promise<SitemapEntry | null> => {
+      try {
+        let lastmod = validDate(entry.document.updatedAt);
+        if (collectionConfig?.lastModified)
+          lastmod = validDate(
+            await collectionConfig.lastModified({
+              collection,
+              document: entry.document,
+              locale: manifest.locale,
+            }),
+          );
+        const id = entry.document.id;
+        const alternates =
+          typeof id === 'string' || typeof id === 'number'
+            ? (alternatesByDocument.get(`${typeof id}:${id}`) ?? {})
+            : {};
+        return {
+          url: entry.url,
+          ...(lastmod ? { lastmod } : {}),
+          alternates,
+        };
+      } catch {
+        manifest.config.diagnostics?.({
+          area: 'sitemap',
+          collection,
+          documentId:
+            typeof entry.document.id === 'string' ||
+            typeof entry.document.id === 'number'
+              ? entry.document.id
+              : undefined,
+          locale: manifest.locale,
+          message: 'Sitemap document resolution failed.',
+        });
+        return null;
+      }
+    }),
+  );
+  return resolved.filter((entry): entry is SitemapEntry => entry !== null);
 };
 
 const renderEntry = (entry: SitemapEntry): string => {
@@ -223,12 +319,22 @@ export const renderSitemapXml = async ({
 }): Promise<string> => {
   if (!Number.isInteger(page) || page < 1) return empty();
   try {
-    const entries = await resolveSitemapEntries({
+    const manifest = await resolveSitemapManifest({
       payload,
       collection,
       locale,
     });
-    const chunk = entries.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    if (!manifest) return empty();
+    const selectedEntries = manifest.entries.slice(
+      (page - 1) * PAGE_SIZE,
+      page * PAGE_SIZE,
+    );
+    const chunk = await enrichSitemapEntries({
+      payload,
+      collection,
+      manifest,
+      entries: selectedEntries,
+    });
     const xhtml = chunk.some((entry) => Object.keys(entry.alternates).length);
     return xmlDocument(
       `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"${xhtml ? ' xmlns:xhtml="http://www.w3.org/1999/xhtml"' : ''}>${chunk.map(renderEntry).join('')}</urlset>`,
@@ -279,22 +385,39 @@ export const renderSitemapIndexXml = async ({
       ?.map((locale) => (typeof locale === 'string' ? locale : locale.code))
       .filter((locale): locale is string => Boolean(locale)) ?? [];
   const effectiveLocales = locales.length ? locales : [''];
-  const entries: string[] = [];
+  const work: Array<{ collection: string; locale: string }> = [];
   for (const [collection, collectionConfig] of Object.entries(
     config.collections,
   )) {
     if (collectionConfig.sitemap?.enabled === false) continue;
-    for (const locale of effectiveLocales) {
+    for (const locale of effectiveLocales) work.push({ collection, locale });
+  }
+  const rendered = await mapBounded(
+    work,
+    INDEX_MANIFEST_CONCURRENCY,
+    async ({ collection, locale }) => {
       try {
-        const count = (
-          await resolveSitemapEntries({ payload, collection, locale })
-        ).length;
-        for (let page = 1; page <= Math.ceil(count / PAGE_SIZE); page++) {
-          const resolvedUrl = await config.resolveChunkUrl({
-            collection,
-            locale,
-            page,
-          });
+        const manifest = await resolveSitemapManifest({
+          payload,
+          collection,
+          locale,
+        });
+        if (!manifest) return '';
+        const entries: string[] = [];
+        for (
+          let page = 1;
+          page <= Math.ceil(manifest.entries.length / PAGE_SIZE);
+          page++
+        ) {
+          const resolvedUrl = await runWithGlobalSitemapConcurrency(() =>
+            Promise.resolve(
+              config.resolveChunkUrl({
+                collection,
+                locale,
+                page,
+              }),
+            ),
+          );
           if (!isAbsoluteHttpUrl(resolvedUrl)) continue;
           const url = resolvedUrl.trim();
           const normalizedUrl = isSameSiteUrl(config.siteUrl, url)
@@ -305,6 +428,7 @@ export const renderSitemapIndexXml = async ({
               `<sitemap><loc>${escapeXml(normalizedUrl)}</loc></sitemap>`,
             );
         }
+        return entries.join('');
       } catch {
         config.diagnostics?.({
           area: 'sitemap',
@@ -312,10 +436,11 @@ export const renderSitemapIndexXml = async ({
           locale,
           message: 'Sitemap index chunk resolution failed.',
         });
+        return '';
       }
-    }
-  }
+    },
+  );
   return xmlDocument(
-    `<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${entries.join('')}</sitemapindex>`,
+    `<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${rendered.join('')}</sitemapindex>`,
   );
 };

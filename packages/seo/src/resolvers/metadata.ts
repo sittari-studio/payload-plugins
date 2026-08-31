@@ -17,10 +17,9 @@ type ResolverOptions = {
 };
 
 /** Framework-neutral projection of the shared effective SEO state. */
-export const resolveSeoMetadataCore = async (
-  input: ResolverOptions,
-): Promise<ResolvedSeoMetadata> => {
-  const effective = await resolveEffectiveSeo(input);
+export const projectSeoMetadata = (
+  effective: Awaited<ReturnType<typeof resolveEffectiveSeo>>,
+): ResolvedSeoMetadata => {
   const result: ResolvedSeoMetadata = {};
   if (effective.title) result.title = effective.title;
   if (effective.description) result.description = effective.description;
@@ -41,3 +40,8 @@ export const resolveSeoMetadataCore = async (
     result.schema = composeSchemaGraph(effective.schemas);
   return result;
 };
+
+export const resolveSeoMetadataCore = async (
+  input: ResolverOptions,
+): Promise<ResolvedSeoMetadata> =>
+  projectSeoMetadata(await resolveEffectiveSeo(input));
