@@ -1,6 +1,10 @@
 export { linkField } from './linkField.js';
 export { linkFieldPlugin } from './plugin.js';
-export { LinkFieldFeature } from './lexical/feature.server.js';
+export {
+  LinkFieldFeature,
+  LinkFieldHTMLConverter,
+  LinkFieldHTMLConverters,
+} from './lexical/feature.server.js';
 export {
   $createLinkFieldAutoLinkNode,
   $createLinkFieldNode,

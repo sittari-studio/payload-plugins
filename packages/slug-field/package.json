@@ -38,18 +38,18 @@
     "prepublishOnly": "pnpm run clean && pnpm run build"
   },
   "dependencies": {
-    "@payloadcms/ui": "^3.0.0",
+    "@payloadcms/ui": "4.0.0-canary.33",
     "slugify": "^1.6.9"
   },
   "peerDependencies": {
-    "payload": "^3.0.0",
+    "payload": "^4.0.0-0",
     "react": "^19.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
-    "payload": "^3.0.0",
+    "payload": "4.0.0-canary.33",
     "react": "^19.0.0",
-    "typescript": "5.9.3",
+    "typescript": "6.0.3",
     "vitest": "4.1.9"
   },
   "publishConfig": {

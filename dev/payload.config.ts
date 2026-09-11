@@ -67,17 +67,17 @@ export default buildConfig({
 
     user: 'users',
   },
-  bin: [
-    {
-      key: 'seed',
-      scriptPath: path.resolve(dirname, 'seed.ts'),
+  cli: {
+    commands: {
+      seed: './seed.js#seedCommand',
     },
-  ],
+  },
   collections: [
     {
       slug: 'users',
       auth: true,
       fields: [],
+      versions: false,
     },
     {
       slug: 'media',
@@ -90,6 +90,7 @@ export default buildConfig({
       upload: {
         staticDir: path.resolve(dirname, 'media'),
       },
+      versions: false,
     },
     {
       slug: 'link-field-test',
@@ -110,6 +111,7 @@ export default buildConfig({
           label: 'Link to page',
         }),
       ],
+      versions: false,
     },
     {
       slug: 'categories',
@@ -135,6 +137,7 @@ export default buildConfig({
           required: true,
         },
       ],
+      versions: false,
     },
   ],
   db: sqliteAdapter({
@@ -183,6 +186,7 @@ export default buildConfig({
           type: 'textarea',
         },
       ],
+      versions: false,
     },
   ],
   onInit: async (payload) => {

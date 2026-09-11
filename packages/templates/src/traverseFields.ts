@@ -43,24 +43,16 @@ export const transformField = (
   if (transformed.type === 'blocks') {
     const blocksField = transformed;
     const blocks = blocksField.blocks.map((block) =>
-      transformBlock(block, transformer),
-    );
-    const blockReferences = blocksField.blockReferences?.map((block) =>
       typeof block === 'string' ? block : transformBlock(block, transformer),
     );
     const blocksChanged = blocks.some(
       (block, index) => block !== blocksField.blocks[index],
     );
-    const referencesChanged =
-      blockReferences?.some(
-        (block, index) => block !== blocksField.blockReferences?.[index],
-      ) ?? false;
 
-    if (blocksChanged || referencesChanged) {
+    if (blocksChanged) {
       transformed = {
         ...blocksField,
         blocks,
-        blockReferences,
       };
     }
   }

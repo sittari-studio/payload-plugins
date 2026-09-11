@@ -120,7 +120,7 @@ export const VariableInput = ({
         >
           {matches.map((variable, index) => (
             <Button
-              buttonStyle={index === active ? 'tab' : 'transparent'}
+              buttonStyle={index === active ? 'secondary' : 'ghost'}
               className="seo-variable-option st-w-full st-px-2.5 st-py-2 st-text-left"
               extraButtonProps={{
                 'aria-selected': index === active,
@@ -130,7 +130,7 @@ export const VariableInput = ({
               margin={false}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => choose(variable)}
-              size="small"
+              size="medium"
               type="button"
             >
               <span className="st-grid st-gap-0.5">

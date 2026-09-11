@@ -86,6 +86,24 @@ including when explicitly provided.
 Existing Payload-native custom and internal link nodes are normalized lazily when read or
 opened in the editor; their next save writes only the plugin-owned field shape.
 
+Payload v4 HTML conversion requires custom node converters to be passed explicitly:
+
+```ts
+import {
+  convertLexicalToHTMLAsync,
+  defaultHTMLConvertersAsync,
+} from '@payloadcms/richtext-lexical/html-async';
+import { LinkFieldHTMLConverters } from '@sittari/payload-link-field';
+
+const html = await convertLexicalToHTMLAsync({
+  converters: {
+    ...defaultHTMLConvertersAsync,
+    ...LinkFieldHTMLConverters,
+  },
+  data,
+});
+```
+
 ## Frontend rendering
 
 The React export provides JSX converters for Payload's `RichText` component and is safe to

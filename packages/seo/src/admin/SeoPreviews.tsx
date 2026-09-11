@@ -277,7 +277,7 @@ export const SeoPreviews = (_props: UIFieldClientProps) => {
               buttonStyle="secondary"
               margin={false}
               onClick={() => void copySchema()}
-              size="small"
+              size="medium"
               type="button"
             >
               {schemaCopied ? t('copied') : t('copy')}

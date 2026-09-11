@@ -97,7 +97,7 @@ export const DocumentSchemaManager = ({
     collection,
     custom?.apiRoute,
     document.id,
-    locale.code,
+    locale?.code,
   ]);
   const [loadState, setLoadState] = useState<{
     error?: string;
@@ -127,7 +127,7 @@ export const DocumentSchemaManager = ({
     if (!collection) return;
     const controller = new AbortController();
     const params = new URLSearchParams();
-    if (locale.code) params.set('locale', locale.code);
+    if (locale?.code) params.set('locale', locale.code);
     if (document.id !== undefined) params.set('id', String(document.id));
     fetch(
       `${custom?.apiRoute ?? '/api'}/${collection}/seo-schema-templates?${params}`,
@@ -157,7 +157,7 @@ export const DocumentSchemaManager = ({
     collection,
     custom?.apiRoute,
     document.id,
-    locale.code,
+    locale?.code,
     requestKey,
     schemaAccessDenied,
     schemaLoadFailed,
@@ -333,7 +333,7 @@ export const DocumentSchemaManager = ({
   const collectionTemplates = templates?.collectionTemplates ?? [];
   const localized = isLocalizedSchemaLocale({
     defaultLocale: templates?.defaultLocale,
-    locale: locale.code,
+    locale: locale?.code,
     localization: config.localization,
   });
   const byId = new Map(
@@ -343,7 +343,7 @@ export const DocumentSchemaManager = ({
   return (
     <section className="st-mb-base-150 st-grid st-gap-base [&_.field-type]:st-mb-0 [&_h3]:st-m-0 [&_h4]:st-m-0 [&_p]:st-mb-0 [&_p]:st-mt-[.35rem] [&_p]:st-text-elevation-600">
       {loading ? <p>{t('loadingSchemas')}</p> : null}
-      {loadError ? <Banner type="error">{loadError}</Banner> : null}
+      {loadError ? <Banner type="danger">{loadError}</Banner> : null}
       {templates?.globalSchemas.length ? (
         <div className="st-grid st-gap-base-70">
           <h3>{t('appliedGlobally')}</h3>
@@ -360,7 +360,7 @@ export const DocumentSchemaManager = ({
                   actions={
                     <>
                       <Button
-                        buttonStyle="transparent"
+                        buttonStyle="ghost"
                         disabled={readOnly}
                         margin={false}
                         onClick={(event) =>
@@ -375,7 +375,7 @@ export const DocumentSchemaManager = ({
                       </Button>
                       {customized ? (
                         <Button
-                          buttonStyle="transparent"
+                          buttonStyle="ghost"
                           disabled={readOnly}
                           margin={false}
                           onClick={() => resetGlobal(template.templateId)}
@@ -424,7 +424,7 @@ export const DocumentSchemaManager = ({
             onClick={(event) =>
               openTemplates(event.currentTarget as HTMLElement)
             }
-            size="small"
+            size="medium"
             type="button"
           >
             + {t('addSchema')}
@@ -441,7 +441,7 @@ export const DocumentSchemaManager = ({
                     <>
                       {template ? (
                         <Button
-                          buttonStyle="transparent"
+                          buttonStyle="ghost"
                           disabled={readOnly}
                           margin={false}
                           onClick={(event) =>
@@ -456,7 +456,7 @@ export const DocumentSchemaManager = ({
                         </Button>
                       ) : null}
                       <Button
-                        buttonStyle="transparent"
+                        buttonStyle="ghost"
                         disabled={readOnly}
                         margin={false}
                         onClick={() => duplicateInstance(index)}
@@ -465,7 +465,7 @@ export const DocumentSchemaManager = ({
                         {t('duplicate')}
                       </Button>
                       <Button
-                        buttonStyle="transparent"
+                        buttonStyle="ghost"
                         disabled={readOnly || index === 0}
                         margin={false}
                         onClick={() => moveInstance(index, -1)}
@@ -474,7 +474,7 @@ export const DocumentSchemaManager = ({
                         ↑
                       </Button>
                       <Button
-                        buttonStyle="transparent"
+                        buttonStyle="ghost"
                         disabled={readOnly || index === instances.length - 1}
                         margin={false}
                         onClick={() => moveInstance(index, 1)}
@@ -484,7 +484,7 @@ export const DocumentSchemaManager = ({
                       </Button>
                       {customized ? (
                         <Button
-                          buttonStyle="transparent"
+                          buttonStyle="ghost"
                           disabled={readOnly}
                           margin={false}
                           onClick={() => resetInstance(index)}
@@ -494,7 +494,7 @@ export const DocumentSchemaManager = ({
                         </Button>
                       ) : null}
                       <Button
-                        buttonStyle="transparent"
+                        buttonStyle="ghost"
                         className="!st-text-error-500 hover:!st-bg-error-100 hover:!st-text-error-700"
                         disabled={readOnly}
                         margin={false}
@@ -549,7 +549,7 @@ export const DocumentSchemaManager = ({
             onClick={(event) =>
               openDocumentPicker(event.currentTarget as HTMLElement)
             }
-            size="small"
+            size="medium"
             type="button"
           >
             + {t('createDocumentSchema')}
@@ -562,7 +562,7 @@ export const DocumentSchemaManager = ({
                 actions={
                   <>
                     <Button
-                      buttonStyle="transparent"
+                      buttonStyle="ghost"
                       disabled={readOnly}
                       margin={false}
                       onClick={(event) =>
@@ -576,7 +576,7 @@ export const DocumentSchemaManager = ({
                       {t('edit')}
                     </Button>
                     <Button
-                      buttonStyle="transparent"
+                      buttonStyle="ghost"
                       disabled={readOnly || localized}
                       margin={false}
                       onClick={() => duplicateDocumentSchema(index)}
@@ -585,7 +585,7 @@ export const DocumentSchemaManager = ({
                       {t('duplicate')}
                     </Button>
                     <Button
-                      buttonStyle="transparent"
+                      buttonStyle="ghost"
                       disabled={readOnly || localized || index === 0}
                       margin={false}
                       onClick={() =>
@@ -596,7 +596,7 @@ export const DocumentSchemaManager = ({
                       ↑
                     </Button>
                     <Button
-                      buttonStyle="transparent"
+                      buttonStyle="ghost"
                       disabled={
                         readOnly ||
                         localized ||
@@ -611,7 +611,7 @@ export const DocumentSchemaManager = ({
                       ↓
                     </Button>
                     <Button
-                      buttonStyle="transparent"
+                      buttonStyle="ghost"
                       className="!st-text-error-500 hover:!st-bg-error-100 hover:!st-text-error-700"
                       disabled={readOnly || localized}
                       margin={false}
@@ -682,7 +682,7 @@ export const DocumentSchemaManager = ({
                       <Button
                         buttonStyle="secondary"
                         onClick={() => applyTemplate(template)}
-                        size="small"
+                        size="medium"
                         type="button"
                       >
                         {count ? t('useAgain') : t('use')}

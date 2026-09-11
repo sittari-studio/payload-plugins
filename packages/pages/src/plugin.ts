@@ -61,7 +61,6 @@ const createPagesCollection = (
         autosave: {
           interval: 375,
         },
-        localizeStatus: true,
         schedulePublish: true,
       },
       maxPerDoc: 50,

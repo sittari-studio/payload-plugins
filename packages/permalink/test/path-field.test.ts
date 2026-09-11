@@ -87,7 +87,6 @@ describe('permalinkPlugin', () => {
       name: 'sittariPermalink',
       type: 'ui',
       admin: {
-        disableListColumn: true,
         components: {
           Field: {
             path: '@sittari/payload-permalink/client#PermalinkField',

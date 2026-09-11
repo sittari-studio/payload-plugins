@@ -117,11 +117,11 @@ const ScalarEditor = ({
     <span className="st-flex st-h-full st-min-h-0 st-items-center st-justify-center st-gap-1.5 st-whitespace-nowrap st-text-[11px] st-text-elevation-550">
       {overridden || editingInherited ? (
         <Button
-          buttonStyle="subtle"
+          buttonStyle="ghost"
           disabled={readOnly}
           margin={false}
           onClick={reset}
-          size="xsmall"
+          size="medium"
           type="button"
         >
           {t('reset')}
@@ -130,11 +130,11 @@ const ScalarEditor = ({
         <>
           <Pill size="small">{t('inherited')}</Pill>
           <Button
-            buttonStyle="subtle"
+            buttonStyle="ghost"
             disabled={readOnly}
             margin={false}
             onClick={() => setEditingInherited(true)}
-            size="xsmall"
+            size="medium"
             type="button"
           >
             {t('overrideValue')}
@@ -206,7 +206,7 @@ const TypeMenu = ({
     <div className="st-grid st-min-w-[180px]" role="menu">
       {TYPES.map((type) => (
         <Button
-          buttonStyle="transparent"
+          buttonStyle="ghost"
           extraButtonProps={{ role: 'menuitem' }}
           key={type}
           margin={false}
@@ -214,7 +214,7 @@ const TypeMenu = ({
             onChoose(type);
             close();
           }}
-          size="small"
+          size="medium"
           type="button"
         >
           {t(type)}
@@ -270,7 +270,7 @@ const ContainerEditor = ({
         {breadcrumb.length ? breadcrumb.join(' › ') : t('schemaRoot')}
       </div>
       {!entries.length ? (
-        <Banner type="info">
+        <Banner type="brand">
           {Array.isArray(value) ? t('emptyArray') : t('emptyObject')}
         </Banner>
       ) : null}
@@ -345,13 +345,13 @@ const ContainerEditor = ({
                   <div className="st-flex st-h-full st-min-h-0 st-flex-nowrap st-items-center st-gap-1 st-whitespace-nowrap">
                     <Button
                       aria-label={t('moveUp')}
-                      buttonStyle="transparent"
+                      buttonStyle="ghost"
                       disabled={locked || readOnly || index === 0}
                       margin={false}
                       onClick={() =>
                         onChange(reorderSchemaEntry(value, index, index - 1))
                       }
-                      size="xsmall"
+                      size="medium"
                       tooltip={t('moveUp')}
                       type="button"
                     >
@@ -359,7 +359,7 @@ const ContainerEditor = ({
                     </Button>
                     <Button
                       aria-label={t('moveDown')}
-                      buttonStyle="transparent"
+                      buttonStyle="ghost"
                       disabled={
                         locked || readOnly || index === entries.length - 1
                       }
@@ -367,7 +367,7 @@ const ContainerEditor = ({
                       onClick={() =>
                         onChange(reorderSchemaEntry(value, index, index + 1))
                       }
-                      size="xsmall"
+                      size="medium"
                       tooltip={t('moveDown')}
                       type="button"
                     >
@@ -375,13 +375,13 @@ const ContainerEditor = ({
                     </Button>
                     <Button
                       aria-label={t('duplicate')}
-                      buttonStyle="transparent"
+                      buttonStyle="ghost"
                       disabled={locked || readOnly}
                       margin={false}
                       onClick={() =>
                         onChange(duplicateSchemaEntry(value, index))
                       }
-                      size="xsmall"
+                      size="medium"
                       tooltip={t('duplicate')}
                       type="button"
                     >
@@ -389,7 +389,7 @@ const ContainerEditor = ({
                     </Button>
                     <Button
                       aria-label={t('delete')}
-                      buttonStyle="transparent"
+                      buttonStyle="ghost"
                       className="!st-text-error-500 hover:!st-bg-error-100 hover:!st-text-error-700"
                       disabled={locked || readOnly}
                       margin={false}
@@ -397,7 +397,7 @@ const ContainerEditor = ({
                         if (globalThis.confirm(t('confirmDeleteProperty')))
                           onChange(removeSchemaEntry(value, index));
                       }}
-                      size="xsmall"
+                      size="medium"
                       tooltip={t('delete')}
                       type="button"
                     >

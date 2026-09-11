@@ -240,6 +240,7 @@ export const createSeoSettingsGlobal = ({
 }): GlobalConfig => ({
   slug,
   label: adminLabel('seoSettings'),
+  versions: false,
   access: {
     read: access?.read ?? (() => false),
     update: access?.update ?? (() => false),

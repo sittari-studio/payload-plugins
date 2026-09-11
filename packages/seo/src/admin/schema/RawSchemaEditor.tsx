@@ -79,12 +79,12 @@ export const RawSchemaEditor = ({
           rows={18}
           value={raw}
         />
-        {error ? <Banner type="error">{error}</Banner> : null}
+        {error ? <Banner type="danger">{error}</Banner> : null}
         <Button
           buttonStyle="primary"
           disabled={readOnly}
           onClick={apply}
-          size="small"
+          size="medium"
           type="button"
         >
           {t('applyJson')}

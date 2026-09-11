@@ -209,8 +209,7 @@ describe('templatesPlugin', () => {
           {
             name: 'sections',
             type: 'blocks' as const,
-            blocks: [],
-            blockReferences: ['referencedBlock'],
+            blocks: ['referencedBlock'],
           },
         ],
       },
@@ -281,7 +280,7 @@ describe('templatesPlugin', () => {
       if (!sections || sections.type !== 'blocks') {
         throw new Error('Expected sections blocks field');
       }
-      const referencedBlock = sections.blockReferences?.[0];
+      const referencedBlock = sections.blocks[0];
       if (!referencedBlock || typeof referencedBlock === 'string') {
         throw new Error('Expected resolved reusable block');
       }

@@ -24,7 +24,7 @@ export const LinkActionButtons = ({
   <div className="link-field__actions">
     <Button
       aria-label={editLabel}
-      buttonStyle="icon-label"
+      buttonStyle="ghost"
       className="link-field__button"
       disabled={readOnly}
       icon={<EditIcon />}
@@ -34,7 +34,7 @@ export const LinkActionButtons = ({
     {onRemove ? (
       <Button
         aria-label={removeLabel}
-        buttonStyle="icon-label"
+        buttonStyle="ghost"
         className="link-field__button link-field__button--clear"
         disabled={readOnly}
         icon={<XIcon />}

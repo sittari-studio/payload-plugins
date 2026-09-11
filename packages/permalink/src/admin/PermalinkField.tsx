@@ -144,7 +144,7 @@ export const PermalinkField = ({
       draftSlug.length > 0 ? draftSlug : getDataByPath(slugSourceFieldName);
     const formatted =
       typeof valueToSlugify === 'string' && valueToSlugify.length > 0
-        ? formatPermalinkSlug(valueToSlugify, locale.code)
+        ? formatPermalinkSlug(valueToSlugify, locale?.code)
         : '';
 
     setOptimisticPath({
@@ -197,16 +197,16 @@ export const PermalinkField = ({
             className="sittari-permalink-field__button sittari-permalink-field__button--ok"
             margin={false}
             onClick={applySlug}
-            size="small"
+            size="medium"
           >
             {strings.ok}
           </Button>
           <Button
-            buttonStyle="none"
+            buttonStyle="ghost"
             className="sittari-permalink-field__button sittari-permalink-field__button--cancel"
             margin={false}
             onClick={cancelEditing}
-            size="small"
+            size="medium"
           >
             {strings.cancel}
           </Button>
@@ -231,7 +231,7 @@ export const PermalinkField = ({
               className="sittari-permalink-field__button sittari-permalink-field__button--edit"
               margin={false}
               onClick={beginEditing}
-              size="small"
+              size="medium"
             >
               {strings.edit}
             </Button>

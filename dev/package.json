@@ -18,13 +18,13 @@
     "@sittari/payload-strings": "workspace:*",
     "@sittari/payload-pages": "workspace:*",
     "@sittari/payload-templates": "workspace:*",
-    "@payloadcms/db-sqlite": "^3.0.0",
-    "@payloadcms/next": "^3.0.0",
-    "@payloadcms/plugin-nested-docs": "3.85.2",
-    "@payloadcms/richtext-lexical": "^3.0.0",
-    "@payloadcms/translations": "^3.85.2",
-    "next": "^16.0.0",
-    "payload": "^3.0.0",
+    "@payloadcms/db-sqlite": "4.0.0-canary.33",
+    "@payloadcms/next": "4.0.0-canary.33",
+    "@payloadcms/plugin-nested-docs": "4.0.0-canary.33",
+    "@payloadcms/richtext-lexical": "4.0.0-canary.33",
+    "@payloadcms/translations": "4.0.0-canary.33",
+    "next": "^16.2.6",
+    "payload": "4.0.0-canary.33",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "sass": "^1.77.0",
@@ -33,7 +33,7 @@
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "typescript": "5.9.3",
+    "typescript": "6.0.3",
     "vitest": "4.1.9"
   }
 }

@@ -51,9 +51,6 @@ const cloneField = (
     cloned = {
       ...cloned,
       blocks: cloned.blocks.map((block) =>
-        cloneBlock(block, blocks, resolving),
-      ),
-      blockReferences: cloned.blockReferences?.map((block) =>
         typeof block === 'string'
           ? blocks.has(block) && !resolving.has(block)
             ? cloneBlock(blocks.get(block)!, blocks, resolving)

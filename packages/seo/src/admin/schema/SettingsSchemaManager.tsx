@@ -78,7 +78,7 @@ export const SettingsSchemaManager = ({
   const locale = useLocale();
   const localized = isLocalizedSchemaLocale({
     defaultLocale: custom?.defaultLocale,
-    locale: locale.code,
+    locale: locale?.code,
     localization: config.localization,
   });
   const { closeModal, openModal } = useModal();
@@ -266,7 +266,7 @@ export const SettingsSchemaManager = ({
         actions={
           <>
             <Button
-              buttonStyle="transparent"
+              buttonStyle="ghost"
               disabled={readOnly}
               margin={false}
               onClick={(event) =>
@@ -282,7 +282,7 @@ export const SettingsSchemaManager = ({
               {t('edit')}
             </Button>
             <Button
-              buttonStyle="transparent"
+              buttonStyle="ghost"
               disabled={disabled}
               margin={false}
               onClick={() => duplicate(nextScope, index)}
@@ -291,7 +291,7 @@ export const SettingsSchemaManager = ({
               {t('duplicate')}
             </Button>
             <Button
-              buttonStyle="transparent"
+              buttonStyle="ghost"
               disabled={disabled || index === 0}
               margin={false}
               onClick={() =>
@@ -309,7 +309,7 @@ export const SettingsSchemaManager = ({
               ↑
             </Button>
             <Button
-              buttonStyle="transparent"
+              buttonStyle="ghost"
               disabled={disabled || index === items.length - 1}
               margin={false}
               onClick={() =>
@@ -327,7 +327,7 @@ export const SettingsSchemaManager = ({
               ↓
             </Button>
             <Button
-              buttonStyle="transparent"
+              buttonStyle="ghost"
               className="!st-text-error-500 hover:!st-bg-error-100 hover:!st-text-error-700"
               disabled={disabled}
               margin={false}
@@ -369,7 +369,7 @@ export const SettingsSchemaManager = ({
       >
         {(['global', 'collection'] as const).map((tab) => (
           <Button
-            buttonStyle="tab"
+            buttonStyle="secondary"
             className={`default-list-view-tabs__button${activeTab === tab ? ' default-list-view-tabs__button--active' : ''}`}
             disabled={activeTab === tab}
             extraButtonProps={{
@@ -404,7 +404,7 @@ export const SettingsSchemaManager = ({
               onClick={(event) =>
                 beginAdd('global', event.currentTarget as HTMLElement)
               }
-              size="small"
+              size="medium"
               type="button"
             >
               + {t('addSchema')}
@@ -434,7 +434,7 @@ export const SettingsSchemaManager = ({
             {collections.map((collection) => (
               <Button
                 buttonStyle={
-                  selectedCollection === collection ? 'subtle' : 'transparent'
+                  selectedCollection === collection ? 'secondary' : 'ghost'
                 }
                 extraButtonProps={{
                   'aria-current':
@@ -458,7 +458,7 @@ export const SettingsSchemaManager = ({
                 onClick={(event) =>
                   beginAdd('collection', event.currentTarget as HTMLElement)
                 }
-                size="small"
+                size="medium"
                 type="button"
               >
                 + {t('addSchema')}

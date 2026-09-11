@@ -127,6 +127,7 @@ export const createRedirectsCollection = ({
       plural: adminLabel('seoRedirects'),
     },
     timestamps: true,
+    versions: false,
     access: {
       admin: access?.admin ?? deny,
       create: access?.create ?? deny,

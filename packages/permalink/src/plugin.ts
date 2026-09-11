@@ -261,7 +261,6 @@ export const permalinkPlugin = (
         name: PERMALINK_FIELD_NAME,
         type: 'ui',
         admin: {
-          disableListColumn: true,
           components: {
             Field: {
               path: PERMALINK_FIELD_COMPONENT,

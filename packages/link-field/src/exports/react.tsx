@@ -47,7 +47,7 @@ const defaultRenderer: LinkFieldRenderer = ({ children, newTab, url }) => (
 
 export const LinkFieldJSXConverter = ({
   renderer = defaultRenderer,
-}: LinkFieldJSXConverterOptions = {}): JSXConverters<SerializedLinkFieldCompatibleNode> => {
+}: LinkFieldJSXConverterOptions = {}): JSXConverters<any> => {
   const converter = ({
     node,
     nodesToJSX,
@@ -67,10 +67,11 @@ export const LinkFieldJSXConverter = ({
     });
   };
 
-  return {
+  const converters: JSXConverters<any> = {
     autolink: converter,
     link: converter,
   };
+  return converters;
 };
 
 export type {

@@ -47,19 +47,19 @@
     "prepublishOnly": "pnpm run clean && pnpm run build"
   },
   "dependencies": {
-    "@payloadcms/ui": "^3.0.0"
+    "@payloadcms/ui": "4.0.0-canary.33"
   },
   "peerDependencies": {
-    "payload": "^3.0.0",
+    "payload": "^4.0.0-0",
     "react": "^19.0.0"
   },
   "devDependencies": {
-    "@payloadcms/db-sqlite": "3.85.2",
+    "@payloadcms/db-sqlite": "4.0.0-canary.33",
     "@types/react": "^19.0.0",
-    "payload": "^3.0.0",
+    "payload": "4.0.0-canary.33",
     "react": "^19.0.0",
     "tailwindcss": "3.4.17",
-    "typescript": "5.9.3",
+    "typescript": "6.0.3",
     "vitest": "4.1.9"
   },
   "publishConfig": {

@@ -1,6 +1,6 @@
-import type { Payload, SanitizedConfig } from 'payload';
-
-import { getPayload } from 'payload';
+import type { Payload } from 'payload';
+import { strictObject } from 'payload';
+import { defineCLICommand } from 'payload/cli';
 
 import { devAdminRoleName } from './rbac.js';
 
@@ -265,15 +265,11 @@ export const seed = async (payload: Payload): Promise<void> => {
   await seedStrings(payload);
 };
 
-export const script = async (config: SanitizedConfig): Promise<void> => {
-  const payload = await getPayload({
-    config,
-    disableOnInit: true,
-  });
-
-  try {
+export const seedCommand = defineCLICommand({
+  description: 'Seed the development database.',
+  input: strictObject({}),
+  handler: async ({ getPayload }) => {
+    const payload = await getPayload();
     await seed(payload);
-  } finally {
-    await payload.destroy();
-  }
-};
+  },
+});

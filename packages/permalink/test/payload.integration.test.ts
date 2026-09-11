@@ -37,7 +37,6 @@ beforeAll(async () => {
         versions: {
           drafts: {
             autosave: true,
-            localizeStatus: true,
           },
         },
         fields: [

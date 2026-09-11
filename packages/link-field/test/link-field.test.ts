@@ -522,8 +522,7 @@ describe('linkFieldPlugin', () => {
             {
               name: 'referencedLayout',
               type: 'blocks',
-              blocks: [],
-              blockReferences: ['reusableLink'],
+              blocks: ['reusableLink'],
             },
             {
               name: 'inlineLayout',
@@ -551,7 +550,11 @@ describe('linkFieldPlugin', () => {
     }
 
     const reusableLink = outputReusableBlock.fields[0] as GroupField;
-    const inlineLink = inlineLayout.blocks[0].fields[0] as GroupField;
+    const inlineBlockOutput = inlineLayout.blocks[0];
+    if (!inlineBlockOutput || typeof inlineBlockOutput === 'string') {
+      throw new Error('Expected inline block config');
+    }
+    const inlineLink = inlineBlockOutput.fields[0] as GroupField;
     const reusableReference = getChildField<RelationshipField>(
       reusableLink,
       'reference',
@@ -566,7 +569,7 @@ describe('linkFieldPlugin', () => {
       },
       slug: 'reusableLink',
     });
-    expect(referencedLayout.blockReferences).toEqual(['reusableLink']);
+    expect(referencedLayout.blocks).toEqual(['reusableLink']);
     expect(
       getChildField<TextField>(reusableLink, 'url').hooks?.afterRead,
     ).toHaveLength(1);

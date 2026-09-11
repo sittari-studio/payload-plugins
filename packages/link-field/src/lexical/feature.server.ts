@@ -1,8 +1,8 @@
-import {
-  convertLexicalNodesToHTML,
-  createNode,
-  createServerFeature,
-} from '@payloadcms/richtext-lexical';
+import { createNode, createServerFeature } from '@payloadcms/richtext-lexical';
+import type {
+  HTMLConverterAsync,
+  HTMLConvertersAsync,
+} from '@payloadcms/richtext-lexical/html-async';
 import { fieldSchemasToFormState } from '@payloadcms/ui/forms/fieldSchemasToFormState';
 import {
   sanitizeFields,
@@ -20,6 +20,7 @@ import {
   LINK_FIELD_RUNTIME_CONFIG_KEY,
   type LinkFieldFeatureConfig,
   type LinkFieldRuntimeConfig,
+  type SerializedLinkFieldAutoLinkNode,
   type SerializedLinkFieldNode,
 } from '../types.js';
 import { getReferenceIdentity } from '../utils/getReferenceIdentity.js';
@@ -191,32 +192,33 @@ const createGraphQLPopulationPromise = ({
   };
 };
 
-const createHTMLConverter = () => ({
-  converter: async (args: any): Promise<string> => {
-    const node = normalizeSerializedLinkNode(
-      args.node,
-    ) as SerializedLinkFieldNode;
-    const children = await convertLexicalNodesToHTML({
-      converters: args.converters,
-      currentDepth: args.currentDepth,
-      depth: args.depth,
-      draft: args.draft,
-      lexicalNodes: node.children,
-      overrideAccess: args.overrideAccess,
-      parent: { ...node, parent: args.parent },
-      req: args.req,
-      showHiddenFields: args.showHiddenFields,
-    });
-    const href =
-      node.fields.url ??
-      (node.fields.type === 'custom' ? node.fields.customUrl : undefined) ??
-      '';
-    return `<a href="${escapeAttribute(href)}"${
-      node.fields.newTab ? ' rel="noopener noreferrer" target="_blank"' : ''
-    }>${children}</a>`;
-  },
-  nodeTypes: ['link', 'autolink'],
-});
+export const LinkFieldHTMLConverter: HTMLConverterAsync = async ({
+  node: rawNode,
+  nodesToHTML,
+  parent,
+}) => {
+  const node = normalizeSerializedLinkNode(rawNode) as
+    | SerializedLinkFieldAutoLinkNode
+    | SerializedLinkFieldNode;
+  const children = (
+    await nodesToHTML({
+      nodes: node.children,
+      parent: { ...node, parent },
+    })
+  ).join('');
+  const href =
+    node.fields.url ??
+    (node.fields.type === 'custom' ? node.fields.customUrl : undefined) ??
+    '';
+  return `<a href="${escapeAttribute(href)}"${
+    node.fields.newTab ? ' rel="noopener noreferrer" target="_blank"' : ''
+  }>${children}</a>`;
+};
+
+export const LinkFieldHTMLConverters: HTMLConvertersAsync = {
+  autolink: LinkFieldHTMLConverter,
+  link: LinkFieldHTMLConverter,
+};
 
 export const LinkFieldFeature = createServerFeature<
   LinkFieldFeatureConfig,
@@ -224,7 +226,7 @@ export const LinkFieldFeature = createServerFeature<
   LinkFieldFeatureClientProps
 >({
   key: 'link',
-  feature: async ({ config, isRoot, parentIsLocalized, props = {} }) => {
+  feature: ({ config, isRoot, parentIsLocalized, props = {} }) => {
     const runtime = getRuntime(config);
     const relationTo = discardPayloadCollections(
       props.relationTo ?? config.collections.map(({ slug }) => slug),
@@ -239,7 +241,7 @@ export const LinkFieldFeature = createServerFeature<
       }),
       runtime,
     );
-    const sanitizedFields = await sanitizeFields({
+    const sanitizedFields = sanitizeFields({
       config: config as never,
       fields: rawFields,
       parentIsLocalized,
@@ -253,14 +255,12 @@ export const LinkFieldFeature = createServerFeature<
       showLabel: props.showLabel ?? true,
       showNewTab: props.showNewTab ?? true,
     };
-    const html = createHTMLConverter();
     const validation = createNodeValidation(sanitizedFields);
     const graphQLPopulation = createGraphQLPopulationPromise({
       fields: sanitizedFields,
       runtime,
     });
     const commonNode = {
-      converters: { html },
       getSubFields: () => sanitizedFields,
       getSubFieldsData: ({ node }: any) => node?.fields ?? {},
       graphQLPopulationPromises: [graphQLPopulation],

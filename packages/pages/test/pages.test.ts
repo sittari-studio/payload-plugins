@@ -93,8 +93,7 @@ describe('pagesPlugin', () => {
         {
           name: 'blocks',
           type: 'blocks',
-          blockReferences: ['hero', 'content'],
-          blocks: [],
+          blocks: ['hero', 'content'],
         },
       ],
     });

@@ -12,10 +12,8 @@
     "next.config.mjs"
   ],
   "compilerOptions": {
-    "baseUrl": "./",
     "emitDeclarationOnly": false,
     "allowJs": true,
-    "ignoreDeprecations": "5.0",
     "jsx": "preserve",
     "noEmit": true,
     "paths": {

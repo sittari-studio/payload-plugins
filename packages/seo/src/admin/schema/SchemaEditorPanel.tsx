@@ -39,7 +39,7 @@ export const SchemaEditorPanel = ({
           aria-label={t('backToStarters')}
         >
           <Button
-            buttonStyle="transparent"
+            buttonStyle="ghost"
             margin={false}
             onClick={onReplace}
             type="button"

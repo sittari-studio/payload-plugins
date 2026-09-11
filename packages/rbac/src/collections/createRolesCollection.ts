@@ -112,6 +112,7 @@ export const createRolesCollection = ({
       plural: localizedText('roles'),
       singular: localizedText('role'),
     },
+    versions: false,
   };
 
   return override ? override(collection) : collection;

@@ -48,7 +48,7 @@ export const StarterPicker = ({
     return (
       <div className="st-grid st-max-w-[820px] st-gap-base [&_h3]:st-m-0 [&_p]:st-mb-0 [&_p]:st-mt-[.35rem] [&_p]:st-text-elevation-600">
         <Button
-          buttonStyle="transparent"
+          buttonStyle="ghost"
           margin={false}
           onClick={() => {
             setImporting(false);
@@ -74,7 +74,7 @@ export const StarterPicker = ({
           value={raw}
         />
         {error ? (
-          <Banner type={contextSchema ? 'default' : 'error'}>{error}</Banner>
+          <Banner type={contextSchema ? 'default' : 'danger'}>{error}</Banner>
         ) : null}
         <div className="st-flex st-flex-wrap st-items-center st-gap-1">
           {contextSchema ? (
@@ -114,7 +114,7 @@ export const StarterPicker = ({
               <Button
                 buttonStyle="secondary"
                 onClick={() => onChoose(starter, createSchemaStarter(starter))}
-                size="small"
+                size="medium"
                 type="button"
               >
                 {t('use')}
@@ -130,7 +130,7 @@ export const StarterPicker = ({
             <Button
               buttonStyle="secondary"
               onClick={() => onChoose(t('untitledSchema'), {})}
-              size="small"
+              size="medium"
               type="button"
             >
               {t('use')}
@@ -144,7 +144,7 @@ export const StarterPicker = ({
             <Button
               buttonStyle="secondary"
               onClick={() => setImporting(true)}
-              size="small"
+              size="medium"
               type="button"
             >
               {t('use')}

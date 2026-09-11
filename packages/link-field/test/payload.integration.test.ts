@@ -1,11 +1,13 @@
 import { sqliteAdapter } from '@payloadcms/db-sqlite';
 import { configToSchema } from '@payloadcms/graphql';
 import {
-  convertLexicalToHTML,
   convertLexicalToMarkdown,
-  defaultHTMLConverters,
   lexicalEditor,
 } from '@payloadcms/richtext-lexical';
+import {
+  convertLexicalToHTMLAsync,
+  defaultHTMLConvertersAsync,
+} from '@payloadcms/richtext-lexical/html-async';
 import { randomUUID } from 'node:crypto';
 import { createRequire } from 'node:module';
 import { rm } from 'node:fs/promises';
@@ -15,7 +17,12 @@ import type { Block, Field, GroupField, TextField } from 'payload';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildConfig, createLocalReq, getPayload, type Payload } from 'payload';
 
-import { LinkFieldFeature, linkField, linkFieldPlugin } from '../src/index.js';
+import {
+  LinkFieldFeature,
+  LinkFieldHTMLConverters,
+  linkField,
+  linkFieldPlugin,
+} from '../src/index.js';
 
 const { graphql } = createRequire(import.meta.url)(
   'graphql',
@@ -155,8 +162,7 @@ beforeAll(async () => {
           {
             name: 'referencedLayout',
             type: 'blocks',
-            blocks: [],
-            blockReferences: ['reusableLink'],
+            blocks: ['reusableLink'],
           },
           {
             name: 'inlineLayout',
@@ -334,12 +340,6 @@ describe('real Payload Lexical link feature', () => {
       type: 'text',
       virtual: true,
     });
-    expect(
-      content.editor.editorConfig.features.converters.html.some(
-        (converter: any) => converter.nodeTypes.includes('link'),
-      ),
-    ).toBe(true);
-
     const filteredContent = payload.config.collections[0].fields.find(
       (field) => 'name' in field && field.name === 'filteredRelationContent',
     ) as any;
@@ -561,25 +561,23 @@ describe('real Payload Lexical link feature', () => {
     }) as any;
 
     await expect(
-      convertLexicalToHTML({
-        converters: [
-          ...defaultHTMLConverters,
-          ...editorConfig.features.converters.html,
-        ],
+      convertLexicalToHTMLAsync({
+        converters: {
+          ...defaultHTMLConvertersAsync,
+          ...LinkFieldHTMLConverters,
+        },
         data: custom,
-        req: null,
       }),
     ).resolves.toContain(
       '<a href="/about" rel="noopener noreferrer" target="_blank">About</a>',
     );
     await expect(
-      convertLexicalToHTML({
-        converters: [
-          ...defaultHTMLConverters,
-          ...editorConfig.features.converters.html,
-        ],
+      convertLexicalToHTMLAsync({
+        converters: {
+          ...defaultHTMLConvertersAsync,
+          ...LinkFieldHTMLConverters,
+        },
         data: reference,
-        req: null,
       }),
     ).resolves.toContain('<a href="/posts/one">Post</a>');
     expect(convertLexicalToMarkdown({ data: custom, editorConfig })).toContain(

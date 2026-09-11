@@ -32,8 +32,8 @@ import {
 import {
   CloseMenuIcon,
   EditIcon,
-  ExternalLinkIcon,
   formatDrawerSlug,
+  NewTabIcon,
   useConfig,
   useEditDepth,
   useLocale,
@@ -517,7 +517,7 @@ const LinkFieldEditor = ({
           <div className="link-input">
             {linkUrl ? (
               <a href={linkUrl} rel="noopener noreferrer" target="_blank">
-                {state?.data.newTab ? <ExternalLinkIcon /> : null}
+                {state?.data.newTab ? <NewTabIcon /> : null}
                 {linkLabel || linkUrl}
               </a>
             ) : (

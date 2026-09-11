@@ -64,6 +64,7 @@ export const createPathRoutesCollection = (
   ],
   slug: PATH_ROUTES_COLLECTION,
   timestamps: false,
+  versions: false,
 });
 
 const routeCollection = PATH_ROUTES_COLLECTION as never;

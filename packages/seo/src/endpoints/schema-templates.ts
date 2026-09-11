@@ -4,6 +4,7 @@ import {
   type Endpoint,
   type Field,
   type PayloadRequest,
+  type SanitizedCollectionConfig,
 } from 'payload';
 
 import type { JsonObject } from '../schema/types.js';
@@ -79,6 +80,7 @@ const settingsTemplates = (
 const fieldCanRead = async (
   req: PayloadRequest,
   field: Field | undefined,
+  collection: SanitizedCollectionConfig,
   document?: JsonObject,
 ): Promise<boolean> => {
   if (
@@ -89,6 +91,7 @@ const fieldCanRead = async (
     return true;
   return field.access.read({
     req,
+    collection,
     doc: document,
     data: document,
     siblingData: document,
@@ -122,7 +125,7 @@ export const createSchemaTemplatesEndpoint = ({
       return Response.json({ message: 'Not found' }, { status: 404 });
     if (
       typeof collectionConfig.access?.admin === 'function' &&
-      !(await collectionConfig.access.admin({ req }))
+      !(await collectionConfig.access.admin({ req, slug: collection }))
     )
       return Response.json({ message: 'Forbidden' }, { status: 403 });
 
@@ -148,7 +151,7 @@ export const createSchemaTemplatesEndpoint = ({
         })) as unknown as JsonObject;
       else {
         const access = await executeAccess(
-          { req, data: {}, disableErrors: true },
+          { req, data: {}, disableErrors: true, slug: collection },
           collectionConfig.access?.create,
         );
         if (!access)
@@ -161,6 +164,7 @@ export const createSchemaTemplatesEndpoint = ({
       !(await fieldCanRead(
         req,
         findField(collectionConfig.fields, seoField),
+        collectionConfig,
         document,
       ))
     )

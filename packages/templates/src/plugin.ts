@@ -219,6 +219,7 @@ const createTemplatesCollection = (
     beforeOperation: [beforeOperation],
   },
   fields: createTemplateFields(templates),
+  versions: false,
 });
 
 const reconcileTemplates = async (

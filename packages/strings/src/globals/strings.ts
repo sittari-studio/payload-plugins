@@ -47,5 +47,6 @@ export const createStringsGlobal = ({
     label: localizedText('translations'),
     slug,
     fields: [tabsField],
+    versions: false,
   };
 };
