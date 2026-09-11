@@ -1,5 +1,11 @@
 # @sittari/payload-permalink
 
+## 1.1.0
+
+### Minor Changes
+
+- c17e4da: Add compatibility with Payload 4, including updated rich text converters, block references, admin UI APIs, access callbacks, CLI configuration, and version defaults.
+
 ## 1.0.3
 
 ### Patch Changes

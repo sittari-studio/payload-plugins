@@ -1,6 +1,6 @@
 {
   "name": "@sittari/payload-strings",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Developer-defined UI strings global for Payload CMS with scoped tabs and localized text fields.",
   "type": "module",
   "license": "MIT",

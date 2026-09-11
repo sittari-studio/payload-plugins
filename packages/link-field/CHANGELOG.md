@@ -1,5 +1,11 @@
 # @sittari/payload-link-field
 
+## 0.4.0
+
+### Minor Changes
+
+- c17e4da: Add compatibility with Payload 4, including updated rich text converters, block references, admin UI APIs, access callbacks, CLI configuration, and version defaults.
+
 ## 0.3.2
 
 ### Patch Changes

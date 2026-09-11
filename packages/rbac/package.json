@@ -1,6 +1,6 @@
 {
   "name": "@sittari/payload-rbac",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Role-based access control plugin for PayloadCMS. Forked from @whatworks/payload-rbac with English, Ukrainian, and Russian admin localization.",
   "type": "module",
   "license": "MIT",
